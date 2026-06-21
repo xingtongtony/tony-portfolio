@@ -40,7 +40,7 @@ const projects: Project[] = [
 // Irregular hand-drawn squiggle (uneven control points).
 const SQUIGGLE = "M2 7C16 3 30 10 46 6 62 2 78 9 98 5";
 
-const ROW_BASE = "group flex items-baseline gap-3 py-[7px] transition-opacity duration-300";
+const ROW_BASE = "group flex items-center gap-3 py-[7px] transition-opacity duration-300";
 // Non-active rows dim when any sibling is hovered; the hovered one snaps back.
 const ROW_DIMMABLE = "group-hover/list:opacity-40 hover:!opacity-100";
 
