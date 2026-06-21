@@ -97,6 +97,23 @@ body {
   text-rendering: geometricPrecision;
 }
 
+/* Page-transition crossfade (View Transitions API — driven by
+   components/page-transitions.tsx). Cross-dissolves the whole page on
+   navigation, so the sidebar colour and the background morph between light and
+   dark case studies instead of snapping. Tuned slower than the 0.25s default
+   for a soft, deliberate fade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
 /* Smooth scroll on in-page anchor clicks (e.g. "Selected Work" → #work) but
    not on route transitions. The `data-scroll-behavior` attribute on <html>
    (set in app/layout.tsx) is what Next.js temporarily clears during route
