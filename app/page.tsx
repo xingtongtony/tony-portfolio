@@ -159,7 +159,7 @@ const marqueeCompanies = [
 
 export default function Home() {
   return (
-    <PortfolioShell>
+    <PortfolioShell sidebarTheme="light">
       <div className="mx-auto w-full max-w-[1280px]">
         <div className="marquee-viewport -mx-6 hidden overflow-hidden py-1 sm:-mx-10 sm:block lg:-mx-14 2xl:-mx-16">
           <div className="marquee-track flex min-w-max text-lg font-semibold tracking-[-0.045em] text-black/18 sm:text-2xl">
