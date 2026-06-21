@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { PortfolioShell } from "./components/portfolio-shell";
 import { StaggerGrid, StaggerItem } from "./components/motion";
-import { HeroIntro } from "./components/hero-intro";
+import { HeroIntro, HeroStatic } from "./components/hero-intro";
 import { NextSectionButton } from "./components/next-section-button";
 
 const work = [
@@ -187,7 +187,14 @@ export default function Home() {
               add visual weight below the headline, so true optical center sits
               lower than the flex center. The padding lifts content to balance. */}
           <div className="w-full pb-[12vh]">
-            <HeroIntro />
+            {/* Desktop (≥lg): interactive, word-anchored hero. Tablet + mobile
+                (<lg): a static, freely-laid-out hero — no hover/parallax. */}
+            <div className="hidden lg:block">
+              <HeroIntro />
+            </div>
+            <div className="lg:hidden">
+              <HeroStatic />
+            </div>
           </div>
         </section>
 

@@ -457,3 +457,82 @@ export function HeroIntro() {
     </div>
   );
 }
+
+// Static hero for tablet + mobile (< lg). No pointer on touch devices, so the
+// desktop hero's word-anchored stickers + cursor parallax buy nothing here and
+// are fiddly to lay out at narrow widths. Instead: a bigger, freely-wrapping
+// headline (comfortable to read) with the stickers dropped into a simple
+// wrapping row below — placed in the open space under the statement. No JS
+// positioning, no hover. The desktop interactive hero is untouched.
+export function HeroStatic() {
+  const [greeting, setGreeting] = useState<string>("Hello");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGreeting(getGreeting(new Date().getHours()));
+  }, []);
+
+  return (
+    // @container: the headline sizes from the CONTENT column width (cqw), not
+    // the viewport — so it never overflows when the sidebar narrows the column
+    // on tablet, yet still scales up nicely as the column grows.
+    <div className="@container relative">
+      <div className="mb-6 flex flex-col gap-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/40">
+          {greeting} — I&apos;m Tony
+        </p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/70">
+          A Staff Product Designer
+        </p>
+      </div>
+
+      {/* Bigger + freely wrapping. Keeps the black-uppercase / serif-italic
+          contrast, but drops the desktop overlap-seam so it wraps cleanly.
+          `cqw` keeps the longest word (CLOUDKITCHENS) inside the column. */}
+      <h1 className="font-black uppercase leading-[1.02] tracking-[-0.04em] text-[#151515] text-[clamp(2rem,11cqw,4rem)] text-balance">
+        {SEGMENTS.map((s, i) => {
+          if (s.k === "br") return null;
+          if (s.k === "i") {
+            return (
+              <span key={i}>
+                <span
+                  className="font-medium normal-case italic"
+                  style={{ fontFamily: "var(--font-serif), Georgia, serif" }}
+                >
+                  {s.t}
+                </span>{" "}
+              </span>
+            );
+          }
+          return (
+            <span key={i}>
+              {s.t}
+              {" "}
+            </span>
+          );
+        })}
+      </h1>
+
+      {/* Stickers as a wrapping row in the open space below the headline. */}
+      <div className="mt-9 flex flex-wrap items-center gap-x-3 gap-y-4">
+        {TAGS.map((tag) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={tag.src}
+            src={tag.src}
+            alt={tag.alt}
+            width={tag.w}
+            height={tag.h}
+            draggable={false}
+            className="block select-none drop-shadow-[0_8px_20px_rgba(0,0,0,0.12)]"
+            style={{
+              height: "clamp(28px, 7vw, 40px)",
+              width: "auto",
+              transform: `rotate(${tag.rot}deg)`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
