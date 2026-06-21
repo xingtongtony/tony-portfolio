@@ -111,7 +111,7 @@ export function PortfolioShell({
                     href={
                       item === "LinkedIn"
                         ? "https://www.linkedin.com/in/tongxingdesign/"
-                        : "https://drive.google.com/file/d/1cK3rWh4no14awCdSfYfgvAAEqOb5L1fk/view?usp=sharing"
+                        : "https://drive.google.com/file/d/1-GoTcB9ZYxMW_vwdvF5KdgT0OveWcOhM/view?usp=sharing"
                     }
                     target="_blank"
                     rel="noreferrer"
