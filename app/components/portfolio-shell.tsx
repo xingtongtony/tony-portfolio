@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { TonyLogo } from "../tony-logo";
 import { SidebarProjects } from "./sidebar-projects";
 import { RootBackground } from "./root-background";
@@ -115,9 +116,10 @@ export function PortfolioShell({
                     }
                     target="_blank"
                     rel="noreferrer"
-                    className={className}
+                    className={`inline-flex items-center gap-1 ${className}`}
                   >
-                    {item} ↗
+                    {item}
+                    <ArrowUpRight className="size-3.5" />
                   </a>
                 );
               }

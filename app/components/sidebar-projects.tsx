@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ArrowUpRight } from "lucide-react";
 
 /**
  * Sidebar project entry points. Editorial list under the logo.
@@ -89,13 +90,13 @@ function RowInner({
       </span>
       {hasLink && (
         <span
-          className={`ml-auto shrink-0 text-[11px] leading-none transition-all duration-300 ${
+          className={`ml-auto flex shrink-0 items-center leading-none transition-all duration-300 ${
             active
               ? "translate-x-0 text-[#3b82f6]"
               : "translate-x-1 text-transparent group-hover:translate-x-0 group-hover:text-[#3b82f6]"
           }`}
         >
-          ↗
+          <ArrowUpRight className="size-3.5" />
         </span>
       )}
     </>
