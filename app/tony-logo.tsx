@@ -9,7 +9,7 @@ export function TonyLogo() {
       animationData={tonyLogo}
       loop
       autoplay
-      className="h-auto w-[48px]"
+      className="h-auto w-[32px]"
       aria-label="Tony Xing logo"
     />
   );

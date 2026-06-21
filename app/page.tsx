@@ -2,6 +2,9 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { PortfolioShell } from "./components/portfolio-shell";
+import { StaggerGrid, StaggerItem } from "./components/motion";
+import { HeroIntro } from "./components/hero-intro";
+import { NextSectionButton } from "./components/next-section-button";
 
 const work = [
   {
@@ -17,6 +20,7 @@ const work = [
     title: "CloudKitchens",
     company: "CloudKitchens",
     period: "Case Study",
+    href: "/work/cloudkitchens",
     image: "/portfolio/tony-work-06.jpg",
     hoverColor: "#dfeaf4",
     glowColor: "rgba(92, 142, 183, 0.24)",
@@ -25,6 +29,7 @@ const work = [
     title: "TikTok Web Restructure",
     company: "TikTok",
     period: "Case Study",
+    href: "/work/tiktok-restructure",
     image: "/portfolio/tony-work-21.jpg",
     hoverColor: "#151515",
     glowColor: "rgba(0, 0, 0, 0.22)",
@@ -33,6 +38,7 @@ const work = [
     title: "TikTok Multi-Platform",
     company: "TikTok",
     period: "Case Study",
+    href: "/work/tiktok-multi-platform",
     image: "/portfolio/tony-work-08.jpg",
     hoverColor: "#e7e7e5",
     glowColor: "rgba(0, 0, 0, 0.12)",
@@ -41,6 +47,7 @@ const work = [
     title: "TikTok Design System",
     company: "TikTok",
     period: "Case Study",
+    href: "/work/tiktok-design-system",
     image: "/portfolio/tony-work-09.jpg",
     hoverColor: "#161616",
     glowColor: "rgba(0, 0, 0, 0.22)",
@@ -49,6 +56,7 @@ const work = [
     title: "TikCode Redesign",
     company: "TikTok",
     period: "Case Study",
+    href: "/work/tiktok-tikcode",
     image: "/portfolio/tony-work-10.jpg",
     hoverColor: "#2367d4",
     glowColor: "rgba(35, 103, 212, 0.22)",
@@ -65,6 +73,7 @@ const work = [
     title: "Airbnb Wishlist",
     company: "Airbnb",
     period: "Case Study",
+    href: "/work/airbnb-wishlist",
     image: "/portfolio/tony-work-12.jpg",
     hoverColor: "#eaffab",
     glowColor: "rgba(127, 180, 70, 0.18)",
@@ -121,7 +130,7 @@ const experience = [
     logo: "/portfolio/tony-work-17.png",
     description:
       "Created refined visual and interface design work for high-quality product experiences in a global hospitality brand.",
-    skills: ["Visual Design", "Brand Systems", "UI Design", "Craft"],
+    skills: ["Product Design", "Visual Design", "Design Systems", "Craft"],
   },
   {
     company: "DiDi",
@@ -151,6 +160,7 @@ const marqueeCompanies = [
 export default function Home() {
   return (
     <PortfolioShell>
+      <div className="mx-auto w-full max-w-[1280px]">
         <div className="marquee-viewport -mx-6 hidden overflow-hidden py-1 sm:-mx-10 sm:block lg:-mx-14 2xl:-mx-16">
           <div className="marquee-track flex min-w-max text-lg font-semibold tracking-[-0.045em] text-black/18 sm:text-2xl">
             {[0, 1].map((group) => (
@@ -171,31 +181,17 @@ export default function Home() {
 
         <section
           id="about"
-          className="flex min-h-[calc(100vh-48px)] scroll-mt-8 items-center justify-center py-14 lg:py-16"
+          className="flex min-h-[calc(100vh-48px)] scroll-mt-8 items-center py-14 lg:py-16"
         >
-          <div className="w-full max-w-5xl">
-            <h1 className="max-w-4xl text-3xl font-semibold leading-[1.04] tracking-[-0.055em] sm:text-4xl lg:text-5xl 2xl:text-6xl">
-              Hi, I&apos;m Tony.
-              <br />
-              I&apos;m a Lead Product Designer at TikTok,
-              focused on cross-platform products, design systems, promotion
-              tools, and user-friendly experiences.
-            </h1>
-            <p className="mt-8 max-w-2xl text-sm leading-6 tracking-[-0.015em] text-black/54 sm:text-base sm:leading-7">
-              With 10+ years of design experience across TikTok, Airbnb,
-              CloudKitchens, and DiDi, I bring product thinking, visual craft,
-              and attention to detail to complex digital journeys.
-            </p>
-            <a
-              href="#work"
-              className="mt-10 inline-flex rounded-full border border-black/10 bg-white px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-black/62 shadow-[0_8px_28px_rgba(0,0,0,0.055)] transition hover:-translate-y-0.5 hover:border-black/20 hover:text-black"
-            >
-              Selected work ↓
-            </a>
+          {/* pb biases the centered block upward: the bottom-hanging stickers
+              add visual weight below the headline, so true optical center sits
+              lower than the flex center. The padding lifts content to balance. */}
+          <div className="w-full pb-[12vh]">
+            <HeroIntro />
           </div>
         </section>
 
-        <section id="work" className="scroll-mt-8 py-10 lg:py-16">
+        <section id="work" data-case-section className="scroll-mt-8 py-10 lg:py-16">
           <div className="mb-9 max-w-2xl">
             <div>
               <p className="section-label">Work</p>
@@ -209,8 +205,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid w-full gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:gap-6 2xl:gap-7">
-            {work.map((project) => {
+          <StaggerGrid className="grid w-full gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:gap-6 2xl:gap-7">
+            {work.map((project, index) => {
               const cardContent = (
                 <>
                   <div className="absolute -inset-1 rounded-[1.4rem] bg-[var(--card-hover)] opacity-0 blur-lg transition duration-500 group-hover:opacity-10" />
@@ -240,34 +236,36 @@ export default function Home() {
 
               if (project.href) {
                 return (
-                  <Link
-                    key={project.title}
-                    href={project.href}
-                    style={cardStyle}
-                    className="group relative w-full overflow-visible rounded-[1.25rem]"
-                    aria-label={`Open ${project.title} case study`}
-                    data-cursor="view"
-                  >
-                    {cardContent}
-                  </Link>
+                  <StaggerItem key={project.title} index={index}>
+                    <Link
+                      href={project.href}
+                      style={cardStyle}
+                      className="group relative block w-full overflow-visible rounded-[1.25rem]"
+                      aria-label={`Open ${project.title} case study`}
+                      data-cursor="view"
+                    >
+                      {cardContent}
+                    </Link>
+                  </StaggerItem>
                 );
               }
 
               return (
-                <article
-                  key={project.title}
-                  style={cardStyle}
-                  className="group relative w-full overflow-visible rounded-[1.25rem]"
-                  {...(isCaseStudy ? { "data-cursor": "view" } : {})}
-                >
-                  {cardContent}
-                </article>
+                <StaggerItem key={project.title} index={index}>
+                  <article
+                    style={cardStyle}
+                    className="group relative w-full overflow-visible rounded-[1.25rem]"
+                    {...(isCaseStudy ? { "data-cursor": "view" } : {})}
+                  >
+                    {cardContent}
+                  </article>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerGrid>
         </section>
 
-        <section id="experience" className="scroll-mt-8 py-16 lg:py-24">
+        <section id="experience" data-case-section className="scroll-mt-8 py-16 lg:py-24">
           <div className="mb-6">
             <p className="section-label">Experience</p>
             <h2 className="mt-3 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">
@@ -278,24 +276,26 @@ export default function Home() {
             {experience.map((job) => (
               <article
                 key={job.company}
-                className="rounded-[1.5rem] border border-black/[0.08] bg-[#fafafa] p-5 shadow-[0_6px_28px_rgba(35,29,16,0.028)]"
+                className="group rounded-[1.5rem] border border-black/[0.06] bg-white p-6 shadow-[0_4px_24px_rgba(35,29,16,0.035)] transition duration-300 ease-out hover:-translate-y-0.5 hover:border-black/[0.1] hover:shadow-[0_14px_36px_rgba(35,29,16,0.07)]"
               >
                 <div className="flex items-start gap-4">
                   <Image
                     src={job.logo}
                     alt={`${job.company} logo`}
-                    width={52}
-                    height={52}
-                    className="rounded-[1rem]"
+                    width={48}
+                    height={48}
+                    className="shrink-0 rounded-[0.85rem]"
                   />
-                  <div className="min-w-0">
-                    <div className="flex flex-col gap-1">
-                      <h3 className="text-2xl font-semibold tracking-[-0.055em]">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+                      <h3 className="text-xl font-semibold leading-[1.2] tracking-[-0.03em]">
                         {job.company}
                       </h3>
-                      <p className="text-sm text-black/44">{job.date}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-black/40 sm:shrink-0">
+                        {job.date}
+                      </p>
                     </div>
-                    <p className="mt-3 text-base font-medium tracking-[-0.025em]">
+                    <p className="mt-2 text-sm font-medium tracking-[-0.015em] text-black/60 sm:mt-1">
                       {job.role}
                     </p>
                   </div>
@@ -304,11 +304,11 @@ export default function Home() {
                   <p className="mt-5 text-sm leading-6 text-black/58">
                     {job.description}
                   </p>
-                  <div className="mt-5 flex flex-wrap gap-2">
+                  <div className="mt-5 flex flex-wrap gap-1.5">
                     {job.skills.map((skill) => (
                       <span
                         key={skill}
-                        className="rounded-full border border-black/10 px-3 py-1.5 text-[11px] font-medium text-black/54"
+                        className="rounded-full bg-black/[0.04] px-3 py-1.5 text-[11px] font-medium text-black/60"
                       >
                         {skill}
                       </span>
@@ -320,7 +320,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="contact" className="scroll-mt-8 py-12 lg:py-16">
+        <section id="contact" data-case-section className="scroll-mt-8 py-12 lg:py-16">
           <div className="border-t border-black/10 pt-8">
             <p className="section-label">Contact</p>
             <h2 className="mt-6 max-w-4xl text-5xl font-semibold leading-[0.92] tracking-[-0.075em] sm:text-7xl">
@@ -349,6 +349,8 @@ export default function Home() {
             <p>Product Designer · TikTok · Airbnb · CloudKitchens</p>
           </footer>
         </section>
+      </div>
+      <NextSectionButton theme="light" rootSelector="main" />
     </PortfolioShell>
   );
 }

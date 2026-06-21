@@ -6,4 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Portfolio Project Rules
 
-Before making portfolio design, content, routing, or asset changes, read and follow `PORTFOLIO_WORKING_RULES.md`.
+Before making portfolio design, content, routing, or asset changes, read and follow the rules in the `rules/` folder:
+
+- `rules/PORTFOLIO_WORKING_RULES.md` — binding rules + process spec (judgment, anti-patterns, workflow, content voice).
+- `rules/DESIGN_SYSTEM.md` — token reference (color, type, spacing, radii, shadows, motion, components).

@@ -5,6 +5,83 @@
   --foreground: #151515;
 }
 
+/* Case-study theme tokens (consumed by app/lib/tokens.ts + case-study.tsx).
+   DARK is the default, so the existing dark case studies need no change. A
+   LIGHT case study sets data-cs-theme="light" on its <article> root to flip
+   every token at once. */
+:root {
+  --cs-bg: #161616;
+  --cs-heading: #ffffff;
+  --cs-body: rgb(255 255 255 / 0.64);
+  --cs-body-sm: rgb(255 255 255 / 0.56);
+  --cs-emphasis: rgb(255 255 255 / 0.9);
+  --cs-eyebrow: rgb(255 255 255 / 0.4);
+  --cs-eyebrow-meta: rgb(255 255 255 / 0.36);
+  --cs-lead: rgb(255 255 255 / 0.8);
+  --cs-cap: rgb(255 255 255 / 0.85);
+  --cs-border: rgb(255 255 255 / 0.05);
+  --cs-border-2: rgb(255 255 255 / 0.06);
+  --cs-surface: rgb(255 255 255 / 0.025);
+  --cs-surface-2: rgb(255 255 255 / 0.04);
+  --cs-hover-border: rgb(255 255 255 / 0.12);
+  --cs-hover-surface: rgb(255 255 255 / 0.06);
+  /* GradientTag endpoints — DARK surfaces (default). Brightened from the
+     verbatim old-site values below so both ends stay legible on #161616. */
+  --gtag-warm-from: #ff5c5c;
+  --gtag-warm-to: #c79cff;
+  --gtag-cool-from: #2fe0c4;
+  --gtag-cool-to: #5aa9e6;
+}
+
+/* Radius scale — one source of truth (see DESIGN_SYSTEM §3). Leans round.
+   Use rounded-[var(--r-md)] etc.; don't hand-pick one-off px radii. */
+:root {
+  --r-xs: 0.75rem; /* 12px — chips, tags, badges, small labels */
+  --r-sm: 1rem; /* 16px — small cards, inputs */
+  --r-md: 1.25rem; /* 20px — standard cards, metadata, work card */
+  --r-lg: 1.5rem; /* 24px — media frames (image/video/diagram), experience card */
+  --r-xl: 1.75rem; /* 28px — hero image, sidebar panel, large containers */
+  --r-2xl: 2rem; /* 32px — extra-round feature block */
+  --r-pill: 9999px; /* pills, chips, dots, cursor */
+}
+
+[data-cs-theme="light"] {
+  --cs-bg: #ffffff;
+  --cs-heading: #0a0a0a;
+  --cs-body: rgb(23 23 23 / 0.72);
+  --cs-body-sm: rgb(23 23 23 / 0.62);
+  --cs-emphasis: rgb(10 10 10 / 0.96);
+  --cs-eyebrow: rgb(23 23 23 / 0.45);
+  --cs-eyebrow-meta: rgb(23 23 23 / 0.4);
+  --cs-lead: rgb(23 23 23 / 0.82);
+  --cs-cap: rgb(23 23 23 / 0.85);
+  --cs-border: rgb(23 23 23 / 0.08);
+  --cs-border-2: rgb(23 23 23 / 0.1);
+  --cs-surface: rgb(23 23 23 / 0.03);
+  --cs-surface-2: rgb(23 23 23 / 0.05);
+  --cs-hover-border: rgb(23 23 23 / 0.16);
+  --cs-hover-surface: rgb(23 23 23 / 0.05);
+  /* GradientTag endpoints — LIGHT surfaces: artistic old-site values, verbatim
+     from the Airbnb Wishlist site. Warm = red→purple, cool = teal→blue. */
+  --gtag-warm-from: #d61515;
+  --gtag-warm-to: #8446b8;
+  --gtag-cool-from: #14baa1;
+  --gtag-cool-to: #0f4f85;
+}
+
+
+/* Whole-page light/dark crossfade (ScrollThemeShell). The article's colors are
+   all `--cs-*` driven, so the var values swap instantly when data-cs-theme
+   flips; this transitions every color property across the subtree so the page
+   fades in step with the sidebar/main background. Framer-motion animates via
+   the Web Animations API (not CSS transitions), so this does not interfere. */
+.cs-page-fade,
+.cs-page-fade * {
+  transition-property: background-color, color, border-color, fill;
+  transition-duration: 0.5s;
+  transition-timing-function: ease;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -20,7 +97,11 @@ body {
   text-rendering: geometricPrecision;
 }
 
-html {
+/* Smooth scroll on in-page anchor clicks (e.g. "Selected Work" → #work) but
+   not on route transitions. The `data-scroll-behavior` attribute on <html>
+   (set in app/layout.tsx) is what Next.js temporarily clears during route
+   changes, so this CSS rule only applies when Next isn't navigating. */
+[data-scroll-behavior="smooth"] {
   scroll-behavior: smooth;
 }
 
@@ -59,6 +140,20 @@ img {
   );
 }
 
+/* "Floating screen" elevation — for a LIGHT image sitting on a DARK case-study
+   page (TikTok Design System). A soft, deep drop shadow grounds the bright
+   image so it reads as a lifted screen rather than a harsh white cut-out. */
+.screen-shadow {
+  box-shadow: 0 26px 70px -26px rgba(0, 0, 0, 0.85);
+}
+
+/* Marquee that fades only on the LEFT edge (the side nearest the sidebar);
+   the right edge runs flush. Variant of .marquee-viewport's two-sided mask. */
+.marquee-fade-left {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5rem, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 5rem, #000 100%);
+}
+
 .availability-dot {
   display: inline-block;
   position: relative;
@@ -82,6 +177,126 @@ img {
 
 .right-pane-enter {
   animation: right-pane-enter 320ms ease-out both;
+}
+
+.word-reveal {
+  animation: word-reveal 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fade-reveal {
+  animation: fade-reveal 850ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hero per-token reveal — neutral words (text / connective / punct).
+   The `inline-block` lets us transform individual words without breaking
+   line wrap; spaces between tokens are rendered as raw text nodes outside
+   the animated span so they don't get clipped by the inline-block box. */
+.hero-token {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(14px);
+  animation: hero-token-reveal 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hero per-token reveal — emphasized words (role / brand / number).
+   Same reveal arc as `.hero-token`, but with a subtle scale overshoot at
+   the tail so these words "land" with a tiny pop. Eye naturally catches
+   on words that move differently. */
+.hero-token-pulse {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(14px) scale(1);
+  animation: hero-token-pulse 920ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes hero-token-reveal {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-token-pulse {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(14px) scale(1);
+  }
+  72% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+  84% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* "10+" gradient flash: a transparent gradient-filled text layer that fades in
+   over the solid black glyph, sweeping three colors via background-position,
+   then fades back out. Plays once on load; re-triggered on hover via JS. */
+.grad-flash {
+  background-image: linear-gradient(110deg, #3b82f6 0%, #a855f7 35%, #f2784b 70%, #3b82f6 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0;
+  animation: grad-flash 1200ms ease-out 600ms both;
+}
+
+@keyframes grad-flash {
+  0% {
+    opacity: 0;
+    background-position: 0% 50%;
+  }
+  18% {
+    opacity: 1;
+  }
+  38% {
+    opacity: 1;
+    background-position: 80% 50%;
+  }
+  100% {
+    opacity: 0;
+    background-position: 130% 50%;
+  }
+}
+
+@keyframes word-reveal {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-reveal {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
 }
 
 @keyframes marquee {

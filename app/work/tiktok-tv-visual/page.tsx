@@ -2,19 +2,19 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { PortfolioShell } from "../../components/portfolio-shell";
-
-const eyebrowSection =
-  "text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40";
-const eyebrowMeta =
-  "text-[10px] font-semibold uppercase tracking-[0.14em] text-white/36";
-
-const surfaceQuiet =
-  "border border-white/[0.05] bg-white/[0.025]";
-const surfaceDefault =
-  "border border-white/[0.06] bg-white/[0.04]";
-
-const bodyMd = "text-base leading-[1.55] text-white/64";
-const bodySm = "text-sm leading-[1.5] text-white/56";
+import { CaseStudyFooter } from "../../components/case-study";
+import { Reveal, StaggerGrid, StaggerItem } from "../../components/motion";
+import { NextSectionButton } from "../../components/next-section-button";
+import {
+  eyebrowSection,
+  eyebrowMeta,
+  surfaceQuiet,
+  surfaceDefault,
+  bodyMd,
+  bodySm,
+  emphasis,
+  cardHoverDark,
+} from "../../lib/tokens";
 
 const projectStats = [
   ["Role", "Lead Product Designer"],
@@ -23,17 +23,29 @@ const projectStats = [
   ["Patents", "6 Design Patents"],
 ];
 
-const focusRules = [
-  [
-    "Horizontal Focus",
-    "The static position of focus states consistently highlights the second item in a horizontal row, ensuring a fixed point of interest along the horizontal axis.",
-    "/portfolio/tiktok-tv/tv-08.mp4",
-  ],
-  [
-    "Vertical Focus",
-    "The static position of focus states remains centered on the list, ensuring the focal point stays in the middle of the vertical layout.",
-    "/portfolio/tiktok-tv/tv-07.mp4",
-  ],
+const focusRules: { label: string; body: ReactNode; video: string }[] = [
+  {
+    label: "Horizontal Focus",
+    body: (
+      <>
+        The static position of focus states consistently highlights the{" "}
+        <strong className={emphasis}>second item</strong> in a horizontal row,
+        ensuring a fixed point of interest along the horizontal axis.
+      </>
+    ),
+    video: "/portfolio/tiktok-tv/tv-08.mp4",
+  },
+  {
+    label: "Vertical Focus",
+    body: (
+      <>
+        The static position of focus states remains{" "}
+        <strong className={emphasis}>centered</strong> on the list, ensuring the
+        focal point stays in the middle of the vertical layout.
+      </>
+    ),
+    video: "/portfolio/tiktok-tv/tv-07.mp4",
+  },
 ];
 
 const features: {
@@ -72,11 +84,13 @@ function CaseSection({
   className?: string;
 }) {
   return (
-    <section className={className}>
-      <p className={eyebrowSection}>{eyebrow}</p>
-      <h2 className="mt-4 max-w-4xl text-3xl font-medium leading-[1.05] tracking-[-0.025em] text-white sm:text-4xl">
-        {title}
-      </h2>
+    <section className={className} data-case-section>
+      <Reveal>
+        <p className={eyebrowSection}>{eyebrow}</p>
+        <h2 className="mt-4 max-w-4xl text-3xl font-medium leading-[1.05] tracking-[-0.025em] text-white sm:text-4xl">
+          {title}
+        </h2>
+      </Reveal>
       {children}
     </section>
   );
@@ -137,33 +151,13 @@ function ImageFrame({
   );
 }
 
-function TextCard({
-  title,
-  children,
-  className = "",
-}: {
-  title: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`rounded-[1.25rem] p-6 sm:p-7 ${surfaceDefault} ${className}`}
-    >
-      <h3 className="text-lg font-semibold leading-[1.25] tracking-[-0.02em] text-white">
-        {title}
-      </h3>
-      <div className={`mt-3 ${bodySm}`}>{children}</div>
-    </div>
-  );
-}
-
 export default function TikTokTvVisualPage() {
   return (
     <PortfolioShell
       sidebarTheme="tiktok-tv"
       mainClassName="bg-[#161616] text-white"
-      contentClassName="right-pane-enter min-w-0 bg-[#161616] text-white"
+      rootBg="#161616"
+      contentClassName="min-w-0 bg-[#161616] text-white"
     >
       <article className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 sm:pt-10 lg:px-14 lg:pb-24 lg:pt-14">
         {/* HERO */}
@@ -229,7 +223,7 @@ export default function TikTokTvVisualPage() {
         </dl>
 
         {/* PATENTS + CREDITS */}
-        <section className="mt-4 grid gap-4 lg:grid-cols-2">
+        <section className="mt-4 grid gap-x-12 gap-y-4 lg:grid-cols-2">
           <article className={`rounded-[1.25rem] px-6 py-6 ${surfaceQuiet}`}>
             <Image
               src="/portfolio/tiktok-tv/tv-15.png"
@@ -241,7 +235,7 @@ export default function TikTokTvVisualPage() {
             <h2 className="mt-5 text-[1.25rem] font-semibold leading-[1.2] tracking-[-0.02em] text-white">
               6 Design Patent
             </h2>
-            <ul className="mt-3 space-y-1 text-[15px] font-medium leading-6 text-white/56">
+            <ul className="mt-3 flex flex-col gap-1 text-[15px] font-medium leading-6 text-white/56">
               <li>Video related interactive patent</li>
               <li>Design inventions</li>
               <li>Apr 2024 — Oct 2024</li>
@@ -259,7 +253,7 @@ export default function TikTokTvVisualPage() {
             <h2 className="mt-5 text-[1.25rem] font-semibold leading-[1.2] tracking-[-0.02em] text-white">
               Special thanks
             </h2>
-            <ul className="mt-3 space-y-1 text-[15px] font-medium leading-6 text-white/56">
+            <ul className="mt-3 flex flex-col gap-1 text-[15px] font-medium leading-6 text-white/56">
               <li>Nina Ding</li>
               <li>Zhanchen Zhang</li>
               <li>Weilong Gao</li>
@@ -271,7 +265,7 @@ export default function TikTokTvVisualPage() {
         <div className="mt-32 flex flex-col gap-32 lg:mt-40 lg:gap-40">
           {/* BACKGROUND — WHY TV? */}
           <CaseSection eyebrow="Background" title="Why TV?">
-            <div className={`mt-8 max-w-3xl flex flex-col gap-7 ${bodyMd}`}>
+            <Reveal className={`mt-8 max-w-3xl flex flex-col gap-7 ${bodyMd}`}>
               <p>
                 Since its successful launch in the North American market in
                 November 2021, TikTok TV has successively landed on Android and
@@ -283,9 +277,9 @@ export default function TikTokTvVisualPage() {
                 one of the core segments of PGC, we began significantly
                 increasing our investment in this field.
               </p>
-            </div>
+            </Reveal>
 
-            <div
+            <Reveal
               className={`mt-10 rounded-[1.25rem] p-7 sm:p-9 ${surfaceDefault}`}
             >
               <div className="grid gap-10 sm:grid-cols-3 sm:items-end">
@@ -312,58 +306,52 @@ export default function TikTokTvVisualPage() {
                 <div className="bg-white/80" style={{ width: "70%" }} />
                 <div className="bg-white/30" style={{ width: "30%" }} />
               </div>
-            </div>
+            </Reveal>
           </CaseSection>
 
           {/* THE NEW VISUAL — VAST WINDOW */}
           <CaseSection eyebrow="The new visual" title="A vast window of TV">
-            <p className={`mt-8 max-w-3xl ${bodyMd}`}>
-              We wanted TikTok TV to feel like a vast window — turning the
-              screen into a spatial medium that connects the user&apos;s room
-              to what&apos;s playing on it. The goal was a sensation of depth
-              that carries through every layer of the interface, not just a
-              flat surface to scroll on.
-            </p>
+            <Reveal>
+              <p className={`mt-8 max-w-3xl ${bodyMd}`}>
+                We wanted TikTok TV to feel like a vast window — turning the
+                screen into a spatial medium that connects the user&apos;s
+                room to what&apos;s playing on it. The goal was a sensation
+                of depth that carries through every layer of the interface,
+                not just a flat surface to scroll on.
+              </p>
+            </Reveal>
 
-            <VideoFrame
-              src="/portfolio/tiktok-tv/tv-05.mp4"
-              className="mt-10"
-            />
+            <Reveal className="mt-10">
+              <VideoFrame src="/portfolio/tiktok-tv/tv-05.mp4" />
+            </Reveal>
 
-            <p className={`mt-10 max-w-3xl ${bodyMd}`}>
-              True depth is expensive. On Web TV and Android TV, real blur
-              effects and color-driven motion cause significant performance
-              issues. We solved it with layered transparent color — spotlight
-              backgrounds bleed through the layers above, creating depth
-              without the cost.
-            </p>
+            <Reveal>
+              <p className={`mt-10 max-w-3xl ${bodyMd}`}>
+                True depth is expensive. On Web TV and Android TV, real blur
+                effects and color-driven motion cause significant performance
+                issues. We solved it with layered transparent color —
+                spotlight backgrounds bleed through the layers above,
+                creating depth without the cost.
+              </p>
+            </Reveal>
 
-            <div className="mt-10 grid gap-5 sm:grid-cols-2">
-              <ImageFrame
-                src="/portfolio/tiktok-tv/tv-20.jpg"
-                alt="TikTok TV video consumption interface"
-                width={3200}
-                height={3200}
-              />
-              <ImageFrame
-                src="/portfolio/tiktok-tv/tv-14.jpg"
-                alt="TikTok TV profile interface"
-                width={3200}
-                height={3200}
-              />
-              <ImageFrame
-                src="/portfolio/tiktok-tv/tv-19.jpg"
-                alt="Spatial layer concept for TikTok TV video consumption"
-                width={3200}
-                height={3200}
-              />
-              <ImageFrame
-                src="/portfolio/tiktok-tv/tv-11.jpg"
-                alt="Spatial layer concept for TikTok TV profile"
-                width={3200}
-                height={3200}
-              />
-            </div>
+            <StaggerGrid className="mt-10 grid gap-x-12 gap-y-5 sm:grid-cols-2">
+              {[
+                ["/portfolio/tiktok-tv/tv-20.jpg", "TikTok TV video consumption interface"],
+                ["/portfolio/tiktok-tv/tv-14.jpg", "TikTok TV profile interface"],
+                ["/portfolio/tiktok-tv/tv-19.jpg", "Spatial layer concept for TikTok TV video consumption"],
+                ["/portfolio/tiktok-tv/tv-11.jpg", "Spatial layer concept for TikTok TV profile"],
+              ].map(([src, alt], i) => (
+                <StaggerItem key={src} index={i}>
+                  <ImageFrame
+                    src={src}
+                    alt={alt}
+                    width={3200}
+                    height={3200}
+                  />
+                </StaggerItem>
+              ))}
+            </StaggerGrid>
           </CaseSection>
 
           {/* THE NEW IDENTITY — INTERACTIONS & ANIMATION */}
@@ -371,7 +359,7 @@ export default function TikTokTvVisualPage() {
             eyebrow="The new identity"
             title="Interactions & Animation"
           >
-            <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:gap-14">
+            <Reveal className="mt-8 grid gap-x-12 gap-y-8 lg:grid-cols-2">
               <p className={bodyMd}>
                 On TV, animation isn&apos;t decoration. It&apos;s the feedback
                 layer — what just happened, what&apos;s next — and the
@@ -384,10 +372,10 @@ export default function TikTokTvVisualPage() {
                 dynamic backgrounds, in &amp; out transitions, and cold-start
                 loading.
               </p>
-            </div>
+            </Reveal>
 
             {/* Sub-section: Dynamic background */}
-            <div className="mt-20 grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-12">
+            <Reveal className="mt-20 grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-12">
               <div>
                 <SubHeading>
                   Dynamic background &amp; video consumption
@@ -401,10 +389,10 @@ export default function TikTokTvVisualPage() {
                 </p>
               </div>
               <VideoFrame src="/portfolio/tiktok-tv/tv-01.mp4" />
-            </div>
+            </Reveal>
 
             {/* Sub-section: Feeling of In & Out */}
-            <div className="mt-20 grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-12">
+            <Reveal className="mt-20 grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-12">
               <div>
                 <SubHeading>Feeling of In &amp; out</SubHeading>
                 <p className={`mt-5 ${bodyMd}`}>
@@ -414,10 +402,10 @@ export default function TikTokTvVisualPage() {
                 </p>
               </div>
               <VideoFrame src="/portfolio/tiktok-tv/tv-02.mp4" />
-            </div>
+            </Reveal>
 
             {/* Sub-row: 30% scaling rule */}
-            <div className="mt-10">
+            <Reveal className="mt-10">
               <p className={`max-w-3xl ${bodyMd}`}>
                 Scaling the interface by 30% from top to bottom makes the
                 transition more noticeable — without being overly dramatic
@@ -427,7 +415,7 @@ export default function TikTokTvVisualPage() {
                 src="/portfolio/tiktok-tv/tv-03.mp4"
                 className="mt-7"
               />
-            </div>
+            </Reveal>
 
             {/* Sub-section: Cold start loading — sticky media */}
             <div className="mt-20 grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
@@ -459,19 +447,20 @@ export default function TikTokTvVisualPage() {
               </div>
             </div>
 
-            <ImageFrame
-              src="/portfolio/tiktok-tv/tv-09.png"
-              alt="Cold start loading strategy diagram"
-              width={2446}
-              height={1738}
-              className="mt-10"
-            />
+            <Reveal className="mt-10">
+              <ImageFrame
+                src="/portfolio/tiktok-tv/tv-09.png"
+                alt="Cold start loading strategy diagram"
+                width={2446}
+                height={1738}
+              />
+            </Reveal>
           </CaseSection>
 
           {/* THE NEW LOOKS — COMPONENTS & FOCUS */}
           <CaseSection eyebrow="The new looks" title="Components & Focus">
             {/* Sub-section: Components */}
-            <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-12">
+            <Reveal className="mt-8 grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-12">
               <div>
                 <SubHeading>Components</SubHeading>
                 <div className={`mt-5 flex flex-col gap-6 ${bodyMd}`}>
@@ -488,10 +477,10 @@ export default function TikTokTvVisualPage() {
                 </div>
               </div>
               <VideoFrame src="/portfolio/tiktok-tv/tv-04.mp4" />
-            </div>
+            </Reveal>
 
             {/* Sub-section: Focus */}
-            <div className="mt-20">
+            <Reveal className="mt-20">
               <SubHeading>Focus</SubHeading>
               <p className={`mt-5 max-w-3xl ${bodyMd}`}>
                 Compared with touch-based interfaces, television interfaces
@@ -499,26 +488,26 @@ export default function TikTokTvVisualPage() {
                 attention on the selected element. This approach forms the
                 foundation for initiating navigation.
               </p>
+            </Reveal>
 
-              <div className="mt-10 grid gap-10 lg:grid-cols-2 lg:gap-10">
-                {focusRules.map(([label, body, video]) => (
-                  <div key={label}>
-                    <VideoFrame src={video} />
-                    <h4 className="mt-6 text-xl font-semibold leading-[1.25] tracking-[-0.02em] text-white">
-                      {label}
-                    </h4>
-                    <p className={`mt-3 ${bodyMd}`}>{body}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <StaggerGrid className="mt-10 grid gap-x-12 gap-y-10 lg:grid-cols-2">
+              {focusRules.map(({ label, body, video }, i) => (
+                <StaggerItem key={label} index={i}>
+                  <VideoFrame src={video} />
+                  <h4 className="mt-6 text-xl font-semibold leading-[1.25] tracking-[-0.02em] text-white">
+                    {label}
+                  </h4>
+                  <p className={`mt-3 ${bodyMd}`}>{body}</p>
+                </StaggerItem>
+              ))}
+            </StaggerGrid>
           </CaseSection>
 
           {/* FEATURES */}
           <CaseSection eyebrow="Highlights" title="Features">
-            <div className="mt-8 grid gap-5 lg:grid-cols-3">
-              {features.map(({ title, body, image, href }) => {
-                const cardClass = `group overflow-hidden rounded-[1.25rem] transition duration-300 ease-out hover:-translate-y-1 hover:border-white/[0.12] hover:bg-white/[0.06] hover:shadow-[0_18px_40px_rgba(0,0,0,0.35)] ${surfaceDefault}`;
+            <StaggerGrid className="mt-8 grid gap-5 lg:grid-cols-3">
+              {features.map(({ title, body, image, href }, i) => {
+                const cardClass = `group flex h-full flex-col overflow-hidden rounded-[1.25rem] ${surfaceDefault} ${cardHoverDark}`;
                 const cardInner = (
                   <>
                     <div className="overflow-hidden">
@@ -541,28 +530,31 @@ export default function TikTokTvVisualPage() {
 
                 if (href) {
                   return (
-                    <Link
-                      key={title}
-                      href={href}
-                      data-cursor="view"
-                      aria-label={`Open ${title} case study`}
-                      className={`block ${cardClass}`}
-                    >
-                      {cardInner}
-                    </Link>
+                    <StaggerItem key={title} index={i} className="h-full">
+                      <Link
+                        href={href}
+                        data-cursor="view"
+                        aria-label={`Open ${title} case study`}
+                        className={cardClass}
+                      >
+                        {cardInner}
+                      </Link>
+                    </StaggerItem>
                   );
                 }
 
                 return (
-                  <article key={title} className={cardClass}>
-                    {cardInner}
-                  </article>
+                  <StaggerItem key={title} index={i} className="h-full">
+                    <article className={cardClass}>{cardInner}</article>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </StaggerGrid>
           </CaseSection>
         </div>
+        <CaseStudyFooter />
       </article>
+      <NextSectionButton />
     </PortfolioShell>
   );
 }
