@@ -486,17 +486,22 @@ export function HeroStatic() {
         </p>
       </div>
 
-      {/* Bigger + freely wrapping. Keeps the black-uppercase / serif-italic
-          contrast, but drops the desktop overlap-seam so it wraps cleanly.
-          `cqw` keeps the longest word (CLOUDKITCHENS) inside the column. */}
-      <h1 className="font-black uppercase leading-[1.02] tracking-[-0.04em] text-[#151515] text-[clamp(2rem,11cqw,4rem)] text-balance">
+      {/* Bigger + freely wrapping, with the desktop overlap-seam borrowed in:
+          italics pull into the neighbouring bold words and the white text-stroke
+          (paint-order: stroke) cuts a clean seam where they overlap. `cqw` keeps
+          the longest word (CLOUDKITCHENS) inside the column. The seam-stroke is
+          a touch thinner than desktop's 4px to suit the smaller type. */}
+      <h1
+        className="font-black uppercase leading-[1.02] tracking-[-0.04em] text-[#151515] text-[clamp(2rem,11cqw,4rem)] text-balance"
+        style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
+      >
         {SEGMENTS.map((s, i) => {
           if (s.k === "br") return null;
           if (s.k === "i") {
             return (
               <span key={i}>
                 <span
-                  className="font-medium normal-case italic"
+                  className="relative z-10 -mr-[0.1em] -ml-[0.15em] font-medium normal-case italic"
                   style={{ fontFamily: "var(--font-serif), Georgia, serif" }}
                 >
                   {s.t}
@@ -505,7 +510,7 @@ export function HeroStatic() {
             );
           }
           return (
-            <span key={i}>
+            <span key={i} style={s.k === "grad" ? { WebkitTextStroke: "0px" } : undefined}>
               {s.t}
               {" "}
             </span>
