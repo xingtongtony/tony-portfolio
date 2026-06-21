@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 /**
  * Hero — dramatic mixed-weight statement with floating color tags.
@@ -458,12 +458,28 @@ export function HeroIntro() {
   );
 }
 
+// Mobile/tablet headline as FIXED lines. Each italic sits on the same line as a
+// bold neighbour (so the overlap-seam works) and never lands at the left edge —
+// so no runtime line-start fix is needed and there's no negative-margin overflow
+// from natural wrapping. The longest line is the single word CLOUDKITCHENS, so
+// the cqw font is bound only by that, just like before. `kind`: b = bold,
+// il = italic overlapping the bold to its LEFT (line-end), ir = italic
+// overlapping the bold to its RIGHT (line-start "&").
+type StaticWord = { t: string; kind: "b" | "il" | "ir" };
+const STATIC_LINES: StaticWord[][] = [
+  [{ t: "10+", kind: "b" }, { t: "YEARS", kind: "b" }, { t: "shaping", kind: "il" }],
+  [{ t: "INTERFACES", kind: "b" }, { t: "for", kind: "il" }],
+  [{ t: "MILLIONS", kind: "b" }, { t: "at", kind: "il" }],
+  [{ t: "TIKTOK,", kind: "b" }],
+  [{ t: "AIRBNB,", kind: "b" }],
+  [{ t: "CLOUDKITCHENS", kind: "b" }],
+  [{ t: "&", kind: "ir" }, { t: "DIDI", kind: "b" }],
+];
+
 // Static hero for tablet + mobile (< lg). No pointer on touch devices, so the
 // desktop hero's word-anchored stickers + cursor parallax buy nothing here and
-// are fiddly to lay out at narrow widths. Instead: a bigger, freely-wrapping
-// headline (comfortable to read) with the stickers dropped into a simple
-// wrapping row below — placed in the open space under the statement. No JS
-// positioning, no hover. The desktop interactive hero is untouched.
+// are fiddly to lay out narrow. Instead: a bigger headline on fixed lines (with
+// the desktop overlap-seam) and the stickers in a simple wrapping row below.
 export function HeroStatic() {
   const [greeting, setGreeting] = useState<string>("Hello");
 
@@ -486,36 +502,42 @@ export function HeroStatic() {
         </p>
       </div>
 
-      {/* Bigger + freely wrapping, with the desktop overlap-seam borrowed in:
-          italics pull into the neighbouring bold words and the white text-stroke
-          (paint-order: stroke) cuts a clean seam where they overlap. `cqw` keeps
-          the longest word (CLOUDKITCHENS) inside the column. The seam-stroke is
-          a touch thinner than desktop's 4px to suit the smaller type. */}
+      {/* Same tracking + overlap margins as the desktop hero so the seam reads
+          identically; the white text-stroke (paint-order: stroke) cuts the seam
+          where italics overlap their bold neighbour. */}
       <h1
-        className="font-black uppercase leading-[1.02] tracking-[-0.04em] text-[#151515] text-[clamp(2rem,11cqw,4rem)] text-balance"
+        className="font-black uppercase leading-[1.02] tracking-[-0.06em] text-[#151515] text-[clamp(2rem,11cqw,4rem)]"
         style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
       >
-        {SEGMENTS.map((s, i) => {
-          if (s.k === "br") return null;
-          if (s.k === "i") {
-            return (
-              <span key={i}>
-                <span
-                  className="relative z-10 -mr-[0.1em] -ml-[0.15em] font-medium normal-case italic"
-                  style={{ fontFamily: "var(--font-serif), Georgia, serif" }}
-                >
-                  {s.t}
-                </span>{" "}
-              </span>
-            );
-          }
-          return (
-            <span key={i} style={s.k === "grad" ? { WebkitTextStroke: "0px" } : undefined}>
-              {s.t}
-              {" "}
-            </span>
-          );
-        })}
+        {STATIC_LINES.map((line, li) => (
+          <Fragment key={li}>
+            {line.map((w, wi) => {
+              if (w.kind === "b") {
+                return (
+                  <span key={wi}>
+                    {w.t}
+                    {" "}
+                  </span>
+                );
+              }
+              // il → overlap the bold to its left (-ml); ir → overlap the bold
+              // to its right (-mr), used for "&" at the start of the last line.
+              const overlap = w.kind === "il" ? "-ml-[0.22em]" : "-mr-[0.14em]";
+              return (
+                <span key={wi}>
+                  <span
+                    className={`relative z-10 font-medium normal-case italic tracking-[-0.03em] ${overlap}`}
+                    style={{ fontFamily: "var(--font-serif), Georgia, serif" }}
+                  >
+                    {w.t}
+                  </span>
+                  {" "}
+                </span>
+              );
+            })}
+            {li < STATIC_LINES.length - 1 && <br />}
+          </Fragment>
+        ))}
       </h1>
 
       {/* Stickers as a wrapping row in the open space below the headline. */}
