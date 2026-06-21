@@ -198,10 +198,6 @@ export default function Home() {
               <h2 className="mt-2 text-4xl font-semibold tracking-[-0.06em] sm:text-6xl">
                 Case studies
               </h2>
-              <p className="mt-6 text-base leading-7 text-black/56">
-                A compact index of product, systems, and visual design work.
-                Local case study pages will be added one by one.
-              </p>
             </div>
           </div>
 
