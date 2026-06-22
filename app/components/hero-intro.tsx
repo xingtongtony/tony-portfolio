@@ -470,8 +470,7 @@ const STATIC_LINES: StaticWord[][] = [
   [{ t: "10+", kind: "b" }, { t: "YEARS", kind: "b" }, { t: "shaping", kind: "il" }],
   [{ t: "INTERFACES", kind: "b" }, { t: "for", kind: "il" }],
   [{ t: "MILLIONS", kind: "b" }, { t: "at", kind: "il" }],
-  [{ t: "TIKTOK,", kind: "b" }],
-  [{ t: "AIRBNB,", kind: "b" }],
+  [{ t: "TIKTOK,", kind: "b" }, { t: "AIRBNB,", kind: "b" }],
   [{ t: "CLOUDKITCHENS", kind: "b" }],
   [{ t: "&", kind: "ir" }, { t: "DIDI", kind: "b" }],
 ];
