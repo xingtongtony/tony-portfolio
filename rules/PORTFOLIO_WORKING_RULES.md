@@ -247,9 +247,9 @@ Content area is ~1004px on a 1440 viewport (after 324px sidebar + margins), 664p
 
 **Small screens and touch (2026-11 responsive pass)**
 
-- The sidebar is a top bar below `lg`; don't add `md:` layout to the shell again — at 768 it left ~420px of content.
-- Anything revealed only on hover needs a touch fallback, because phones and tablets never hover. Use Tailwind's `pointer-coarse:` variant: the homepage Coming Soon label stays visible on touch; `HoverVideo` reads "Tap to play" and hides its badge while playing.
-- Tap targets in the top bar are at least ~32px tall (`py-2` on the LinkedIn / About links, `-m-2 p-2` on the logo).
+- The sidebar exists only from `lg`; below it the page gets `MobileHeader` (slim `● Menu` header + full-screen sheet with the sidebar's content). Don't add `md:` layout to the shell again — at 768 it left ~420px of content — and don't bring back a boxed card header: a desktop panel squeezed onto a phone reads as forced (Tony, 2026-11-09). Anything added to the sidebar must also appear in the sheet.
+- Anything revealed only on hover needs a touch fallback, because phones and tablets never hover. Use Tailwind's `pointer-coarse:` variant: the homepage Coming Soon label stays visible on touch; `HoverVideo` reads "Tap to play" and hides its badge while playing; sheet rows start at 80% instead of the sidebar's 55%-until-hover.
+- Tap targets on touch are at least ~36px tall (the Menu / Close pills are `h-9`, sheet rows ~46px, `-m-2 p-2` on the logo).
 - A small "related / more work" card row should not stack into full-width cards on a tablet — the TikTok TV "Continue exploring" grid is `sm:grid-cols-3`.
 - Size against the visible phone screen with `svh` (`min-h-[calc(100svh-…)]`), not `vh`, which on iOS is the toolbar-hidden height.
 

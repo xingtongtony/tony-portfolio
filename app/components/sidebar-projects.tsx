@@ -40,7 +40,35 @@ const projects: Project[] = [
 // Irregular hand-drawn squiggle (uneven control points).
 const SQUIGGLE = "M2 7C16 3 30 10 46 6 62 2 78 9 98 5";
 
-const ROW_BASE = "group flex items-center gap-3 py-[7px] transition-opacity duration-300";
+// Two sizes of the same list: the desktop sidebar, and the full-screen mobile
+// menu (MobileHeader), where rows are finger-sized and set at title scale.
+// Idle rows in the sidebar sit at 55% and brighten on hover; touch screens
+// never hover, so in the sheet they start near full strength or they read as
+// disabled.
+const SIZES = {
+  sidebar: {
+    list: "mt-10 hidden flex-col lg:flex",
+    row: "py-[7px]",
+    title: "text-[13px] tracking-[-0.01em]",
+    squiggle: "-bottom-[3px] h-[7px]",
+    arrow: "size-3.5",
+    idle: { light: "text-black/55", dark: "text-white/55" },
+  },
+  // max-w keeps the active row's arrow next to its title on a wide tablet
+  // instead of out at the screen edge.
+  sheet: {
+    list: "mt-4 flex max-w-sm flex-col sm:max-w-md",
+    row: "py-2.5 sm:py-3",
+    title: "text-[1.375rem] leading-[1.2] tracking-[-0.02em] sm:text-[1.75rem]",
+    squiggle: "-bottom-[5px] h-[9px]",
+    arrow: "size-5",
+    idle: { light: "text-black/80", dark: "text-white/80" },
+  },
+};
+
+type Size = keyof typeof SIZES;
+
+const ROW_BASE = "group flex items-center gap-3 transition-opacity duration-300";
 // Non-active rows dim when any sibling is hovered; the hovered one snaps back.
 const ROW_DIMMABLE = "group-hover/list:opacity-40 hover:!opacity-100";
 
@@ -49,21 +77,24 @@ function RowInner({
   hasLink,
   active,
   tone,
+  size,
 }: {
   title: string;
   hasLink: boolean;
   active: boolean;
   tone: "dark" | "light";
+  size: Size;
 }) {
+  const s = SIZES[size];
   const activeColor = tone === "light" ? "text-black" : "text-white";
   const idleColor =
     tone === "light"
-      ? "text-black/55 group-hover:translate-x-0.5 group-hover:text-black"
-      : "text-white/55 group-hover:translate-x-0.5 group-hover:text-white";
+      ? `${s.idle.light} group-hover:translate-x-0.5 group-hover:text-black`
+      : `${s.idle.dark} group-hover:translate-x-0.5 group-hover:text-white`;
   return (
     <>
       <span
-        className={`relative whitespace-nowrap text-[13px] font-medium tracking-[-0.01em] transition-all duration-300 ${
+        className={`relative whitespace-nowrap font-medium transition-all duration-300 ${s.title} ${
           active ? activeColor : idleColor
         }`}
       >
@@ -72,7 +103,7 @@ function RowInner({
           aria-hidden="true"
           viewBox="0 0 100 12"
           preserveAspectRatio="none"
-          className={`pointer-events-none absolute -bottom-[3px] left-0 h-[7px] w-full origin-left overflow-visible transition-all duration-500 ease-out ${
+          className={`pointer-events-none absolute left-0 w-full origin-left overflow-visible transition-all duration-500 ease-out ${s.squiggle} ${
             active
               ? "scale-x-100 opacity-100"
               : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100"
@@ -96,7 +127,7 @@ function RowInner({
               : "translate-x-1 text-transparent group-hover:translate-x-0 group-hover:text-[#3b82f6]"
           }`}
         >
-          <ArrowUpRight className="size-3.5" />
+          <ArrowUpRight className={s.arrow} />
         </span>
       )}
     </>
@@ -105,8 +136,13 @@ function RowInner({
 
 export function SidebarProjects({
   tone = "dark",
+  size = "sidebar",
+  onNavigate,
 }: {
   tone?: "dark" | "light";
+  size?: Size;
+  /** Called when a row is tapped — the mobile menu closes itself with it. */
+  onNavigate?: () => void;
 } = {}) {
   const pathname = usePathname();
 
@@ -114,10 +150,10 @@ export function SidebarProjects({
     p.match ? pathname.startsWith(p.match) : !!p.href && pathname === p.href;
 
   return (
-    <ul className="group/list mt-10 hidden flex-col lg:flex">
+    <ul className={`group/list ${SIZES[size].list}`}>
       {projects.map((p) => {
         const active = isActive(p);
-        const rowClass = `${ROW_BASE} ${active ? "" : ROW_DIMMABLE}`;
+        const rowClass = `${ROW_BASE} ${SIZES[size].row} ${active ? "" : ROW_DIMMABLE}`;
         return (
           <li key={p.title}>
             {p.href ? (
@@ -126,12 +162,13 @@ export function SidebarProjects({
                 className={rowClass}
                 aria-label={`Open ${p.title} case study`}
                 aria-current={active ? "page" : undefined}
+                onClick={onNavigate}
               >
-                <RowInner title={p.title} hasLink active={active} tone={tone} />
+                <RowInner title={p.title} hasLink active={active} tone={tone} size={size} />
               </Link>
             ) : (
               <span className={`${rowClass} cursor-default`}>
-                <RowInner title={p.title} hasLink={false} active={active} tone={tone} />
+                <RowInner title={p.title} hasLink={false} active={active} tone={tone} size={size} />
               </span>
             )}
           </li>
