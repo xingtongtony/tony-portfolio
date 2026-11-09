@@ -119,7 +119,7 @@ export default function TikTokRestructurePage() {
   return (
     <ScrollThemeShell base="light">
       <article
-        className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 lg:px-14 lg:pb-24 lg:pt-14"
+        className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 xl:px-14 lg:pb-24 lg:pt-14"
       >
         {/* HERO */}
         <figure className="overflow-hidden rounded-[1.75rem] border border-[var(--cs-border)]">
@@ -183,7 +183,7 @@ export default function TikTokRestructurePage() {
         </section>
 
         {/* SECTION FLOW */}
-        <div className="mt-24 flex flex-col gap-32 lg:mt-28 lg:gap-40">
+        <div className="mt-24 flex flex-col gap-24 sm:gap-32 lg:mt-28 lg:gap-40">
           {/* CONTEXT */}
           <CaseSection
             eyebrow="Context"
@@ -245,7 +245,7 @@ export default function TikTokRestructurePage() {
               holds it across all three sections until it scrolls out, then back
               to light. The wrapper mirrors the parent flex/gap so section
               spacing is unchanged. */}
-          <div data-dark-zone className="flex flex-col gap-32 lg:gap-40">
+          <div data-dark-zone className="flex flex-col gap-24 sm:gap-32 lg:gap-40">
           {/* PROBLEMS — left paragraph + right icon cards */}
           <CaseSection eyebrow="Problems" title="Commonness and Differences">
             <div className="mt-12 grid gap-x-12 gap-y-10 lg:grid-cols-2">

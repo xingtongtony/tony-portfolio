@@ -92,7 +92,7 @@ export default function AirbnbWishlistPage() {
     >
       <article
         data-cs-theme="light"
-        className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 lg:px-14 lg:pb-24 lg:pt-14"
+        className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 xl:px-14 lg:pb-24 lg:pt-14"
       >
         {/* HERO */}
         <figure className="overflow-hidden rounded-[1.75rem] border border-[var(--cs-border)]">
@@ -146,7 +146,7 @@ export default function AirbnbWishlistPage() {
         </section>
 
         {/* SECTION FLOW */}
-        <div className="mt-24 flex flex-col gap-32 lg:mt-28 lg:gap-40">
+        <div className="mt-24 flex flex-col gap-24 sm:gap-32 lg:mt-28 lg:gap-40">
           {/* BACKGROUND */}
           <CaseSection eyebrow="Background" title="User’s Regional Differences">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>

@@ -88,7 +88,7 @@ export default function TikTokTvSearchPage() {
       rootBg="#161616"
       contentClassName="min-w-0 bg-[#161616] text-white"
     >
-      <article className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 sm:pt-10 lg:px-14 lg:pb-24 lg:pt-14">
+      <article className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 sm:pt-10 xl:px-14 lg:pb-24 lg:pt-14">
         {/* HERO */}
         <figure className="overflow-hidden rounded-[1.75rem]">
           <Image
@@ -164,7 +164,7 @@ export default function TikTokTvSearchPage() {
         </section>
 
         {/* SECTION FLOW */}
-        <div className="mt-32 flex flex-col gap-32 lg:mt-40 lg:gap-40">
+        <div className="mt-24 flex flex-col gap-24 sm:mt-32 sm:gap-32 lg:mt-40 lg:gap-40">
           {/* BACKGROUND */}
           <CaseSection eyebrow="Background" title="Dissatisfied users">
             <Reveal>
@@ -334,7 +334,7 @@ export default function TikTokTvSearchPage() {
 
           {/* RELATED */}
           <CaseSection eyebrow="Features" title="Continue exploring">
-            <StaggerGrid className="mt-8 grid gap-5 lg:grid-cols-3">
+            <StaggerGrid className="mt-8 grid gap-5 sm:grid-cols-3">
               {relatedCases.map((c, i) => (
                 <StaggerItem key={c.title} index={i} className="h-full">
                   <Link

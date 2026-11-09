@@ -77,10 +77,11 @@ for (const file of files) {
     );
   }
 
-  // RULE (DESIGN_SYSTEM §4): don't use the `xl:` (1280) breakpoint in case
-  // studies — content is narrower than xl, so columns collapse.
+  // RULE (DESIGN_SYSTEM §4): don't pick case-study column counts at `xl:`
+  // (1280) — they'd only switch on at 1280 viewport. `xl:` padding is fine
+  // (the shell steps its padding up at xl).
   if (rel.startsWith("app/work/")) {
-    scan(file, /\bxl:/, "warn", "xl: breakpoint in a case study — columns may collapse");
+    scan(file, /\bxl:grid-cols/, "warn", "xl:grid-cols in a case study — columns only switch at 1280");
   }
 
   // RULE (DESIGN_SYSTEM §4): a caption/title under a media block must not be

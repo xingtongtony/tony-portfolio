@@ -114,7 +114,7 @@ export function SidebarProjects({
     p.match ? pathname.startsWith(p.match) : !!p.href && pathname === p.href;
 
   return (
-    <ul className="group/list mt-10 hidden flex-col md:flex">
+    <ul className="group/list mt-10 hidden flex-col lg:flex">
       {projects.map((p) => {
         const active = isActive(p);
         const rowClass = `${ROW_BASE} ${active ? "" : ROW_DIMMABLE}`;

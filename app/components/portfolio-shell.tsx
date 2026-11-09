@@ -66,22 +66,25 @@ export function PortfolioShell({
   children,
   sidebarTheme = "home",
   mainClassName = "bg-white text-[#171717]",
-  contentClassName = "min-w-0 px-6 pb-5 pt-2 sm:px-10 lg:px-14 lg:pb-9 lg:pt-3 2xl:px-16",
+  contentClassName = "min-w-0 px-6 pb-5 pt-2 sm:px-10 xl:px-14 lg:pb-9 lg:pt-3 2xl:px-16",
   rootBg,
 }: PortfolioShellProps) {
   const theme = sidebarThemes[sidebarTheme];
 
   return (
-    <main className={`min-h-screen md:grid md:grid-cols-[324px_1fr] ${mainClassName}`}>
+    // The sidebar sits beside the content only from lg (1024px, iPad
+    // landscape) up, at 280px until xl and 324px from xl. Below lg it is a
+    // top bar, so tablet portrait gets the full width instead of ~420px.
+    <main className={`min-h-screen lg:grid lg:grid-cols-[280px_1fr] xl:grid-cols-[324px_1fr] ${mainClassName}`}>
       {rootBg ? <RootBackground color={rootBg} /> : null}
       <aside
-        className={`m-3 overflow-hidden rounded-[1.75rem] border px-5 py-5 transition-colors duration-500 sm:px-7 md:sticky md:top-3 md:flex md:h-[calc(100vh-1.5rem)] md:flex-col md:justify-between md:px-7 md:py-8 ${theme.panel}`}
+        className={`m-3 overflow-hidden rounded-[1.75rem] border px-5 py-4 transition-colors duration-500 sm:px-7 sm:py-5 lg:sticky lg:top-3 lg:flex lg:h-[calc(100vh-1.5rem)] lg:flex-col lg:justify-between lg:px-6 lg:py-8 xl:px-7 ${theme.panel}`}
       >
         <div>
           <nav className="flex items-center justify-between gap-4 text-sm font-medium">
             <Link
               href="/"
-              className={`block w-fit ${theme.logo}`}
+              className={`-m-2 block w-fit p-2 ${theme.logo}`}
               aria-label="Tony Xing"
             >
               <TonyLogo />
@@ -100,10 +103,12 @@ export function PortfolioShell({
           <SidebarProjects tone={sidebarTheme === "light" ? "light" : "dark"} />
         </div>
 
-        <div className="mt-8 flex flex-col gap-8 md:mt-0">
-          <div className="flex flex-wrap gap-x-4 gap-y-2 md:flex-col md:items-start md:gap-4">
+        <div className="mt-3 flex flex-col gap-8 lg:mt-0">
+          <div className="flex flex-wrap gap-x-6 lg:flex-col lg:items-start lg:gap-4">
             {["LinkedIn", "About"].map((item) => {
-              const className = `text-[11px] font-semibold uppercase tracking-[0.16em] transition ${theme.nav} ${theme.navHover}`;
+              // py-2 gives the top-bar links a finger-sized hit area; the
+              // sidebar list needs none.
+              const className = `py-2 text-[11px] font-semibold uppercase tracking-[0.16em] transition lg:py-0 ${theme.nav} ${theme.navHover}`;
 
               if (item === "LinkedIn" || item === "About") {
                 return (
@@ -131,7 +136,7 @@ export function PortfolioShell({
               );
             })}
           </div>
-          <p className={`hidden text-[11px] leading-5 md:block ${theme.copyright}`}>
+          <p className={`hidden text-[11px] leading-5 lg:block ${theme.copyright}`}>
             © 2026
             <br />
             Tony Xing

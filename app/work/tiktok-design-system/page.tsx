@@ -32,7 +32,7 @@ const sectionTitle =
 export default function TikTokDesignSystemPage() {
   return (
     <ScrollThemeShell>
-      <article className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 lg:px-14 lg:pb-24 lg:pt-14">
+      <article className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 xl:px-14 lg:pb-24 lg:pt-14">
         {/* HERO */}
         <figure className="overflow-hidden rounded-[1.75rem] border border-[var(--cs-border)]">
           <Image
@@ -83,7 +83,7 @@ export default function TikTokDesignSystemPage() {
         </section>
 
         {/* ===== DARK INTRO ===== */}
-        <div className="mt-24 flex flex-col gap-32 lg:mt-28 lg:gap-40">
+        <div className="mt-24 flex flex-col gap-24 sm:gap-32 lg:mt-28 lg:gap-40">
           <CaseSection eyebrow="Context" title="The Lifecycle of an Element">
             <Reveal className="mt-8 max-w-3xl">
               <SubHeading>A typical development process</SubHeading>
@@ -146,7 +146,7 @@ export default function TikTokDesignSystemPage() {
               — including the dark-text gaps between images — until the Motion
               section below, instead of flip-flopping per image. The wrapper
               mirrors the parent's flex/gap so section spacing is unchanged. */}
-          <div data-light-zone className="flex flex-col gap-32 lg:gap-40">
+          <div data-light-zone className="flex flex-col gap-24 sm:gap-32 lg:gap-40">
           {/* BUILD WITH VARIANTS — text left / image right */}
             <section data-case-section>
               <div className="grid items-start gap-x-12 gap-y-10 lg:grid-cols-2">
@@ -265,7 +265,7 @@ export default function TikTokDesignSystemPage() {
               {/* Infinite horizontal marquee — fades on the left edge only.
                   (Light mode is driven by the enclosing data-light-zone run.) */}
               <div
-                className="marquee-fade-left -mx-6 mt-10 overflow-hidden sm:-mx-10 lg:-mx-14"
+                className="marquee-fade-left -mx-6 mt-10 overflow-hidden sm:-mx-10 xl:-mx-14"
               >
                 <div
                   className="marquee-track flex min-w-max gap-5"

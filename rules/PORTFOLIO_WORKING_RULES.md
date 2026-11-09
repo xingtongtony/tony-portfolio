@@ -243,7 +243,15 @@ When multiple stats share semantic context (e.g., DAU + Android share + Web shar
 
 **Grid breakpoints**
 
-Content area is ~1004px on a 1440 viewport (after 324px sidebar + margins). Tailwind `xl:` (1280px) does NOT match this content width, so `xl:grid-cols-N` will collapse to single column on most desktops. Use `lg:` (1024px) or `sm:` (640px) for case study multi-col grids.
+Content area is ~1004px on a 1440 viewport (after 324px sidebar + margins), 664px at 1024 (280px sidebar), and the full width minus padding below 1024 (688px on a 768 tablet). Don't pick column counts at `xl:` — `xl:grid-cols-N` only switches on at a 1280 viewport. Use `lg:` (1024px) or `sm:` (640px) for case study multi-col grids, and check the grid at **768 and 1024** — 1024 has *less* content width than 1023 because the sidebar comes back. Full table in DESIGN_SYSTEM §4 Breakpoints.
+
+**Small screens and touch (2026-11 responsive pass)**
+
+- The sidebar is a top bar below `lg`; don't add `md:` layout to the shell again — at 768 it left ~420px of content.
+- Anything revealed only on hover needs a touch fallback, because phones and tablets never hover. Use Tailwind's `pointer-coarse:` variant: the homepage Coming Soon label stays visible on touch; `HoverVideo` reads "Tap to play" and hides its badge while playing.
+- Tap targets in the top bar are at least ~32px tall (`py-2` on the LinkedIn / About links, `-m-2 p-2` on the logo).
+- A small "related / more work" card row should not stack into full-width cards on a tablet — the TikTok TV "Continue exploring" grid is `sm:grid-cols-3`.
+- Size against the visible phone screen with `svh` (`min-h-[calc(100svh-…)]`), not `vh`, which on iOS is the toolbar-hidden height.
 
 **Page container max-width is shared across pages**
 

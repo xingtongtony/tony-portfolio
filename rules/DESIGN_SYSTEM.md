@@ -179,14 +179,14 @@ Existing `rounded-[1.25rem]` / `rounded-[1.5rem]` / `rounded-[1.75rem]` usages m
 
 ### Shell
 
-- Grid: `md:grid-cols-[324px_1fr]`.
-- Sidebar: `m-3 rounded-[1.75rem]`, `md:sticky md:top-3 md:h-[calc(100vh-1.5rem)]`, inset margin (no heavy shadow).
-- Content padding: `px-6 sm:px-10 lg:px-14 2xl:px-16`.
+- Grid: `lg:grid-cols-[280px_1fr] xl:grid-cols-[324px_1fr]`. The sidebar sits beside the content only from `lg` (1024, iPad landscape); below `lg` it is a top bar (logo · Available to connect · LinkedIn / About; the project list is hidden). Before 2026-11 it started at `md`, which left tablet portrait ~420px of content next to a 324px sidebar.
+- Sidebar: `m-3 rounded-[1.75rem]`, `lg:sticky lg:top-3 lg:h-[calc(100vh-1.5rem)]`, inset margin (no heavy shadow). Padding `lg:px-6 xl:px-7` so the logo + availability pill still fit at 280px.
+- Content padding: `px-6 sm:px-10 xl:px-14 2xl:px-16` (shell default and every case `<article>`). 40px from `sm` to `xl` buys iPad landscape room; 56px returns at 1280. Full-bleed rows use the matching negative margins (`-mx-6 sm:-mx-10 xl:-mx-14`).
 - Page container: `max-w-[1280px] mx-auto` (both homepage and case `<article>`).
 
 ### Vertical rhythm (full scale in working rules — Layout Patterns)
 
-`mt-4` eyebrow→H2 · `mt-8` H→content · `mt-5` sub-head→para · `gap-7` between paras · `mt-10` para→media · **`mt-5` media→its caption/title** · `mt-3` caption-title→its list · `mt-20` sub-section · `gap-40` chapter→chapter.
+`mt-4` eyebrow→H2 · `mt-8` H→content · `mt-5` sub-head→para · `gap-7` between paras · `mt-10` para→media · **`mt-5` media→its caption/title** · `mt-3` caption-title→its list · `mt-20` sub-section · `gap-40` chapter→chapter (`gap-24 sm:gap-32 lg:gap-40` — 96px on phones, where 160px is a fifth of the screen). Zone wrappers (`data-dark-zone` / `data-light-zone`) mirror the same three values.
 
 ⚠️ A caption or title that sits **under** a media block (image/video/HoverVideo card) must NEVER be flush against it — always `mt-5`. `MediaCaption`/`SubHeading`/`VideoFrame`/`ImageFrame` carry **no** built-in margin, so the caller owns the gap; placing the caption directly after `<HoverVideo>` with no `mt-*` is the "title glued to the image" bug. This is part of the spacing system — apply the scale, don't eyeball.
 
@@ -210,8 +210,9 @@ Every **two-column side-by-side layout** in a case study uses a **48px column ga
 
 ### Breakpoints
 
-- Content area ≈ **1004px @ 1440** (after 324px sidebar + margins).
-- Use `sm:` (640) / `lg:` (1024) for case-study grids. ⚠️ **Do not use `xl:` (1280)** — content is narrower than xl, columns collapse.
+- Content area (inside the padding): **375 → 327** · **768 → 688** · **1024 → 664** (sidebar appears) · **1180 → 820** · **1280 → 844** · **1440 → 1004**. Note the dip at 1024: the sidebar takes width back, so a grid that fits at 768 must also fit at 1024.
+- Use `sm:` (640) / `lg:` (1024) for case-study grid **columns**. ⚠️ **Do not use `xl:grid-cols-*`** — a column count picked for wide content would only switch on at 1280. (`xl:` for padding is fine; `npm run check` only flags `xl:grid-cols`.)
+- A 3-card text grid (`sm:grid-cols-3 gap-5`) reads well down to ~660px of content (~160px of text per card); below that, prefer stacking.
 - Work grid: `[grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))]`.
 
 ---

@@ -161,7 +161,7 @@ export default function Home() {
   return (
     <PortfolioShell sidebarTheme="light">
       <div className="mx-auto w-full max-w-[1280px]">
-        <div className="marquee-viewport -mx-6 hidden overflow-hidden py-1 sm:-mx-10 sm:block lg:-mx-14 2xl:-mx-16">
+        <div className="marquee-viewport -mx-6 hidden overflow-hidden py-1 sm:-mx-10 sm:block xl:-mx-14 2xl:-mx-16">
           <div className="marquee-track flex min-w-max text-lg font-semibold tracking-[-0.045em] text-black/18 sm:text-2xl">
             {[0, 1].map((group) => (
               <div
@@ -181,7 +181,7 @@ export default function Home() {
 
         <section
           id="about"
-          className="flex min-h-[calc(100vh-48px)] scroll-mt-8 items-center py-14 lg:py-16"
+          className="flex min-h-[calc(100svh-48px)] scroll-mt-8 items-center py-14 lg:py-16"
         >
           {/* pb biases the centered block upward: the bottom-hanging stickers
               add visual weight below the headline, so true optical center sits
@@ -219,10 +219,13 @@ export default function Home() {
                         src={project.image}
                         alt={`${project.title} preview`}
                         fill
-                        sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 100vw"
+                        sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
                         className="object-cover object-top transition duration-700 ease-out group-hover:scale-[1.008]"
                       />
-                      <div className="pointer-events-none absolute left-4 top-4 translate-y-1 rounded-full border border-white/45 bg-white/78 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-black/78 opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.1)] backdrop-blur-xl transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                      {/* Hover reveals the label on desktop. Touch screens have
+                          no hover, so a Coming Soon card keeps its label on —
+                          otherwise it looks tappable and does nothing. */}
+                      <div className={`pointer-events-none absolute left-4 top-4 translate-y-1 rounded-full border border-white/45 bg-white/78 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-black/78 opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.1)] backdrop-blur-xl transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 ${project.href ? "" : "pointer-coarse:translate-y-0 pointer-coarse:opacity-100"}`}>
                         {project.period}
                       </div>
                     </div>
