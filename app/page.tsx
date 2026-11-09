@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { PortfolioShell } from "./components/portfolio-shell";
 import { StaggerGrid, StaggerItem } from "./components/motion";
-import { HeroIntro, HeroStatic } from "./components/hero-intro";
+import { HeroIntro } from "./components/hero-intro";
 import { NextSectionButton } from "./components/next-section-button";
 
 const work = [
@@ -187,13 +187,14 @@ export default function Home() {
               add visual weight below the headline, so true optical center sits
               lower than the flex center. The padding lifts content to balance. */}
           <div className="w-full pb-[12vh]">
-            {/* Desktop (≥lg): interactive, word-anchored hero. Tablet + mobile
-                (<lg): a static, freely-laid-out hero — no hover/parallax. */}
-            <div className="hidden lg:block">
-              <HeroIntro />
+            {/* One collage hero in two arrangements: the 4-line statement from
+                sm (tablet + desktop) and 6 lines on phones, both with
+                word-anchored stickers and the same motion. */}
+            <div className="hidden sm:block">
+              <HeroIntro layout="wide" />
             </div>
-            <div className="lg:hidden">
-              <HeroStatic />
+            <div className="sm:hidden">
+              <HeroIntro layout="compact" />
             </div>
           </div>
         </section>
@@ -278,7 +279,7 @@ export default function Home() {
               Where I&apos;ve designed
             </h2>
           </div>
-          <div className="grid max-w-[1030px] gap-4 sm:grid-cols-2">
+          <div className="grid max-w-[1030px] gap-4 md:grid-cols-2">
             {experience.map((job) => (
               <article
                 key={job.company}

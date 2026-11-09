@@ -22,8 +22,10 @@
   const MAX_COVER = 0.4; // upper bound: max fraction of a word a sticker may hide
   const GAP_TOL = 10; // lower bound: max px a non-overlapping sticker may sit from text
 
-  const h1 = document.querySelector("h1");
-  const tags = [...document.querySelectorAll("h1 ~ span[data-depth]")];
+  // Both hero layouts (wide ≥ sm, compact < sm) are in the DOM; check the one
+  // that is showing at this width.
+  const h1 = [...document.querySelectorAll("h1")].find((h) => h.offsetParent !== null);
+  const tags = h1 ? [...h1.parentElement.querySelectorAll(":scope > span[data-depth]")] : [];
   if (!h1 || !tags.length) return { error: "hero h1 or tags not found" };
 
   const wordRects = [];
