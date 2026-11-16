@@ -400,7 +400,8 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       if (!presenting) swayStart.current[i] = -1;
       else if (swayStart.current[i] < 0) swayStart.current[i] = time;
       const age = presenting ? time - swayStart.current[i] : 0;
-      const turn = presenting && age < 9 ? 0.22 * Math.sin(age * 0.9) * Math.exp(-age / 3.5) : 0;
+      // Brief: the refined picture only starts once it is over.
+      const turn = presenting && age < 4.5 ? 0.2 * Math.sin(age * 1.4) * Math.exp(-age / 1.8) : 0;
       if (turn !== 0 || Math.abs(sway.rotation.y) > 1e-4) {
         sway.rotation.y = damp(sway.rotation.y, turn, 3, dt);
         dirty = true;

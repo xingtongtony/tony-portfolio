@@ -6,6 +6,7 @@ import { StaggerGrid, StaggerItem } from "./components/motion";
 import { HeroIntro } from "./components/hero-intro";
 import { NextSectionButton } from "./components/next-section-button";
 import { BlueprintStage } from "./components/blueprint/blueprint-stage";
+import { FIGURES } from "./components/blueprint/figures";
 
 const work = [
   {
@@ -158,6 +159,9 @@ const marqueeCompanies = [
   ...companies,
 ];
 
+/** Case studies shown as figures on the desktop stage. */
+const STAGED = new Set(FIGURES.map((figure) => figure.href));
+
 export default function Home() {
   return (
     <PortfolioShell sidebarTheme="light">
@@ -209,14 +213,17 @@ export default function Home() {
         <section id="work" data-case-section className="scroll-mt-8 py-10 lg:py-16">
           <div className="mb-9 max-w-2xl">
             <div>
+              {/* From lg up the four projects on the stage above are the
+                  featured work, so this section only lists the rest. */}
               <p className="section-label">Work</p>
-              <h2 className="mt-2 text-4xl font-semibold tracking-[-0.06em] sm:text-6xl">
-                Case studies
+              <h2 className="mt-2 text-4xl font-semibold tracking-[-0.06em] sm:text-6xl lg:text-5xl">
+                <span className="lg:hidden">Case studies</span>
+                <span className="hidden lg:inline">More work</span>
               </h2>
             </div>
           </div>
 
-          <StaggerGrid className="grid w-full gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:gap-6 2xl:gap-7">
+          <StaggerGrid className="grid w-full gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:gap-6 lg:[grid-template-columns:repeat(4,minmax(0,1fr))] 2xl:gap-7">
             {work.map((project, index) => {
               const cardContent = (
                 <>
@@ -249,8 +256,10 @@ export default function Home() {
               const isCaseStudy = project.period === "Case Study";
 
               if (project.href) {
+                // Already on the 3D stage, which only exists from lg up.
+                const staged = STAGED.has(project.href);
                 return (
-                  <StaggerItem key={project.title} index={index}>
+                  <StaggerItem key={project.title} index={index} className={staged ? "lg:hidden" : undefined}>
                     <Link
                       href={project.href}
                       style={cardStyle}

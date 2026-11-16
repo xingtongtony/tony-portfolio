@@ -164,6 +164,8 @@ export const FIGURES: FigureDef[] = [
           { k: "slab", size: [2.9, 1.8], t: 0.08, r: 0.42, pos: [0, 0.04, 0], rot: flat() },
           // A lighter field woven into the rug.
           { k: "slab", size: [2.56, 1.46], t: 0.012, r: 0.3, pos: [0, 0.082, 0], rot: flat(), color: MIST },
+          // A lower, wider step under the base, as on a plinth.
+          { k: "slab", size: [3.2, 2.1], t: 0.04, r: 0.5, pos: [0, 0.02, 0], rot: flat(), color: LILAC },
         ],
       },
       {
@@ -264,6 +266,12 @@ export const FIGURES: FigureDef[] = [
           { k: "cyl", r: 0.05, h: 0.26, pos: [-0.52, 0.21, 0.68], color: GREEN, bevel: 0.05 },
           { k: "cyl", r: 0.05, h: 0.26, pos: [-0.38, 0.21, 0.68], color: GREEN, bevel: 0.05 },
           { k: "torus", R: 0.13, tube: 0.06, pos: [1.0, 0.14, 0.64], rot: flat(), color: YELLOW },
+          // The queue: three cards, loosely stacked.
+          { k: "slab", size: [0.46, 0.32], t: 0.035, r: 0.05, pos: [0.22, 0.106, 0.66], rot: flat(0.1), color: BLUE },
+          { k: "slab", size: [0.46, 0.32], t: 0.035, r: 0.05, pos: [0.2, 0.141, 0.67], rot: flat(-0.12), color: CREAM },
+          { k: "slab", size: [0.46, 0.32], t: 0.035, r: 0.05, pos: [0.21, 0.176, 0.655], rot: flat(0.04), color: GREEN },
+          { k: "slab", size: [0.2, 0.03], t: 0.008, r: 0.015, pos: [0.16, 0.1975, 0.7], rot: flat(0.04), color: INKY },
+          { k: "slab", size: [0.12, 0.03], t: 0.008, r: 0.015, pos: [0.12, 0.1975, 0.75], rot: flat(0.04), color: WHITE },
         ],
       },
     ],
@@ -288,6 +296,7 @@ export const FIGURES: FigureDef[] = [
         shapes: [
           { k: "slab", size: [2.8, 1.7], t: 0.12, r: 0.36, pos: [0, 0.06, 0], rot: flat() },
           { k: "slab", size: [2.5, 1.4], t: 0.012, r: 0.26, pos: [0, 0.121, 0], rot: flat(), color: MIST },
+          { k: "slab", size: [3.1, 2.0], t: 0.045, r: 0.46, pos: [0, 0.0225, 0], rot: flat(), color: LILAC },
         ],
       },
       {
@@ -367,6 +376,13 @@ export const FIGURES: FigureDef[] = [
           { k: "ball", r: 0.03, pos: [0.12, 0.326, 0.67], color: GREEN },
           { k: "cyl", r: 0.02, h: 0.84, pos: [0.22, 0.362, 0.42], rot: lying(0.9), color: CREAM, bevel: 0.02 },
           { k: "cyl", r: 0.02, h: 0.84, pos: [0.28, 0.362, 0.37], rot: lying(0.98), color: CREAM, bevel: 0.02 },
+          // A dish of sauce.
+          { k: "cyl", r: 0.09, h: 0.04, pos: [0.54, 0.147, 0.74], color: CREAM },
+          { k: "cyl", r: 0.062, h: 0.012, pos: [0.54, 0.167, 0.74], color: PLUM, bevel: 0.002 },
+          // A counter bell.
+          { k: "cyl", r: 0.1, h: 0.03, pos: [-1.02, 0.142, 0.42], color: PLUM },
+          { k: "ball", r: 0.082, pos: [-1.02, 0.16, 0.42], color: YELLOW },
+          { k: "ball", r: 0.022, pos: [-1.02, 0.25, 0.42], color: PLUM },
           // A cup of tea.
           { k: "cyl", r: 0.1, h: 0.17, pos: [-0.72, 0.205, 0.64], color: CREAM, bevel: 0.016 },
           { k: "torus", R: 0.05, tube: 0.018, pos: [-0.83, 0.205, 0.64], color: CREAM },
@@ -396,6 +412,7 @@ export const FIGURES: FigureDef[] = [
           { k: "slab", size: [2.9, 2.0], t: 0.12, r: 0.36, pos: [0, 0.06, 0], rot: flat() },
           // The tray's lighter well, where the components sit.
           { k: "slab", size: [2.66, 1.66], t: 0.012, r: 0.26, pos: [0, 0.121, -0.1], rot: flat(), color: MIST },
+          { k: "slab", size: [3.2, 2.3], t: 0.045, r: 0.46, pos: [0, 0.0225, 0], rot: flat(), color: LILAC },
           // Silk-screened nameplate.
           {
             k: "slab",
@@ -433,6 +450,20 @@ export const FIGURES: FigureDef[] = [
           // Radio group: three rings, the first one chosen.
           ...row(3, [0, 0, 0.26], { k: "torus", R: 0.085, tube: 0.024, pos: [0.14, 0.15, -0.62], rot: flat(), color: PLUM }),
           { k: "ball", r: 0.045, pos: [0.14, 0.16, -0.62], color: CORAL },
+        ],
+      },
+      {
+        id: "tabs",
+        label: "Tabs",
+        agent: 0,
+        color: CREAM,
+        shapes: [
+          { k: "slab", size: [0.8, 0.17], t: 0.07, r: 0.085, pos: [0.85, 0.155, 0.82], rot: flat() },
+          // The chosen tab stands proud of the bar; the others are just their labels.
+          { k: "slab", size: [0.24, 0.12], t: 0.078, r: 0.06, pos: [0.6, 0.159, 0.82], rot: flat(), color: PLUM },
+          { k: "slab", size: [0.12, 0.03], t: 0.008, r: 0.015, pos: [0.6, 0.202, 0.82], rot: flat(), color: WHITE },
+          { k: "slab", size: [0.12, 0.03], t: 0.008, r: 0.015, pos: [0.86, 0.194, 0.82], rot: flat(), color: LILAC },
+          { k: "slab", size: [0.12, 0.03], t: 0.008, r: 0.015, pos: [1.1, 0.194, 0.82], rot: flat(), color: LILAC },
         ],
       },
       {
@@ -509,6 +540,7 @@ export const FIGURES: FigureDef[] = [
         shapes: [
           { k: "slab", size: [2.8, 1.9], t: 0.1, r: 0.36, pos: [0, 0.05, 0], rot: flat() },
           { k: "slab", size: [2.5, 1.6], t: 0.012, r: 0.26, pos: [0, 0.101, 0], rot: flat(), color: MIST },
+          { k: "slab", size: [3.1, 2.2], t: 0.04, r: 0.46, pos: [0, 0.02, 0], rot: flat(), color: LILAC },
           // Stepping stones up to the door.
           { k: "cyl", r: 0.075, h: 0.03, pos: [0.38, 0.112, 0.36], color: CREAM, bevel: 0.012 },
           { k: "cyl", r: 0.075, h: 0.03, pos: [0.33, 0.112, 0.55], color: CREAM, bevel: 0.012 },
@@ -536,6 +568,13 @@ export const FIGURES: FigureDef[] = [
             pos: [0.55, 0.64, -0.25],
             color: PLUM,
           },
+          // Three courses of tiles on the slope the camera sees.
+          { k: "box", size: [0.05, 0.024, 0.92], pos: [0.738, 1.003, -0.25], rot: [0, 0, -0.675], color: LILAC },
+          { k: "box", size: [0.05, 0.024, 0.92], pos: [0.894, 0.878, -0.25], rot: [0, 0, -0.675], color: LILAC },
+          { k: "box", size: [0.05, 0.024, 0.92], pos: [1.0505, 0.753, -0.25], rot: [0, 0, -0.675], color: LILAC },
+          // A window in the side wall.
+          { k: "cyl", r: 0.09, h: 0.03, pos: [1.056, 0.4, -0.3], rot: lying(), color: WHITE },
+          { k: "cyl", r: 0.068, h: 0.04, pos: [1.058, 0.4, -0.3], rot: lying(), color: BLUE },
           // Ridge roll, chimney and a round attic vent.
           { k: "cyl", r: 0.04, h: 0.96, pos: [0.55, 1.15, -0.25], rot: FACE, color: LILAC, bevel: 0.04 },
           { k: "box", size: [0.15, 0.32, 0.15], pos: [0.86, 0.98, -0.45], color: CORAL, bevel: 0.016 },
@@ -565,6 +604,11 @@ export const FIGURES: FigureDef[] = [
           // Two bushes by the wall.
           { k: "ball", r: 0.11, pos: [-0.04, 0.17, 0.0] },
           { k: "ball", r: 0.08, pos: [-0.02, 0.15, 0.2] },
+          // Flowers along the path.
+          { k: "ball", r: 0.036, pos: [0.14, 0.135, 0.42], color: YELLOW },
+          { k: "ball", r: 0.03, pos: [0.1, 0.13, 0.6], color: CORAL },
+          { k: "ball", r: 0.036, pos: [0.62, 0.135, 0.5], color: CORAL },
+          { k: "ball", r: 0.03, pos: [0.66, 0.13, 0.68], color: YELLOW },
           // A little rainbow by the door.
           { k: "arch", span: 0.5, rise: 0.25, tube: 0.04, pos: [1.0, 0.09, 0.56], color: CORAL },
           { k: "arch", span: 0.32, rise: 0.16, tube: 0.04, pos: [1.0, 0.09, 0.56], color: YELLOW },
