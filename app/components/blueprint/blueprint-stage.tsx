@@ -205,6 +205,13 @@ export function BlueprintStage() {
   useEffect(() => {
     if (loaderPlayed) return;
     loaderPlayed = true;
+    // Below lg there is no stage and no loader: fetch nothing, and leave the
+    // scene free to mount if the window is later made wide enough.
+    if (!window.matchMedia(DESKTOP).matches) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSceneOn(true);
+      return;
+    }
     void import("./scene");
     const timer = window.setTimeout(() => setSceneOn(true), ENTRANCE);
     return () => window.clearTimeout(timer);
