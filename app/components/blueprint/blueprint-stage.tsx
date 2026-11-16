@@ -38,12 +38,14 @@ const CURSOR =
 // study should not sit through it again. (Module state survives client-side
 // navigation; a reload starts over.)
 let loaderPlayed = false;
-// Long enough for the drawing to appear and be built before it is taken away.
-const LOADER_MIN = 2500;
 const EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
-const WIPE = 900; // the drawing is wiped in
-const BUILD_AT = 800; // then built from the ground up...
-const BUILD = 1500; // ...over this long
+const DRAW = 1000; // the drawing appears, left to right
+const BUILD_AT = 900; // then the object is built from the ground up...
+const BUILD = 1600; // ...over this long
+// The 3D scene is only started once that has played: assembling it and
+// compiling its shaders ties up the main thread, which would stall the
+// animation half-way. Its code is fetched meanwhile, so little time is lost.
+const ENTRANCE = BUILD_AT + BUILD + 150;
 
 const DESKTOP = "(min-width: 1024px)";
 const subscribeDesktop = (onChange: () => void) => {
@@ -196,20 +198,23 @@ export function BlueprintStage() {
   // covers the whole page; then it clears and the scene opens up behind it.
   const [painted, setPainted] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
-  const [minDone, setMinDone] = useState(false);
   const [loader, setLoader] = useState(() => !loaderPlayed);
+  // With the loader on screen the scene waits for its entrance to finish.
+  const [sceneOn, setSceneOn] = useState(() => loaderPlayed);
   const onPainted = useCallback(() => setPainted(true), []);
   useEffect(() => {
+    if (loaderPlayed) return;
     loaderPlayed = true;
-    const timer = window.setTimeout(() => setMinDone(true), LOADER_MIN);
+    void import("./scene");
+    const timer = window.setTimeout(() => setSceneOn(true), ENTRANCE);
     return () => window.clearTimeout(timer);
   }, []);
   // Never hold the page hostage: if the scene has not arrived in a while, show the page anyway.
   useEffect(() => {
-    const timer = window.setTimeout(() => setTimedOut(true), 9000);
+    const timer = window.setTimeout(() => setTimedOut(true), 9000 + ENTRANCE);
     return () => window.clearTimeout(timer);
   }, []);
-  const revealed = (painted || timedOut) && minDone;
+  const revealed = painted || timedOut;
   useEffect(() => {
     if (!revealed) return;
     const timer = window.setTimeout(() => setLoader(false), 800);
@@ -288,76 +293,108 @@ export function BlueprintStage() {
         <div
           role="status"
           aria-label="Loading"
-          className={`fixed inset-0 z-[100] hidden items-center justify-center bg-white transition-opacity duration-700 lg:flex lg:pl-[280px] xl:pl-[324px] ${
+          className={`fixed inset-0 z-[100] hidden items-center justify-center bg-white transition-opacity duration-700 lg:flex ${
             revealed ? "pointer-events-none opacity-0" : "opacity-100"
           }`}
         >
-          <div className={`flex flex-col items-center transition-transform duration-700 ease-out ${revealed ? "scale-[1.1]" : "scale-100"}`}>
-            <div className="relative w-[min(560px,62vw)]" style={{ aspectRatio: `${LOADER_ART.width} / ${LOADER_ART.height}` }}>
-              {/* The drawing, wiped in from the left. */}
-              <div className="bp-anim bp-layer absolute inset-0 overflow-hidden" style={{ animation: `bp-wipe-x ${WIPE}ms ${EASE} both` }}>
-                <svg
-                  viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
-                  className="bp-anim bp-layer block size-full"
-                  style={{ animation: `bp-wipe-x-inner ${WIPE}ms ${EASE} both` }}
-                  aria-hidden="true"
-                  dangerouslySetInnerHTML={{ __html: LOADER_ART.line }}
-                />
-              </div>
-              {/* The object, built from the ground up over it. */}
-              <div className="bp-anim bp-layer absolute inset-0 overflow-hidden" style={{ animation: `bp-rise ${BUILD}ms ${EASE} ${BUILD_AT}ms both` }}>
-                <svg
-                  viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
-                  className="bp-anim bp-layer block size-full"
-                  style={{ animation: `bp-rise-inner ${BUILD}ms ${EASE} ${BUILD_AT}ms both` }}
-                  aria-hidden="true"
-                  dangerouslySetInnerHTML={{ __html: LOADER_ART.colour }}
-                />
-              </div>
-              {/* Two agents ride the build front, one each side. */}
+          {/* Centred on the page while it loads. As it clears it drifts to
+              where the stage's centre is (half the sidebar's width to the
+              right), so it hands over to the first figure instead of
+              vanishing beside it. */}
+          <div
+            className={`flex flex-col items-center transition-transform duration-700 ease-out ${
+              revealed ? "scale-[1.06] lg:translate-x-[140px] xl:translate-x-[162px]" : "scale-100"
+            }`}
+          >
+            <div className="relative w-[min(460px,58vw)]" style={{ aspectRatio: `${LOADER_ART.width} / ${LOADER_ART.height}` }}>
+              {/* The drawing appears left to right... */}
+              <svg
+                viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
+                className="bp-anim absolute inset-0 block size-full"
+                style={{ animation: `bp-draw ${DRAW}ms ${EASE} both` }}
+                aria-hidden="true"
+                dangerouslySetInnerHTML={{ __html: LOADER_ART.line }}
+              />
+              {/* ...and the object is built over it from the ground up. */}
+              <svg
+                viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
+                className="bp-anim absolute inset-0 block size-full"
+                style={{ animation: `bp-build ${BUILD}ms ${EASE} ${BUILD_AT}ms both` }}
+                aria-hidden="true"
+                dangerouslySetInnerHTML={{ __html: LOADER_ART.colour }}
+              />
+              {/* Two agents ride the build front up the block's front edges,
+                  then stay with it, bobbing, until the page is ready. */}
               {[
-                { agent: AGENTS[2], left: "24%", flip: false },
-                { agent: AGENTS[1], left: "76%", flip: true },
-              ].map(({ agent, left, flip }, i) => (
+                { agent: AGENTS[2], path: LOADER_ART.left, outward: -1 },
+                { agent: AGENTS[1], path: LOADER_ART.right, outward: 1 },
+              ].map(({ agent, path, outward }, i) => (
                 // A layer the size of the art: moving it by a share of its own
-                // height keeps the agents on the build front at any size.
+                // height keeps the agent on the build front at any size.
                 <div
                   key={agent.id}
                   className="bp-anim pointer-events-none absolute inset-0"
-                  style={{ "--bp-lift": "-58%", animation: `bp-lift ${BUILD}ms ${EASE} ${BUILD_AT}ms both` } as CSSProperties}
+                  style={
+                    {
+                      "--bp-lift": `${((path.to - path.from) * 100).toFixed(2)}%`,
+                      animation: `bp-lift ${BUILD}ms ${EASE} ${BUILD_AT}ms both`,
+                    } as CSSProperties
+                  }
                   aria-hidden="true"
                 >
-                  <div className="bp-anim absolute top-[80%]" style={{ left, animation: `bp-fade 300ms ease-out ${BUILD_AT - 250 + i * 120}ms both` }}>
-                    <div className="bp-anim" style={{ animation: `bp-scribble 620ms ease-in-out ${BUILD_AT}ms ${Math.round(BUILD / 620)}` }}>
-                      <svg width="20" height="20" viewBox="0 0 22 22" className="block drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]" style={flip ? { transform: "scaleX(-1)" } : undefined}>
-                        <path d={CURSOR} fill={agent.stroke} stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
-                      </svg>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={agent.src}
-                        alt=""
-                        width={agent.w}
-                        height={38}
-                        draggable={false}
-                        className={`absolute top-[16px] block select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)] ${flip ? "right-[14px]" : "left-[14px]"}`}
-                        style={{ height: 20, width: "auto", maxWidth: "none", transform: `rotate(${flip ? 2 : -2}deg)` }}
-                      />
+                  <div
+                    className="bp-anim absolute"
+                    style={{
+                      left: `${(path.x * 100).toFixed(2)}%`,
+                      top: `${(path.from * 100).toFixed(2)}%`,
+                      animation: `bp-fade 300ms ease-out ${BUILD_AT - 300 + i * 120}ms both`,
+                    }}
+                  >
+                    <div className="bp-anim" style={{ animation: `bp-bob 2600ms ease-in-out ${BUILD_AT + BUILD + i * 400}ms infinite` }}>
+                      <div
+                        className="bp-anim relative"
+                        style={{
+                          // The pointer's tip sits on the edge; the name tag hangs away from the block.
+                          transform: outward < 0 ? "translateX(-100%)" : undefined,
+                          animation: `bp-scribble 640ms ease-in-out ${BUILD_AT}ms ${Math.round(BUILD / 640)}`,
+                        }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 22 22"
+                          className="block drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]"
+                          style={outward < 0 ? { transform: "scaleX(-1)" } : undefined}
+                        >
+                          <path d={CURSOR} fill={agent.stroke} stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
+                        </svg>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={agent.src}
+                          alt=""
+                          width={agent.w}
+                          height={38}
+                          draggable={false}
+                          className={`absolute top-[16px] block select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)] ${outward < 0 ? "right-[14px]" : "left-[14px]"}`}
+                          style={{ height: 20, width: "auto", maxWidth: "none", transform: `rotate(${outward < 0 ? 2 : -2}deg)` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
             {/* Captioned like every figure on the stage. */}
-            <div className="bp-anim mt-1 text-center" style={{ animation: `bp-fade 500ms ease-out 350ms both` }}>
+            <div className="bp-anim -mt-1 text-center" style={{ animation: `bp-fade 500ms ease-out 400ms both` }}>
               <span className="block text-[15px] italic leading-none text-[#151515]" style={SERIF}>
                 FIG. 0
               </span>
               <span className="mt-2 block text-[10px] font-semibold uppercase leading-none tracking-[0.16em] text-black/45">Tony Xing — Portfolio</span>
-              {/* Real milestones, not a made-up percentage: the page is live, the scene is assembled, the first frame is drawn. */}
+              {/* Real milestones, not a made-up percentage: the drawing is up, the scene is assembled, its first frame is drawn. */}
               <span className="mx-auto mt-4 block h-px w-16 overflow-hidden bg-black/10">
                 <span
                   className="block h-px origin-left bg-[#151515] transition-transform duration-700 ease-out"
-                  style={{ transform: `scaleX(${painted ? 1 : ready ? 0.7 : 0.3})` }}
+                  style={{ transform: `scaleX(${painted ? 1 : ready ? 0.75 : sceneOn ? 0.45 : 0.15})` }}
                 />
               </span>
             </div>
@@ -371,7 +408,7 @@ export function BlueprintStage() {
       className="@container relative -mx-10 -ml-[3.25rem] -mt-3 h-svh min-h-[640px] overflow-hidden xl:-mx-14 xl:-ml-[4.25rem] 2xl:-mx-16 2xl:-ml-[4.75rem]"
     >
       <div className={`absolute inset-0 transition-opacity duration-700 ${painted ? "opacity-100" : "opacity-0"}`}>
-        {desktop ? (
+        {desktop && sceneOn ? (
           <Scene
             focus={focus}
             reducedMotion={reducedMotion}

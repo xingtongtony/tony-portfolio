@@ -128,12 +128,19 @@ drawings is there at about the same scale, about to close in.
   real geometry with the stage's camera and writes `loader-art.ts` with a line
   layer and a colour layer that register exactly. Re-run it after changing the
   palette or the logo; never edit the output by hand.
-- Only transform and opacity move (a clipping window goes one way, its
-  contents the other), so it stays smooth while the main thread compiles. The
-  moving layers need `will-change: transform` (`.bp-layer`): content that
-  starts wholly outside its clip is otherwise not painted when it slides in.
-- It plays once per visit, holds for at least `LOADER_MIN` so the build is
-  never cut short, gives up after 9s, and its progress line marks real
+- The drawing and the object are revealed with plain `clip-path` animations.
+  (A cleverer version — a clipping window moving one way and its contents the
+  other, to stay on the compositor — left the object unpainted in a real
+  browser. Do not bring it back.) To keep them smooth, the 3D scene is not
+  started until they have played (`ENTRANCE`): assembling it and compiling its
+  shaders would otherwise stall the animation half-way. Its code is fetched
+  meanwhile. After that only the agents' bob moves, which is a transform.
+- The plinth is sized from the block (same margin on all four sides, two
+  layers clearly different in size and height) and the canvas is centred on
+  the object, so centring the image centres the object. The loader itself is
+  centred on the page, not on the stage: while it shows there is no sidebar.
+  As it clears it drifts to the stage's centre to hand over to the first figure.
+- It plays once per visit, gives up 9s after its entrance, and its progress line marks real
   milestones (page live, scene assembled, first frame drawn), not a made-up
   percentage. Below `lg` it never shows.
 - New `@keyframes` in `globals.css` need a clean dev-server restart to appear.

@@ -157,11 +157,16 @@ def hull(points):
 
 
 # ── the object ──
-TOP = 0.107
-slab(3.2, 2.2, 0.46, 0.0, 0.04, STEP)
-slab(2.9, 1.9, 0.36, 0.0, 0.1, GROUND)
-slab(2.6, 1.6, 0.26, 0.1, TOP, MIST, outline=False)
-ZF, ZB, WIDTH = 0.2, -0.2, 1.95
+# The plinth is sized from the block, so the margin round it is the same on
+# all four sides, and the two layers differ enough in size and height to read
+# as two layers in a line drawing.
+WIDTH, DEPTH = 1.95, 0.42
+MARGIN, STEP_OUT, STEP_H, BASE_H = 0.34, 0.22, 0.09, 0.13
+BW, BD = WIDTH + 2 * MARGIN, DEPTH + 2 * MARGIN
+slab(BW + 2 * STEP_OUT, BD + 2 * STEP_OUT, 0.34, 0.0, STEP_H, STEP)
+slab(BW, BD, 0.24, STEP_H, STEP_H + BASE_H, GROUND)
+TOP = STEP_H + BASE_H
+ZF, ZB = DEPTH / 2, -DEPTH / 2
 poly = block(CORAL, TOP, ZF, ZB, WIDTH)
 HEIGHT = max(p[1] for p in poly)
 
@@ -171,49 +176,90 @@ foot = [(-WIDTH / 2, ZB), (WIDTH / 2, ZB), (WIDTH / 2, ZF), (-WIDTH / 2, ZF)]
 h = HEIGHT - TOP
 cast = hull(foot + [(x + sx * h, z + sz * h) for x, z in foot])
 contact = [(x, TOP, z) for x, z in cast]
-base = rounded_rect(3.2, 2.2, 0.46)
-floor = hull([(x + sx * 0.12, z + sz * 0.12) for x, z in base] + [(x + sx * HEIGHT, z + sz * HEIGHT) for x, z in foot])
+outer = rounded_rect(BW + 2 * STEP_OUT, BD + 2 * STEP_OUT, 0.34)
+floor = hull([(x + sx * 0.2, z + sz * 0.2) for x, z in outer] + [(x + sx * HEIGHT, z + sz * HEIGHT) for x, z in foot])
 floor = [(x, 0.0, z) for x, z in floor]
 
 faces.sort(key=lambda f: f[0])
-every = [proj(p) for f in faces for p in f[3]] + [proj(p) for p in floor]
-PAD_X, PAD_T, PAD_B = 96, 56, 30
-x0 = min(p[0] for p in every) - PAD_X
-y0 = min(p[1] for p in every) - PAD_T
-W = max(p[0] for p in every) + PAD_X - x0
-H = max(p[1] for p in every) + PAD_B - y0
+solid = [proj(p) for f in faces for p in f[3]]
+# The canvas is centred on the object itself, with the same room either side
+# for a numeral, so centring the image centres the object.
+cx = (min(p[0] for p in solid) + max(p[0] for p in solid)) / 2
+half_w = (max(p[0] for p in solid) - min(p[0] for p in solid)) / 2 + 112
+top_y = min(p[1] for p in solid)
+bot_y = max(p[1] for p in solid)
+# The pool of colour on the floor must fit inside the canvas, or its edge shows as a straight cut.
+pool_x, pool_y = proj((0.2, 0.0, -0.05))
+POOL_RX, POOL_RY = half_w * 0.9, half_w * 0.36
+x0, y0 = cx - half_w, min(top_y - 46, pool_y - POOL_RY - 4)
+W, H = 2 * half_w, max(bot_y + 46, pool_y + POOL_RY + 4) - y0
 fmt = lambda pts: " ".join("%.1f,%.1f" % (x - x0, y - y0) for x, y in (proj(p) for p in pts))
 at = lambda p: tuple(round(v - o, 1) for v, o in zip(proj(p), (x0, y0)))
 
 line = ['<g fill="%s" stroke="%s" stroke-width="1.25" stroke-linejoin="round">' % (WHITE, INK)]
 line += ['<polygon points="%s"/>' % fmt(f[3]) for f in faces if f[2]]
 line.append("</g>")
-# Two patent callouts: a leader from the object to a numeral.
-for label, src, dst in (("002", (WIDTH / 2 - 0.1, HEIGHT, ZF), (1.75, HEIGHT + 0.42, 0.0)), ("004", (-1.5, 0.06, 0.55), (-2.15, 0.34, 0.75))):
-    (ax, ay), (bx, by) = at(src), at(dst)
+# Two patent callouts: a leader from the object to a numeral, one each side.
+edge_l, edge_r = cx - half_w + 46, cx + half_w - 46
+for label, src, side in (("002", (WIDTH / 2 - 0.12, HEIGHT, ZF), 1), ("004", (-BW / 2 - STEP_OUT + 0.1, STEP_H, BD / 2 + STEP_OUT - 0.12), -1)):
+    ax, ay = at(src)
+    bx = round((edge_r if side > 0 else edge_l) - x0, 1)
+    by = round(ay - 26, 1)
     line.append('<path d="M%s %s Q%s %s %s %s" fill="none" stroke="%s" stroke-width="1"/>' % (ax, ay, round((ax + bx) / 2, 1), by, bx, by, INK))
-    tx = bx + (8 if bx > ax else -8)
-    line.append('<text x="%s" y="%s" text-anchor="%s" font-style="italic" font-size="13" fill="%s" style="font-family:var(--font-serif),Georgia,serif">%s</text>' % (tx, round(by + 4.5, 1), "start" if bx > ax else "end", INK, label))
+    line.append('<text x="%s" y="%s" text-anchor="%s" font-style="italic" font-size="13" fill="%s" style="font-family:var(--font-serif),Georgia,serif">%s</text>' % (bx + side * 7, round(by + 4.5, 1), "start" if side > 0 else "end", INK, label))
 
-colour = ['<defs><filter id="bp-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter><filter id="bp-near" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter></defs>']
-colour.append('<polygon points="%s" fill="%s" opacity="0.26" filter="url(#bp-soft)"/>' % (fmt(floor), PLUM))
+# ── the built object ──
+sil = " ".join('M%sZ' % fmt(f[3]).replace(" ", "L") for f in faces if f[1])
+pool_c = (round(pool_x - x0, 1), round(pool_y - y0, 1))
+colour = [
+    "<defs>"
+    '<filter id="bp-soft" x="-40%%" y="-40%%" width="180%%" height="180%%"><feGaussianBlur stdDeviation="9"/></filter>'
+    '<filter id="bp-near" x="-40%%" y="-40%%" width="180%%" height="180%%"><feGaussianBlur stdDeviation="3.2"/></filter>'
+    '<radialGradient id="bp-pool" cx="50%%" cy="50%%" r="50%%"><stop offset="0" stop-color="%s" stop-opacity="0.75"/><stop offset="0.45" stop-color="%s" stop-opacity="0.42"/><stop offset="1" stop-color="%s" stop-opacity="0"/></radialGradient>'
+    # Light falls off across the object: brightest toward the key light (upper left), dimmer away from it.
+    '<linearGradient id="bp-fall" x1="0.12" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="%s" stop-opacity="0.2"/></linearGradient>'
+    '<clipPath id="bp-sil"><path d="%s"/></clipPath>'
+    "</defs>" % (GROUND, GROUND, GROUND, PLUM, sil)
+]
+colour.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="url(#bp-pool)"/>' % (pool_c[0], pool_c[1], round(POOL_RX, 1), round(POOL_RY, 1)))
+colour.append('<polygon points="%s" fill="%s" opacity="0.3" filter="url(#bp-soft)"/>' % (fmt(floor), PLUM))
+ground_top = shade(GROUND, 1.05)
 drawn_contact = False
 for f in faces:
     if f[1] is None:
         continue
     colour.append('<polygon points="%s" fill="%s" stroke="%s" stroke-width="0.6" stroke-linejoin="round"/>' % (fmt(f[3]), f[1], f[1]))
-    if not drawn_contact and f[1] == shade(MIST, 1.05):
-        # The block's shadow on the base, drawn straight after the surface it falls on.
-        colour.append('<polygon points="%s" fill="%s" opacity="0.3" filter="url(#bp-near)"/>' % (fmt(contact), PLUM))
+    if not drawn_contact and f[1] == ground_top:
+        # The block's shadow on the base, drawn straight after the surface it
+        # falls on, and a tighter, darker one where it touches.
+        colour.append('<polygon points="%s" fill="%s" opacity="0.34" filter="url(#bp-near)"/>' % (fmt(contact), PLUM))
+        colour.append('<polygon points="%s" fill="%s" opacity="0.3" filter="url(#bp-near)"/>' % (fmt([(x, TOP, z) for x, z in [(-WIDTH / 2 - 0.03, ZB), (WIDTH / 2 + 0.05, ZB - 0.04), (WIDTH / 2 + 0.05, ZF + 0.03), (-WIDTH / 2 - 0.03, ZF + 0.03)]]), PLUM))
         drawn_contact = True
+# A bevel catches a line of light: the upper edges of the block's and the plinth's faces.
+hi = []
+for a, b in zip(poly, poly[1:] + poly[:1]):
+    if abs(a[1] - b[1]) < 1e-6 and (b[0] - a[0]) < 0:  # a top edge of the front cap
+        hi.append([(a[0], a[1], ZF), (b[0], b[1], ZF)])
+for seg in hi:
+    (ax, ay), (bx, by) = at(seg[0]), at(seg[1])
+    colour.append('<path d="M%s %s L%s %s" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.1" stroke-linecap="round" fill="none"/>' % (ax, ay, bx, by))
+colour.append('<rect x="0" y="0" width="%d" height="%d" fill="url(#bp-fall)" clip-path="url(#bp-sil)"/>' % (round(W), round(H)))
+
+frac = lambda p: (round((proj(p)[0] - x0) / W, 4), round((proj(p)[1] - y0) / H, 4))
+left_base, left_top = frac((-WIDTH / 2, TOP, ZF)), frac((-WIDTH / 2, HEIGHT, ZF))
+right_base, right_top = frac((WIDTH / 2, TOP, ZF)), frac((WIDTH / 2, HEIGHT, ZF))
 
 out = os.path.join(ROOT, "app/components/blueprint/loader-art.ts")
 with open(out, "w") as fh:
     fh.write("// Generated by scripts/blueprint-loader-art.py — do not edit by hand.\n")
     fh.write("// The page loader's art: the logo as a clay block on a plinth, projected with\n")
-    fh.write("// the 3D stage's camera. Two layers that register exactly.\n\n")
+    fh.write("// the 3D stage's camera. Two layers that register exactly, on a canvas\n")
+    fh.write("// centred on the object.\n\n")
     fh.write("export const LOADER_ART = {\n")
     fh.write("  width: %d,\n  height: %d,\n" % (round(W), round(H)))
+    fh.write("  /** Where the block's front edges meet the plinth and where they end, as fractions of the canvas: the path of the build front. */\n")
+    fh.write("  left: { x: %s, from: %s, to: %s },\n" % (left_base[0], left_base[1], left_top[1]))
+    fh.write("  right: { x: %s, from: %s, to: %s },\n" % (right_base[0], right_base[1], right_top[1]))
     fh.write("  /** The patent drawing. */\n  line: %s,\n" % json.dumps("".join(line)))
     fh.write("  /** The built object. */\n  colour: %s,\n" % json.dumps("".join(colour)))
     fh.write("};\n")

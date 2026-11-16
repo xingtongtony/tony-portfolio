@@ -434,9 +434,11 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     for (let i = 0; i < count; i++) shifts.current[i] = count * Math.round((sc.pos - i) / count) * GAP;
     // 1 at the start of the opening move, 0 once it is over.
     let opening = 0;
-    if (!reduced && intro.current < INTRO_HOLD + INTRO_MOVE) {
-      intro.current += dt;
-      opening = 1 - ease(clamp01((intro.current - INTRO_HOLD) / INTRO_MOVE));
+    // Timed by the clock, not by counting frames, so it takes the same time
+    // on a slow machine or a throttled tab.
+    if (intro.current === 0) intro.current = time;
+    if (!reduced && time - intro.current < INTRO_HOLD + INTRO_MOVE) {
+      opening = 1 - ease(clamp01((time - intro.current - INTRO_HOLD) / INTRO_MOVE));
       dirty = true;
     }
     // The figure in the middle sits a little right of centre — the left is
