@@ -62,7 +62,7 @@ function displayRgb(hex: string): THREE.Vector3 {
  * the form turns softly at its edges. `screen` and `led` glow.
  */
 const FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
-  clay: { roughness: 0.6, metalness: 0, sheen: 0.25, sheenRoughness: 0.55, sheenColor: "#ffffff" },
+  clay: { roughness: 0.56, metalness: 0, specularIntensity: 0.55, sheen: 0.25, sheenRoughness: 0.55, sheenColor: "#ffffff" },
   // Moulded plastic for the small things you press.
   soft: { roughness: 0.45, metalness: 0, clearcoat: 0.25, clearcoatRoughness: 0.4 },
   // Printed card and paper.
@@ -137,6 +137,11 @@ function fillMaterial(
   } else if (map) {
     params.color = "#ffffff";
     params.map = getTexture(map);
+  } else if (finish === "clay" || finish === "soft") {
+    // Clay and soft plastic let a little light through, so their shade keeps
+    // its colour instead of going grey. A trace of self-colour stands in for that.
+    params.emissive = color;
+    params.emissiveIntensity = 0.07;
   }
   const m = new THREE.MeshPhysicalMaterial(params);
   m.onBeforeCompile = (shader) => {
@@ -160,6 +165,11 @@ function fillMaterial(
           GRAIN_NOISE,
       )
       .replace("#include <normal_fragment_maps>", "#include <normal_fragment_maps>\n" + GRAIN_NORMAL)
+      // Hand-made surfaces are never one flat colour: broad, faint unevenness.
+      .replace(
+        "#include <color_fragment>",
+        "#include <color_fragment>\nif ( uGrain > 0.0 ) diffuseColor.rgb *= 1.0 + 1.4 * uGrain * ( grainNoise( vGrainPos * 7.0 ) - 0.5 );",
+      )
       .replace(
         "#include <dithering_fragment>",
         [

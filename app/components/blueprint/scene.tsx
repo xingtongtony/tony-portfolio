@@ -49,9 +49,9 @@ const damp = (from: number, to: number, k: number, dt: number) => from + (to - f
 function dock(i: number, w: number, h: number): [number, number] {
   // A narrow stage has no room for five name tags side by side: the agents
   // wait as bare cursors there, and show their tags when they go to work.
-  if (w < 896) return [w - 66 - (4 - i) * 34, h - 112];
+  if (w < 896) return [w - 66 - (4 - i) * 34, h - 128];
   const gap = Math.min(150, (w - 570) / 4);
-  return [w - 190 - (4 - i) * gap, h - 122];
+  return [w - 190 - (4 - i) * gap, h - 138];
 }
 
 // The shadow-casting lights, so the frame loop can ask them for a finer
@@ -82,6 +82,33 @@ blendScene.add(blendQuad);
 const blendCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
 blendCamera.position.z = 1;
 const bufferSize = new THREE.Vector2();
+
+/**
+ * The scene around a built figure: a pool of the ground colour on the floor
+ * that fades out to the white page. It gives the object a world to sit in —
+ * the accents read against lilac instead of against white, which is most of
+ * what keeps them from looking loud — without competing with the object.
+ */
+function makePoolTexture(): THREE.CanvasTexture {
+  const size = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const g = canvas.getContext("2d")!;
+  const n = parseInt(PALETTE.ground.slice(1), 16);
+  const rgba = (a: number) => `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+  const fade = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  fade.addColorStop(0, rgba(0.82));
+  fade.addColorStop(0.3, rgba(0.66));
+  fade.addColorStop(0.62, rgba(0.26));
+  fade.addColorStop(0.85, rgba(0.06));
+  fade.addColorStop(1, rgba(0));
+  g.fillStyle = fade;
+  g.fillRect(0, 0, size, size);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
 export type SceneProps = {
   focus: string | null;
@@ -198,6 +225,12 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   const camTarget = useRef<THREE.Vector3 | null>(null);
   const agentPos = useRef(AGENTS.map(() => ({ x: 0, y: 0, placed: false })));
   const swayStart = useRef(FIGURES.map(() => -1));
+  // Where the camera aims for each figure: the middle of what it looks like
+  // on screen, so a flat figure and a tall one both sit centred.
+  const centers = useRef<THREE.Vector3[]>([]);
+  const pool = useMemo(makePoolTexture, []);
+  useEffect(() => () => pool.dispose(), [pool]);
+  const poolRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   // What the last drawn frame looked like, to tell when a new one is needed.
   const drawn = useRef({ w: 0, h: 0, count: 0, texture: null as THREE.FramebufferTexture | null });
   useEffect(() => {
@@ -217,12 +250,30 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   // Measure every part once the figures sit in their slots, and hand the
   // runtimes to the engine so the overlay can schedule builds.
   useLayoutEffect(() => {
-    for (const fig of figs) {
+    const box = new THREE.Box3();
+    const corner = new THREE.Vector3();
+    figs.forEach((fig, i) => {
       measureFigure(fig);
       for (const [partId, rt] of Object.entries(fig.parts)) {
         engine.parts[`${fig.def.id}/${partId}`] = rt;
       }
-    }
+      // The figure's extent as the camera sees it: across (RIGHT) and up (CAM_UP).
+      box.setFromObject(fig.group);
+      const across = [Infinity, -Infinity];
+      const up = [Infinity, -Infinity];
+      for (let c = 0; c < 8; c++) {
+        corner.set(c & 1 ? box.max.x : box.min.x, c & 2 ? box.max.y : box.min.y, c & 4 ? box.max.z : box.min.z);
+        across[0] = Math.min(across[0], corner.dot(RIGHT));
+        across[1] = Math.max(across[1], corner.dot(RIGHT));
+        up[0] = Math.min(up[0], corner.dot(CAM_UP));
+        up[1] = Math.max(up[1], corner.dot(CAM_UP));
+      }
+      const origin = positions[i];
+      centers.current[i] = origin
+        .clone()
+        .addScaledVector(RIGHT, (across[0] + across[1]) / 2 - origin.dot(RIGHT))
+        .addScaledVector(CAM_UP, (up[0] + up[1]) / 2 - origin.dot(CAM_UP));
+    });
     onReady();
     // Runs once: the figures never move after mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -246,7 +297,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     // Same threshold as the overlay's `@4xl` container query (56rem).
     const wide = w >= 896;
     const padTop = 140; // the headline
-    const padBottom = 104; // the project index
+    const padBottom = 120; // the project index
     // The subject sits right of centre: the left is the headline and the project text.
     const focusIndex = focusId ? FIGURES.findIndex((f) => f.id === focusId) : -1;
     const shiftRight = w * (focusIndex < 0 ? (wide ? 0.105 : 0.14) : wide ? 0.13 : 0.15);
@@ -257,7 +308,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     if (focusIndex < 0) {
       zoomTo = Math.min((w * (wide ? 0.66 : 0.6)) / 10.2, (h - padTop - padBottom) / 6.7);
     } else {
-      base.copy(positions[focusIndex]).setY(0.95);
+      base.copy(centers.current[focusIndex] ?? positions[focusIndex]);
       zoomTo = Math.min((w * 0.62) / 4.9, (h - padTop - padBottom) / 3.7);
     }
     zoomTo = Math.min(210, Math.max(22, zoomTo));
@@ -380,6 +431,20 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       }
       const fade = fades.current[i];
       fig.setFade(fade);
+      // Fully faded is gone: otherwise its paper would cover the focused figure's pool.
+      fig.group.visible = fade < 0.985;
+      // The pool of colour under the figure appears as it is built.
+      const poolMaterial = poolRefs.current[i];
+      if (poolMaterial) {
+        const parts = Object.values(fig.parts);
+        const to = (parts.reduce((sum, rt) => sum + rt.progress, 0) / parts.length) * (1 - fade);
+        if (Math.abs(poolMaterial.opacity - to) > 0.004) {
+          poolMaterial.opacity = reduced ? to : damp(poolMaterial.opacity, to, 5, dt);
+          dirty = true;
+        } else {
+          poolMaterial.opacity = to;
+        }
+      }
       const callouts = calloutRefs.current[i];
       if (callouts) callouts.visible = fade < 0.5;
       place(eng.labelEls[`cap/${fig.def.id}`], v.copy(positions[i]).add(CAPTION_OFFSET), 1 - fade);
@@ -464,6 +529,22 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     <>
       {figs.map((fig, i) => (
         <group key={fig.def.id} position={positions[i]}>
+          {/* The floor's pool of colour: below the shadow catcher, drawn first. */}
+          {/* Sized to stop short of the neighbouring figures: an unbuilt one is
+              white paper, and would show as a white shape against the colour. */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.2, -0.006, -0.1]} renderOrder={-1}>
+            <planeGeometry args={[6.8, 6.8]} />
+            <meshBasicMaterial
+              ref={(material) => {
+                poolRefs.current[i] = material;
+              }}
+              map={pool}
+              transparent
+              opacity={0}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </mesh>
           <group
             ref={(el) => {
               swayRefs.current[i] = el;

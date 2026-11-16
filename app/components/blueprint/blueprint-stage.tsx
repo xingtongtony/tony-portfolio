@@ -212,11 +212,11 @@ export function BlueprintStage() {
   const buildingHere = buildingDef !== null && focus === building;
 
   return (
-    // A little short of the full screen, so the next section peeks in and
-    // says "there is more below".
+    // Exactly one screen, with the same margin under the project index as
+    // over the eyebrow line.
     <div
       id="stage"
-      className="@container relative -mx-10 -mt-3 h-[calc(100svh-64px)] min-h-[620px] overflow-hidden xl:-mx-14 2xl:-mx-16"
+      className="@container relative -mx-10 -mt-3 h-svh min-h-[640px] overflow-hidden xl:-mx-14 2xl:-mx-16"
     >
       <div className="absolute inset-0">
         {desktop ? (
@@ -320,7 +320,7 @@ export function BlueprintStage() {
 
       {/* Bottom left: one block of text that is always about what is on the
           stage — the invitation, then the agents' log, then the case study. */}
-      <div className="absolute bottom-[92px] left-10 z-20 w-[min(340px,40%)] xl:left-14">
+      <div className="absolute bottom-[108px] left-10 z-20 w-[min(340px,40%)] xl:left-14">
         {focused ? (
           <>
             <p className={LABEL}>
@@ -387,7 +387,7 @@ export function BlueprintStage() {
       </div>
 
       {/* Bottom: the index of projects, the stage's own table of contents. */}
-      <nav aria-label="Projects" className="absolute inset-x-10 bottom-0 z-30 grid h-16 grid-cols-4 border-t border-black/10 xl:inset-x-14">
+      <nav aria-label="Projects" className="absolute inset-x-10 bottom-0 z-30 grid h-20 grid-cols-4 border-t border-black/10 xl:inset-x-14">
         {FIGURES.map((f, i) => {
           const isBuilt = built[f.id] !== undefined;
           const isBuilding = building === f.id;

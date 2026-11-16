@@ -32,7 +32,10 @@ that looks rough.
 | --- | --- |
 | Flat faces, tight bevels | A solid is flat planes with a small bevel (the default, about 0.02) that catches a line of light — not a big fillet on everything, which reads as an inflated blob and hides the three tones of top, front and side. Nothing is razor-sharp either; hairline plates (< 0.02) are the only unbevelled things. Round things (balls, capsules, rings) are round because the object is, not because the edge was softened. |
 | Harmony over realism | Colour comes from `PALETTE` in `figures.ts` only. A TV may be plum, a counter lilac. Never add a one-off hex to a shape. |
-| One family | All four figures stand on the same `ground` lilac with a lighter `mist` inlay, so they read as a set. |
+| One family | All four figures stand on the same `ground` lilac with a lighter `mist` inlay and a darker lower step, so they read as a set. |
+| Two accents | Lilac and plum own most of the area, cream and sand are the neutrals, and only coral and yellow are accents — small, and no others. Green is for plants and "on", blue for glass; both are muted. A figure that uses every colour at equal weight looks busy however nice each colour is. |
+| A scene, not a backdrop | A built figure sits in a pool of the ground colour on the floor that fades to the white page (`makePoolTexture` in `scene.tsx`). The accents then read against lilac instead of white. It must stop short of the neighbouring figures: unbuilt ones are white paper and would show as white shapes on it. |
+| Built like the thing | A roof is boards with thickness that overhang the walls, not a prism with stripes; a window is a frame standing proud with the glass set back, not a disc on the wall. If a part would look stuck on in real life, model how it is actually made. |
 | Matte clay | Default finish is `clay`. `soft` for small pressable things, `print` for paper, `screen` / `led` for things that glow. No metal, no gloss. |
 | Detail earns the close-up | A figure needs three scales: the big masses, the mid parts (drawer fronts, lids, rims), and the small things (pulls, grille dots, knobs, glazing bars). If a part is one plain block, it is not finished. |
 | Real UI on screens | Screens show a crop of the actual case-study UI from `public/portfolio/blueprints/`, never a mock. |
@@ -75,7 +78,10 @@ is opaque white for this; the page behind the stage must stay white.
 The layout around it (`blueprint-stage.tsx`): headline top left, position and
 arrows top right, one text block bottom left (invitation → agents' log → case
 study), the agents' dock bottom right, and the project index along the bottom.
-The figure sits right of centre; the camera's `shiftRight` and paddings in
+The stage is exactly one screen tall, with the same margin under the index as
+over the eyebrow. The camera aims at the middle of each figure as seen on
+screen (`centers` in `scene.tsx`), so a flat figure and a tall one both sit
+centred. The figure sits right of centre; the camera's `shiftRight` and paddings in
 `scene.tsx` must agree with those blocks. ← → switch projects, Esc returns to
 the sheet.
 
