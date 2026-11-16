@@ -2,9 +2,9 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, LayoutGrid, Pause, Play, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Pause, Play, RotateCcw } from "lucide-react";
 import { engine, now, setPartBuilt, type BuildItem } from "./engine";
 import { AGENTS, FIGURES } from "./figures";
 import { getGreeting } from "../hero-intro";
@@ -29,9 +29,6 @@ const ROUND =
   "inline-flex size-9 items-center justify-center rounded-full border border-black/10 text-black/70 transition hover:border-black/25 hover:text-black disabled:opacity-40";
 const GHOST =
   "inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-black/55 transition hover:bg-black/[0.05] hover:text-black";
-const KEY =
-  "inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] border border-black/15 px-1 text-[11px] leading-none text-black/60";
-
 const DESKTOP = "(min-width: 1024px)";
 const subscribeDesktop = (onChange: () => void) => {
   const mq = window.matchMedia(DESKTOP);
@@ -54,11 +51,12 @@ function I({ children, start = false }: { children: ReactNode; start?: boolean }
 /**
  * The homepage's first screen from lg up — "blueprints built by agents".
  *
- * A sheet of patent-style line drawings, one per published case study. The visitor asks for
- * one (chip, caption or the drawing itself); the five sticker agents fly over
- * and build it part by part into the real object, logging what they do. The
- * visitor can pause, redirect to another drawing mid-build, or reset. When a
- * figure is built, its case study is one click away.
+ * One exhibit at a time. A patent-style line drawing of a project stands on
+ * the stage; the five sticker agents fly over and build it part by part into
+ * the object, logging what they do. The first one builds itself; arrows, keys
+ * or the numbered rail bring on the next, which slides in from the side and
+ * is built in turn. The visitor can pause, move on mid-build, or replay. When
+ * a figure is built, its case study is one click away.
  *
  * The "agents" are choreographed, not a model: the schedule below decides who
  * builds what and when.
@@ -88,7 +86,8 @@ export function BlueprintStage() {
   );
 
   const [ready, setReady] = useState(false);
-  const [focus, setFocus] = useState<string | null>(null);
+  // One exhibit at a time: there is always a figure on stage.
+  const [focus, setFocus] = useState<string | null>(FIGURES[0].id);
   const [building, setBuilding] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
   const [built, setBuilt] = useState<Record<string, number>>({}); // figure id → seconds it took
@@ -151,15 +150,15 @@ export function BlueprintStage() {
     setPaused(b.paused);
   };
 
-  const reset = () => {
+  /** Take the figure on stage back to its drawing and build it again. */
+  const replay = () => {
     const eng = engine;
+    if (!focus || !ready) return;
     eng.build = null;
-    for (const rt of Object.values(eng.parts)) setPartBuilt(rt, false);
-    setBuilt({});
-    setBuilding(null);
-    setPaused(false);
-    setFocus(null);
-    setLog([]);
+    const def = FIGURES.find((f) => f.id === focus)!;
+    for (const part of def.parts) setPartBuilt(eng.parts[`${focus}/${part.id}`], false);
+    setBuilt((b) => Object.fromEntries(Object.entries(b).filter(([id]) => id !== focus)));
+    startBuild(focus);
   };
 
   const onPartEvent = useCallback((type: "start" | "end", item: BuildItem) => {
@@ -186,8 +185,24 @@ export function BlueprintStage() {
     [focus, select],
   );
 
-  // ← → flip through the projects, Esc goes back to the sheet — but only
-  // while the stage is what the visitor is looking at, and never while typing.
+  // The first figure builds itself, so the idea is clear without a word of
+  // instruction — unless the visitor has already moved on.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!ready || started.current) return;
+    if (focus !== FIGURES[0].id) {
+      started.current = true;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      started.current = true;
+      select(FIGURES[0].id);
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [ready, focus, select]);
+
+  // ← → flip through the projects — but only while the stage is what the
+  // visitor is looking at, and never while typing.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -197,7 +212,6 @@ export function BlueprintStage() {
       if (!stage || stage.offsetParent === null || stage.getBoundingClientRect().bottom < window.innerHeight * 0.5) return;
       if (e.key === "ArrowRight") step(1);
       else if (e.key === "ArrowLeft") step(-1);
-      else if (e.key === "Escape") setFocus(null);
       else return;
       e.preventDefault();
     };
@@ -208,7 +222,6 @@ export function BlueprintStage() {
   const focused = focus ? FIGURES.find((f) => f.id === focus)! : null;
   const focusedBuilt = focused ? built[focused.id] !== undefined : false;
   const buildingDef = building ? FIGURES.find((f) => f.id === building)! : null;
-  const anyBuilt = Object.keys(built).length > 0 || building !== null;
   const focusIndex = focused ? FIGURES.indexOf(focused) : -1;
   const buildingHere = buildingDef !== null && focus === building;
 
@@ -296,16 +309,10 @@ export function BlueprintStage() {
 
       {/* Top right: where you are in the set, and the way through it. */}
       <div className="absolute right-10 top-6 z-30 flex items-center gap-1 xl:right-14">
-        {anyBuilt ? (
-          <button type="button" onClick={reset} className={GHOST}>
+        {focusedBuilt ? (
+          <button type="button" onClick={replay} className={GHOST}>
             <RotateCcw className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
-            Reset
-          </button>
-        ) : null}
-        {focused ? (
-          <button type="button" onClick={() => setFocus(null)} className={GHOST}>
-            <LayoutGrid className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
-            All
+            Replay
           </button>
         ) : null}
         <span className="mx-2 text-[11px] font-semibold tabular-nums tracking-[0.1em] text-black/45">
@@ -327,7 +334,7 @@ export function BlueprintStage() {
             <p className={LABEL}>
               {focused.fig}
               <span className="mx-2 text-black/20">—</span>
-              {buildingHere ? (paused ? "Paused" : "Building") : focusedBuilt && built[focused.id] > 0 ? `Built in ${built[focused.id].toFixed(1)}s` : "Built"}
+              {buildingHere ? (paused ? "Paused" : "Building") : !focusedBuilt ? "Drawing" : built[focused.id] > 0 ? `Built in ${built[focused.id].toFixed(1)}s` : "Built"}
             </p>
             <h2 className={TITLE}>{focused.title}</h2>
             {buildingHere ? (
@@ -372,24 +379,7 @@ export function BlueprintStage() {
               </>
             )}
           </>
-        ) : (
-          <>
-            <p className={LABEL}>
-              The sheet<span className="mx-2 text-black/20">—</span>
-              {FIGURES.length} figures
-            </p>
-            <p className={TITLE}>
-              Pick a drawing.
-              <br />
-              <span className="text-black/35">My agents build it.</span>
-            </p>
-            <p className="mt-5 flex items-center gap-1.5 text-[12px] text-black/45">
-              <kbd className={KEY}>←</kbd>
-              <kbd className={KEY}>→</kbd>
-              <span className="ml-1">to flip through</span>
-            </p>
-          </>
-        )}
+        ) : null}
       </div>
 
       {/* Bottom: the index of projects, the stage's own table of contents. */}

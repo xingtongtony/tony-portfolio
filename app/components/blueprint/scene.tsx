@@ -14,41 +14,26 @@ installSoftShadows();
 
 // One fixed axonometric view, like a sheet of patent drawings: an orthographic
 // camera looking down from the front-right. Figures are laid out along the
-// camera's own right / away axes, so on screen they form a tidy 2 × 2 grid and
-// every figure is seen from the same angle.
+// camera's own right axis, so every one is seen from the same angle.
 const AZ = 0.56;
 const EL = 0.5;
 const DIR = new THREE.Vector3(Math.sin(AZ) * Math.cos(EL), Math.sin(EL), Math.cos(AZ) * Math.cos(EL));
 const RIGHT = new THREE.Vector3(Math.cos(AZ), 0, -Math.sin(AZ));
-const AWAY = new THREE.Vector3(-Math.sin(AZ), 0, -Math.cos(AZ));
 const CAM_UP = new THREE.Vector3().crossVectors(DIR, RIGHT);
 
 const CAPTION_OFFSET = new THREE.Vector3(0.2, 0, 1.75);
 
-const COL = 4.4; // spacing between columns, world units (= screen units)
-const ROW = 7.1; // spacing between rows on the ground (foreshortened on screen)
-// Eleven figures in three rows: four, four, and three pushed to the right so
-// the bottom-left corner stays free for the stage's text.
-const SLOTS: [number, number][] = [
-  [-3, 2],
-  [-1, 2],
-  [1, 2],
-  [3, 2],
-  [-3, 0],
-  [-1, 0],
-  [1, 0],
-  [3, 0],
-  [-1, -2],
-  [1, -2],
-  [3, -2],
-];
+// One exhibit at a time. The figures stand in a single row along the camera's
+// right axis, far enough apart that only the one on stage is in view; moving
+// to another pans the camera along the row.
+const GAP = 7;
 
 function slotPosition(i: number): THREE.Vector3 {
-  const [cx, cz] = SLOTS[i];
-  return new THREE.Vector3()
-    .addScaledVector(RIGHT, (cx * COL) / 2)
-    .addScaledVector(AWAY, (cz * ROW) / 2);
+  return new THREE.Vector3().addScaledVector(RIGHT, i * GAP);
 }
+
+// The key light's place relative to what the camera looks at.
+const KEY_OFFSET = new THREE.Vector3(-5, 14, 7);
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
@@ -195,12 +180,12 @@ function Studio() {
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0006}
         shadow-normalBias={0.02}
-        shadow-radius={0.14}
+        shadow-radius={0.22}
         shadow-intensity={0.8}
       >
         {/* Depth range kept tight around the scene: precision, and it is the
             unit the light size is measured in. */}
-        <orthographicCamera attach="shadow-camera" args={[-14, 14, 14, -14, 8, 26]} />
+        <orthographicCamera attach="shadow-camera" args={[-9, 9, 9, -9, 8, 26]} />
       </directionalLight>
       <directionalLight
         ref={(light) => {
@@ -212,13 +197,14 @@ function Studio() {
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
-        shadow-radius={0.31}
+        shadow-radius={0.48}
       >
         {/* Deep enough for the light to lean a long way over (see SKY_SPREAD). */}
-        <orthographicCamera attach="shadow-camera" args={[-14, 14, 14, -14, 8, 32]} />
+        <orthographicCamera attach="shadow-camera" args={[-9, 9, 9, -9, 8, 32]} />
       </directionalLight>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
-        <planeGeometry args={[60, 60]} />
+        {/* Long enough for the whole row. */}
+        <planeGeometry args={[400, 400]} />
         <shadowMaterial transparent color={PALETTE.plum} opacity={0.4} />
       </mesh>
     </>
@@ -309,14 +295,15 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     const padBottom = 120; // the project index
     // The subject sits right of centre: the left is the headline and the project text.
     const focusIndex = focusId ? FIGURES.findIndex((f) => f.id === focusId) : -1;
-    const shiftRight = w * (focusIndex < 0 ? 0.035 : wide ? 0.13 : 0.15);
+    const shiftRight = w * (wide ? 0.13 : 0.15);
     let zoomTo: number;
     const shiftX = -shiftRight;
     const shiftY = (padBottom - padTop) / 2;
     const base = new THREE.Vector3(0, 0.9, 0);
     if (focusIndex < 0) {
-      // The sheet is four columns wide and three rows deep.
-      zoomTo = Math.min((w * 0.9) / (4 * COL + 1.8), (h - padTop - padBottom) / 10.6);
+      // Nothing on stage (only before the first figure is chosen): the first one, further off.
+      base.copy(centers.current[0] ?? positions[0]);
+      zoomTo = Math.min((w * 0.62) / 6.4, (h - padTop - padBottom) / 4.8);
     } else {
       base.copy(centers.current[focusIndex] ?? positions[focusIndex]);
       zoomTo = Math.min((w * 0.62) / 4.9, (h - padTop - padBottom) / 3.7);
@@ -344,6 +331,14 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     cam.lookAt(camTarget.current);
     cam.updateProjectionMatrix();
     HULL_U.value = 1.3 / cam.zoom;
+    // The lights travel with the camera, so their shadow maps only ever have
+    // to cover the figure on stage — however long the row gets.
+    for (const light of shadowLights) {
+      if (!light) continue;
+      light.target.position.copy(camTarget.current);
+      light.target.updateMatrixWorld();
+    }
+    shadowLights[0]?.position.copy(camTarget.current).add(KEY_OFFSET);
 
     // ── Build engine: advance every scheduled part ──
     const build = eng.build;
@@ -513,7 +508,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
         const cos = 1 - (k / SAMPLES) * (1 - Math.cos(SKY_SPREAD));
         const sin = Math.sqrt(1 - cos * cos);
         const around = k * 2.3999632;
-        sky.position.set(sin * Math.cos(around) * 20, cos * 20, sin * Math.sin(around) * 20);
+        sky.position.set(sin * Math.cos(around) * 20, cos * 20, sin * Math.sin(around) * 20).add(sky.target.position);
         // Flat tops get the same light from every sample; only what is in the way differs.
         sky.intensity = SKY_INTENSITY / cos;
         sky.shadow.radius = (sky.shadow.radius % 1) + k;

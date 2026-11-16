@@ -71,8 +71,8 @@ that palette, `(c) => ({ id, fig, title, desc, href, parts, callouts })`. Start
 - **Stack by arithmetic**: centre `y` = top of the support + half the height.
 - **Callouts**: three, numbered `n02 / n04 / n06` for figure `n`, on three
   different parts, with leaders that do not cross the figure.
-- **Slots**: `SLOTS` in `scene.tsx` has one entry per figure. A new figure needs
-  a slot, and the overview's zoom divisors may need retuning.
+- **Order**: figures stand in a row in `BUILDERS` order, one on stage at a
+  time. Adding one needs no layout work; it just needs the next `FIG.` number.
 
 ### 3. Look at it
 

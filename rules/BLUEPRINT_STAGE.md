@@ -82,8 +82,13 @@ The layout around it (`blueprint-stage.tsx`): headline top left, position and
 arrows top right, one text block bottom left (invitation → agents' log → case
 study, or "Coming soon"), the agents' dock bottom right, and along the bottom
 a rail of project numbers in which the current one opens to show its name.
-Figures stand in rows of four (`SLOTS`), the last row pushed right so the
-bottom-left stays free for the text. From `lg` up there is no card grid below:
+There is no overview: one figure is on stage at a time. The figures stand in a
+single row (`GAP` in `scene.tsx`) far enough apart that only one is in view;
+moving to another pans the camera along the row and the lights travel with
+it. The first figure builds itself on arrival. A grid of every drawing was
+tried and dropped — past four figures it was a crowd of small drawings with
+their labels on top of each other.
+From `lg` up there is no card grid below:
 the stage is the work section.
 The stage is exactly one screen tall, with the same margin under the index as
 over the eyebrow. The camera aims at the middle of each figure as seen on
