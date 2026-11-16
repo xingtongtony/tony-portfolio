@@ -150,14 +150,13 @@ export function BlueprintStage() {
     setPaused(b.paused);
   };
 
-  /** Take the figure on stage back to its drawing and build it again. */
+  /** Take every figure back to its drawing, and build the one on stage again. */
   const replay = () => {
     const eng = engine;
     if (!focus || !ready) return;
     eng.build = null;
-    const def = FIGURES.find((f) => f.id === focus)!;
-    for (const part of def.parts) setPartBuilt(eng.parts[`${focus}/${part.id}`], false);
-    setBuilt((b) => Object.fromEntries(Object.entries(b).filter(([id]) => id !== focus)));
+    for (const rt of Object.values(eng.parts)) setPartBuilt(rt, false);
+    setBuilt({});
     startBuild(focus);
   };
 
@@ -227,10 +226,12 @@ export function BlueprintStage() {
 
   return (
     // Exactly one screen, with the same margin under the project index as
-    // over the eyebrow line.
+    // over the eyebrow line. It reaches 12px further left than the page
+    // column, to the sidebar's edge, so a neighbouring figure comes out from
+    // under the sidebar with no gap.
     <div
       id="stage"
-      className="@container relative -mx-10 -mt-3 h-svh min-h-[640px] overflow-hidden xl:-mx-14 2xl:-mx-16"
+      className="@container relative -mx-10 -ml-[3.25rem] -mt-3 h-svh min-h-[640px] overflow-hidden xl:-mx-14 xl:-ml-[4.25rem] 2xl:-mx-16 2xl:-ml-[4.75rem]"
     >
       <div className="absolute inset-0">
         {desktop ? (
@@ -289,7 +290,7 @@ export function BlueprintStage() {
 
       {/* Top left: the hero statement, at headline size. The figure sits to
           the right of and below it. */}
-      <div className="pointer-events-none absolute left-10 top-8 z-10 xl:left-14">
+      <div className="pointer-events-none absolute left-[3.25rem] top-8 z-10 xl:left-[4.25rem]">
         <p className={LABEL}>
           {/* On a narrow stage the controls need the room: keep the role, drop the greeting. */}
           <span className="hidden @4xl:inline">
@@ -297,19 +298,30 @@ export function BlueprintStage() {
           </span>
           <span className="text-black/75">A Staff Product Designer</span>
         </p>
+        {/* One strong line and one quiet one. The statement used to be twelve
+            words with four overlapping italics packed into two lines at full
+            weight; now the claim is the headline and the proof sits under it. */}
         <h1
-          className="mt-5 text-[clamp(1.55rem,2.9vw,2.75rem)] font-black uppercase leading-[0.95] tracking-[-0.065em] text-[#151515]"
+          className="mt-5 text-[clamp(1.9rem,3.6vw,3.4rem)] font-black uppercase leading-[0.92] tracking-[-0.065em] text-[#151515]"
           style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
         >
-          10+ years<I>shaping</I> interfaces<I>for</I> millions
-          <br />
-          <I start>at</I> TikTok, Airbnb, CloudKitchens<I>&amp;</I> DiDi
+          Shaping interfaces<I>for</I> millions
         </h1>
+        <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-medium tracking-[-0.01em] text-black/50">
+          <span className="text-black/80">10+ years</span>
+          <span aria-hidden="true" className="h-px w-6 bg-black/20" />
+          {["TikTok", "Airbnb", "CloudKitchens", "DiDi"].map((name, i) => (
+            <span key={name} className="flex items-center gap-x-3">
+              {i > 0 ? <span aria-hidden="true" className="size-[3px] rounded-full bg-black/25" /> : null}
+              {name}
+            </span>
+          ))}
+        </p>
       </div>
 
       {/* Top right: where you are in the set, and the way through it. */}
       <div className="absolute right-10 top-6 z-30 flex items-center gap-1 xl:right-14">
-        {focusedBuilt ? (
+        {Object.keys(built).length > 0 ? (
           <button type="button" onClick={replay} className={GHOST}>
             <RotateCcw className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
             Replay
@@ -328,7 +340,7 @@ export function BlueprintStage() {
 
       {/* Bottom left: one block of text that is always about what is on the
           stage — the invitation, then the agents' log, then the case study. */}
-      <div className="absolute bottom-[108px] left-10 z-20 w-[min(340px,40%)] xl:left-14">
+      <div className="absolute bottom-[108px] left-[3.25rem] z-20 w-[min(340px,40%)] xl:left-[4.25rem]">
         {focused ? (
           <>
             <p className={LABEL}>
@@ -383,7 +395,7 @@ export function BlueprintStage() {
       </div>
 
       {/* Bottom: the index of projects, the stage's own table of contents. */}
-      <nav aria-label="Projects" className="absolute inset-x-10 bottom-0 z-30 flex h-20 items-stretch border-t border-black/10 xl:inset-x-14">
+      <nav aria-label="Projects" className="absolute bottom-0 left-[3.25rem] right-10 z-30 flex h-20 items-stretch border-t border-black/10 xl:left-[4.25rem] xl:right-14">
         {FIGURES.map((f, i) => {
           const isBuilt = built[f.id] !== undefined;
           const isBuilding = building === f.id;

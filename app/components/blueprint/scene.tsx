@@ -33,6 +33,13 @@ const GAP = 4.4;
 const GHOST = 0.84;
 const NEIGHBOUR_SCALE = 0.84;
 const smooth = (x: number) => x * x * (3 - 2 * x);
+const wrap = (i: number, n: number) => ((i % n) + n) % n;
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+// The opening move: the camera starts far enough out to show the row, holds
+// for a moment, then closes in on the first figure.
+const INTRO_HOLD = 0.7;
+const INTRO_MOVE = 1.6;
+const scratch = new THREE.Vector3();
 
 function slotPosition(i: number): THREE.Vector3 {
   return new THREE.Vector3().addScaledVector(RIGHT, i * GAP);
@@ -232,6 +239,11 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   const pools = useMemo(() => FIGURES.map((figure) => makePoolTexture(figure.palette.ground)), []);
   useEffect(() => () => pools.forEach((texture) => texture.dispose()), [pools]);
   const poolRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  // The row is a loop: each figure stands at whichever copy of its slot is
+  // nearest the camera. `shifts` is how far along the row that copy is.
+  const outerRefs = useRef<(THREE.Group | null)[]>([]);
+  const shifts = useRef(FIGURES.map(() => 0));
+  const intro = useRef(0);
   // The carousel's position along the row, in figures; see the pointer handlers below.
   const scrub = useRef({
     pos: 0,
@@ -244,7 +256,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     lastX: 0,
     lastT: 0,
     velocity: 0,
-    pending: -1,
+    pending: 0,
     pendingUntil: 0,
     timer: 0,
   });
@@ -270,17 +282,16 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   const canvas = useThree((state) => state.gl.domElement);
   useEffect(() => {
     const sc = scrub.current;
-    const last = FIGURES.length - 1;
     const perFigure = () => GAP * sc.zoom; // pixels between two figures
-    const within = (v: number) => Math.min(last + 0.35, Math.max(-0.35, v));
     const settle = (at: number) => {
-      const index = Math.min(last, Math.max(0, Math.round(at)));
+      // The row is a loop, so any whole number is a figure.
+      const index = Math.round(at);
       sc.dragging = false;
       sc.pending = index;
       sc.pendingUntil = now() + 0.5;
       sc.target = index;
       engine.dirty = true;
-      live.current.onSelect(FIGURES[index].id);
+      live.current.onSelect(FIGURES[wrap(index, FIGURES.length)].id);
     };
     const down = (e: PointerEvent) => {
       if (e.button !== 0) return;
@@ -304,7 +315,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       sc.velocity = -(e.clientX - sc.lastX) / perFigure() / (ms / 1000);
       sc.lastX = e.clientX;
       sc.lastT = e.timeStamp;
-      sc.target = within(sc.startTarget - dx / perFigure());
+      sc.target = sc.startTarget - dx / perFigure();
       engine.dirty = true;
     };
     const up = (e: PointerEvent) => {
@@ -320,7 +331,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
       e.preventDefault();
       sc.dragging = true;
-      sc.target = within(sc.target + e.deltaX / perFigure());
+      sc.target = sc.target + e.deltaX / perFigure();
       engine.dirty = true;
       window.clearTimeout(sc.timer);
       sc.timer = window.setTimeout(() => settle(sc.target), 140);
@@ -395,12 +406,19 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     const padBottom = 120; // the project index
     const focusIndex = focusId ? FIGURES.findIndex((f) => f.id === focusId) : -1;
     const sc = scrub.current;
-    const last = FIGURES.length - 1;
+    const count = FIGURES.length;
     if (!sc.dragging) {
-      // Follow the chosen figure. After a drag, hold where it landed until
-      // the overlay has caught up with the choice.
-      if (sc.pending >= 0 && (focusIndex === sc.pending || time > sc.pendingUntil)) sc.pending = -1;
-      sc.target = sc.pending >= 0 ? sc.pending : Math.max(0, focusIndex);
+      // After a drag, hold where it landed until the overlay has caught up
+      // with the choice.
+      if (sc.pendingUntil > 0 && (wrap(sc.pending, count) === focusIndex || time > sc.pendingUntil)) sc.pendingUntil = 0;
+      if (sc.pendingUntil > 0) {
+        sc.target = sc.pending;
+      } else {
+        // Go to the nearest copy of the chosen figure, whichever way that is:
+        // from the last, the first is one step to the right.
+        const chosen = Math.max(0, focusIndex);
+        sc.target = chosen + count * Math.round((sc.target - chosen) / count);
+      }
     }
     if (reduced || Math.abs(sc.pos - sc.target) < 0.0008) {
       if (sc.pos !== sc.target) dirty = true;
@@ -410,19 +428,25 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       sc.pos = damp(sc.pos, sc.target, sc.dragging ? 26 : 6.5, dt);
       dirty = true;
     }
+    for (let i = 0; i < count; i++) shifts.current[i] = count * Math.round((sc.pos - i) / count) * GAP;
+    // 1 at the start of the opening move, 0 once it is over.
+    let opening = 0;
+    if (!reduced && intro.current < INTRO_HOLD + INTRO_MOVE) {
+      intro.current += dt;
+      opening = 1 - ease(clamp01((intro.current - INTRO_HOLD) / INTRO_MOVE));
+      dirty = true;
+    }
     // The figure in the middle sits a little right of centre — the left is
     // the headline and the project text — leaving the next one peeking in.
-    const shiftX = -w * (wide ? 0.08 : 0.1);
+    const shiftX = -w * (wide ? 0.08 : 0.1) * (1 - opening);
     const shiftY = (padBottom - padTop) / 2;
-    const lo = Math.min(last, Math.max(0, Math.floor(sc.pos)));
-    const hi = Math.min(last, lo + 1);
-    const base = new THREE.Vector3()
-      .copy(centers.current[lo] ?? positions[lo])
-      .lerp(centers.current[hi] ?? positions[hi], Math.min(1, Math.max(0, sc.pos - lo)));
-    // Dragged past either end: keep going a little, so the end can be felt.
-    if (sc.pos < 0) base.addScaledVector(RIGHT, sc.pos * GAP);
-    if (sc.pos > last) base.addScaledVector(RIGHT, (sc.pos - last) * GAP);
-    const zoomTo = Math.min(210, Math.max(22, Math.min((w * 0.58) / 4.9, (h - padTop - padBottom) / 3.7)));
+    const slotCentre = (slot: number, out: THREE.Vector3) => {
+      const i = wrap(slot, count);
+      return out.copy(centers.current[i] ?? positions[i]).addScaledVector(RIGHT, (slot - i) * GAP);
+    };
+    const lo = Math.floor(sc.pos);
+    const base = slotCentre(lo, new THREE.Vector3()).lerp(slotCentre(lo + 1, scratch), sc.pos - lo);
+    const zoomTo = Math.min(210, Math.max(22, Math.min((w * 0.58) / 4.9, (h - padTop - padBottom) / 3.7))) * (1 - 0.6 * opening);
     // Looking at a point to the right of / below the subject moves it left / up.
     base.addScaledVector(RIGHT, shiftX / zoomTo).addScaledVector(CAM_UP, -shiftY / zoomTo);
     if (!camTarget.current) {
@@ -492,7 +516,9 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
         const item = build.items.find((it) => it.agent === i && !it.ended);
         if (item && buildTime >= item.tGo) {
           const rt = eng.parts[`${item.figId}/${item.partId}`];
-          v.copy(rt.anchor).project(cam);
+          v.copy(rt.anchor)
+            .addScaledVector(RIGHT, shifts.current[FIGURES.findIndex((f) => f.id === item.figId)] ?? 0)
+            .project(cam);
           // Spread agents that share a spot so their name tags don't stack.
           tx = ((v.x + 1) / 2) * w + (i - 2) * 26;
           ty = ((1 - v.y) / 2) * h + (i % 2) * 24 - 6;
@@ -540,14 +566,24 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       // Distance from the middle of the stage, in figures, decides everything:
       // 0 is full colour and full size, 1 is a faint, smaller neighbour, and
       // much beyond that is gone.
-      const away = Math.abs(i - sc.pos);
-      const fadeTo = away <= 1 ? GHOST * smooth(away) : GHOST + (1 - GHOST) * smooth(Math.min(1, (away - 1) / 0.6));
+      const shift = shifts.current[i];
+      const outer = outerRefs.current[i];
+      if (outer && outer.userData.shift !== shift) {
+        outer.userData.shift = shift;
+        outer.position.copy(positions[i]).addScaledVector(RIGHT, shift);
+        fig.origin.value.copy(outer.position);
+        dirty = true;
+      }
+      const away = Math.abs(i + shift / GAP - sc.pos);
+      const settled = away <= 1 ? GHOST * smooth(away) : GHOST + (1 - GHOST) * smooth(Math.min(1, (away - 1) / 0.6));
+      // During the opening every figure in view is an equal, light drawing.
+      const fadeTo = mix(settled, away <= 3.4 ? 0.3 : 1, opening);
       if (Math.abs(fades.current[i] - fadeTo) > 0.002) {
         fades.current[i] = fadeTo;
         dirty = true;
       }
       const fade = fades.current[i];
-      swayRefs.current[i]?.scale.setScalar(1 - (1 - NEIGHBOUR_SCALE) * smooth(Math.min(1, away)));
+      swayRefs.current[i]?.scale.setScalar(1 - (1 - NEIGHBOUR_SCALE) * smooth(Math.min(1, away)) * (1 - opening));
       fig.setFade(fade);
       // Fully faded is gone: otherwise its paper would cover the focused figure's pool.
       fig.group.visible = fade < 0.985;
@@ -565,7 +601,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       }
       const callouts = calloutRefs.current[i];
       if (callouts) callouts.visible = fade < 0.5;
-      place(eng.labelEls[`cap/${fig.def.id}`], v.copy(positions[i]).add(CAPTION_OFFSET), 1 - fade);
+      place(eng.labelEls[`cap/${fig.def.id}`], v.copy(positions[i]).addScaledVector(RIGHT, shift).add(CAPTION_OFFSET), 1 - fade);
       const sway = swayRefs.current[i];
       if (!sway) return;
       for (const c of fig.def.callouts) {
@@ -647,7 +683,13 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   return (
     <>
       {figs.map((fig, i) => (
-        <group key={fig.def.id} position={positions[i]}>
+        <group
+          key={fig.def.id}
+          position={positions[i]}
+          ref={(el) => {
+            outerRefs.current[i] = el;
+          }}
+        >
           {/* The floor's pool of colour: below the shadow catcher, drawn first. */}
           {/* Sized to stop short of the neighbouring figures: an unbuilt one is
               white paper, and would show as a white shape against the colour. */}

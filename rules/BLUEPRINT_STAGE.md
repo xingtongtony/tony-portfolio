@@ -78,7 +78,9 @@ around (ambient occlusion). Then drawing stops altogether. Anything that
 changes the picture from outside the loop must set `engine.dirty`. The canvas
 is opaque white for this; the page behind the stage must stay white.
 
-The layout around it (`blueprint-stage.tsx`): headline top left, position and
+The layout around it (`blueprint-stage.tsx`): one strong headline line with one
+quiet line of proof under it (not the full statement at display size — twelve
+words with four overlapping italics in two lines fought the figure) top left, position and
 arrows top right, one text block bottom left (invitation → agents' log → case
 study, or "Coming soon"), the agents' dock bottom right, and along the bottom
 a rail of project numbers in which the current one opens to show its name.
@@ -91,13 +93,20 @@ continuous number, so everything — fade, size, camera — follows from distanc
 to the middle. It moves by dragging or throwing the stage, a sideways swipe on
 a trackpad, the arrows, the arrow keys, the numbered rail, or clicking a
 neighbour; a small drag falls back, a real one or a flick lands on the next.
-The lights travel with the camera. The first figure builds itself on arrival.
+The row is a loop: each figure stands at whichever copy of its slot is nearest
+the camera (`shifts`), so the last figure is the first one's left neighbour and
+going past either end just carries on. The page opens far enough out to show
+the row as light drawings, holds a moment, then closes in on the first figure
+(`INTRO_HOLD`, `INTRO_MOVE`) while it starts to build. Replay takes every
+figure back to its drawing and rebuilds the one on stage. The lights travel
+with the camera.
 A grid of every drawing was tried and dropped — past four figures it was a
 crowd of small drawings with their labels on top of each other — and so was a
 single figure alone, which felt empty and gave no sign of the others.
 From `lg` up there is no card grid below:
 the stage is the work section.
-The stage is exactly one screen tall, with the same margin under the index as
+The stage reaches left to the sidebar's edge, so a neighbour comes out from
+under it with no gap. It is exactly one screen tall, with the same margin under the index as
 over the eyebrow. The camera aims at the middle of each figure as seen on
 screen (`centers` in `scene.tsx`), so a flat figure and a tall one both sit
 centred. The figure sits right of centre; the camera's `shiftRight` and paddings in
