@@ -14,7 +14,10 @@
 //   3. Filter — average many depth tests over a disc of that width.
 //
 // Samples sit on a Vogel disc turned by a per-pixel angle, which trades
-// banding for a fine, stable grain. The receiver's own depth slope is carried
+// banding for a fine grain. A few samples are enough while the picture moves;
+// the frame that stays on screen is drawn once more with four times as many
+// (the scene adds 1 to the light's size to ask for it), so the still image has
+// no grain and nothing to shimmer. The receiver's own depth slope is carried
 // into every sample so a wide filter does not shadow the surface it is on.
 //
 // Use with <Canvas shadows="basic">. Call before the first material compiles.
@@ -22,9 +25,6 @@
 import * as THREE from "three";
 
 const HELPERS = /* glsl */ `
-	#define PCSS_BLOCKERS 16
-	#define PCSS_TAPS 24
-
 	float pcssAngle( vec2 p ) {
 		return 6.2831853 * fract( 52.9829189 * fract( dot( p, vec2( 0.06711056, 0.00583715 ) ) ) );
 	}
@@ -35,7 +35,14 @@ const HELPERS = /* glsl */ `
 		return r * vec2( cos( a ), sin( a ) );
 	}
 
-	float pcssShadow( sampler2D shadowMap, float lightSize, vec3 coord ) {
+	float pcssShadow( sampler2D shadowMap, float light, vec3 coord ) {
+		// The whole part of the light's size picks the quality: 0 while things
+		// move, 1 for the frame that stays on screen once they stop.
+		bool still = light >= 1.0;
+		float lightSize = fract( light );
+		int blockerCount = still ? 32 : 12;
+		int tapCount = still ? 72 : 18;
+
 		// How the receiver's depth changes across the map (receiver-plane bias).
 		vec3 dx = dFdx( coord );
 		vec3 dy = dFdy( coord );
@@ -50,8 +57,8 @@ const HELPERS = /* glsl */ `
 
 		float blockers = 0.0;
 		float blockerDepth = 0.0;
-		for ( int i = 0; i < PCSS_BLOCKERS; i ++ ) {
-			vec2 o = pcssDisc( i, PCSS_BLOCKERS, phi ) * search;
+		for ( int i = 0; i < blockerCount; i ++ ) {
+			vec2 o = pcssDisc( i, blockerCount, phi ) * search;
 			float d = texture2D( shadowMap, coord.xy + o ).r;
 			if ( d < coord.z + dot( o, slope ) ) {
 				blockerDepth += d;
@@ -62,11 +69,11 @@ const HELPERS = /* glsl */ `
 
 		float radius = clamp( ( coord.z - blockerDepth / blockers ) * lightSize, 0.0012, search );
 		float lit = 0.0;
-		for ( int i = 0; i < PCSS_TAPS; i ++ ) {
-			vec2 o = pcssDisc( i, PCSS_TAPS, phi + 1.7 ) * radius;
+		for ( int i = 0; i < tapCount; i ++ ) {
+			vec2 o = pcssDisc( i, tapCount, phi + 1.7 ) * radius;
 			lit += step( coord.z + dot( o, slope ), texture2D( shadowMap, coord.xy + o ).r );
 		}
-		return lit / float( PCSS_TAPS );
+		return lit / float( tapCount );
 	}
 `;
 

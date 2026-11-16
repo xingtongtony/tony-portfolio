@@ -62,9 +62,9 @@ function displayRgb(hex: string): THREE.Vector3 {
  * the form turns softly at its edges. `screen` and `led` glow.
  */
 const FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
-  clay: { roughness: 0.86, metalness: 0, sheen: 0.25, sheenRoughness: 0.6, sheenColor: "#ffffff" },
+  clay: { roughness: 0.68, metalness: 0, sheen: 0.3, sheenRoughness: 0.55, sheenColor: "#ffffff" },
   // Moulded plastic for the small things you press.
-  soft: { roughness: 0.58, metalness: 0 },
+  soft: { roughness: 0.45, metalness: 0, clearcoat: 0.25, clearcoatRoughness: 0.4 },
   // Printed card and paper.
   print: { roughness: 0.92, metalness: 0 },
   screen: { roughness: 0.16, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08 },
@@ -106,7 +106,14 @@ if ( uGrain > 0.0 ) {
 
 const WORLD_Y_VERTEX = "#include <project_vertex>\nvWorldY = (modelMatrix * vec4(transformed, 1.0)).y;";
 
-function fillMaterial(color: string, finish: Finish, map: string | undefined, rt: PartRuntime, fade: { value: number }) {
+function fillMaterial(
+  color: string,
+  finish: Finish,
+  map: string | undefined,
+  rt: PartRuntime,
+  fade: { value: number },
+  origin: { value: THREE.Vector3 },
+) {
   const params: THREE.MeshPhysicalMaterialParameters = {
     ...FINISHES[finish],
     color,
@@ -136,19 +143,28 @@ function fillMaterial(color: string, finish: Finish, map: string | undefined, rt
     shader.uniforms.uPaper = PAPER_U;
     shader.uniforms.uFade = fade;
     shader.uniforms.uGrain = { value: GRAIN[finish] };
+    shader.uniforms.uOrigin = origin;
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;")
-      .replace("#include <project_vertex>", WORLD_Y_VERTEX + "\nvGrainPos = position;");
+      .replace("#include <common>", "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nvarying vec3 vFig;\nuniform vec3 uOrigin;")
+      .replace(
+        "#include <project_vertex>",
+        WORLD_Y_VERTEX + "\nvGrainPos = position;\nvFig = (modelMatrix * vec4(transformed, 1.0)).xyz - uOrigin;",
+      );
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
-        "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nuniform float uH;\nuniform float uBandOn;\nuniform float uFade;\nuniform float uGrain;\nuniform vec3 uBand;\nuniform vec3 uPaper;\n" +
+        "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nvarying vec3 vFig;\nuniform float uH;\nuniform float uBandOn;\nuniform float uFade;\nuniform float uGrain;\nuniform vec3 uBand;\nuniform vec3 uPaper;\n" +
           GRAIN_NOISE,
       )
       .replace("#include <normal_fragment_maps>", "#include <normal_fragment_maps>\n" + GRAIN_NORMAL)
       .replace(
         "#include <dithering_fragment>",
         [
+          // Light falls off across the figure, as it does under a real soft
+          // box: brightest on what is nearest the key light, dimmer on what
+          // is furthest from it and close to the ground.
+          "float reach = dot(vFig - vec3(0.0, 0.9, 0.0), vec3(-0.304, 0.852, 0.426));",
+          "gl_FragColor.rgb *= mix(0.84, 1.09, smoothstep(-1.5, 1.5, reach));",
           "float built = 1.0 - smoothstep(uH - 0.003, uH + 0.003, vWorldY);",
           "gl_FragColor.rgb = mix(uPaper, gl_FragColor.rgb, built);",
           "float band = uBandOn * (1.0 - smoothstep(0.012, 0.03, abs(vWorldY - uH)));",
@@ -432,6 +448,8 @@ export type BuiltFigure = {
   def: FigureDef;
   group: THREE.Group;
   parts: Record<string, PartRuntime>;
+  /** Where the figure stands in the world; the light falloff is measured from it. */
+  origin: { value: THREE.Vector3 };
   /** 0 = drawn normally, 1 = faded into the paper (while another figure is in focus). */
   setFade: (v: number) => void;
 };
@@ -440,6 +458,7 @@ export function createFigure(def: FigureDef): BuiltFigure {
   const group = new THREE.Group();
   const parts: Record<string, PartRuntime> = {};
   const fade = { value: 0 };
+  const origin = { value: new THREE.Vector3() };
   const inks: (LineMaterial | THREE.MeshBasicMaterial)[] = [];
   const casters: THREE.Mesh[] = [];
 
@@ -472,7 +491,7 @@ export function createFigure(def: FigureDef): BuiltFigure {
       const fillKey = `${color}|${finish}|${s.map ?? ""}`;
       let fill = fills.get(fillKey);
       if (!fill) {
-        fill = fillMaterial(color, finish, s.map, rt, fade);
+        fill = fillMaterial(color, finish, s.map, rt, fade, origin);
         fills.set(fillKey, fill);
       }
       const mesh = new THREE.Mesh(geo, fill);
@@ -499,12 +518,13 @@ export function createFigure(def: FigureDef): BuiltFigure {
     if (casters[0].castShadow !== cast) for (const mesh of casters) mesh.castShadow = cast;
   };
 
-  return { def, group, parts, setFade };
+  return { def, group, parts, origin, setFade };
 }
 
 /** Call once the figure sits at its final place in the scene. */
 export function measureFigure(fig: BuiltFigure) {
   fig.group.updateWorldMatrix(true, true);
+  fig.group.getWorldPosition(fig.origin.value);
   const box = new THREE.Box3();
   for (const rt of Object.values(fig.parts)) {
     box.setFromObject(rt.object);

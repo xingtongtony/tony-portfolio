@@ -49,12 +49,30 @@ that looks rough.
 | `blueprint-stage.tsx` | The DOM layer: intro, chips, agent stickers, log and result card. |
 | `textures.ts` | Printed surfaces drawn on a canvas (ticket, QR card, labels). |
 
-Lighting, in `Studio` (`scene.tsx`): a KEY soft box high and front-left, a SKY
-light straight overhead whose shadow reads as ambient occlusion, and a FILL
-(room environment + lilac ground bounce). `shadow-radius` is each light's size.
-Lit tops should land near the palette colour, fronts about three-quarters of
-it, shaded sides a little over half. If colours look washed out, there is too
-much ambient light — lower it, do not darken the palette.
+Lighting, in `Studio` (`scene.tsx`): a warm KEY soft box high and front-left, a
+SKY light straight overhead whose shadow reads as ambient occlusion, and a FILL
+(room environment, warm from above and lilac from below, so shade is coloured,
+never grey). `shadow-radius` is each light's size. On top of that the fill
+shader dims each figure with distance from the key light — nearest and highest
+is brightest, furthest and lowest is darkest — which is what gives the forms
+their gradient. Lit tops should land near the palette colour, fronts about
+three-quarters of it, shaded sides a little over half. If colours look washed
+out, there is too much ambient light — lower it, do not darken the palette.
+
+Drawing is on demand. The soft shadows are costly, so the frame loop redraws
+the 3D picture only when something in it moved (camera, a build, a fade, the
+turn of a newly built figure) and stops when it is at rest; the agents and
+labels are DOM and keep moving for free. The last frame of every run is drawn
+with fine shadows (four times the samples), so the picture that stays on
+screen has no grain. Anything that changes the picture from outside the loop
+must set `engine.dirty`.
+
+The layout around it (`blueprint-stage.tsx`): headline top left, position and
+arrows top right, one text block bottom left (invitation → agents' log → case
+study), the agents' dock bottom right, and the project index along the bottom.
+The figure sits right of centre; the camera's `shiftRight` and paddings in
+`scene.tsx` must agree with those blocks. ← → switch projects, Esc returns to
+the sheet.
 
 ## 4. Things that will bite
 
@@ -66,6 +84,9 @@ much ambient light — lower it, do not darken the palette.
 - **Ink lines must sit on the surface.** Lines are drawn along the middle of
   each fillet (`softBoxLines`, the inset outline for slabs). A line inside the
   mesh is hidden by the paper fill; one outside it floats.
+- **A shimmering model means continuous redraw.** The shadow samples are laid
+  out per screen pixel; redraw a moving figure every frame and its penumbras
+  crawl. Nothing should move forever — the built figure turns once and stops.
 - **Only what is built casts a shadow.** The depth material discards above the
   build height. Any new material path must keep that.
 - **Do not mutate props in the frame loop** — the repo's lint forbids it. Shared

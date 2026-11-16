@@ -4,9 +4,9 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useReducedMotion } from "framer-motion";
-import { ArrowUpRight, Check, Pause, Play, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, LayoutGrid, Pause, Play, RotateCcw } from "lucide-react";
 import { engine, now, setPartBuilt, type BuildItem } from "./engine";
-import { AGENTS, FIGURES, INK } from "./figures";
+import { AGENTS, FIGURES } from "./figures";
 import { getGreeting } from "../hero-intro";
 
 // three.js only runs in the browser, and it is heavy: load the scene as its
@@ -20,11 +20,16 @@ const SERIF = { fontFamily: "var(--font-serif), Georgia, serif" };
 const TRAVEL = 0.5; // seconds an agent takes to reach its part
 const STAGGER = 0.25; // seconds between consecutive parts setting off
 
-// The log while building and the result card afterwards share one slot, to the
-// right of the figure. It narrows on a narrow stage (container width, because
-// the sidebar eats into the viewport).
-const PANEL =
-  "absolute right-6 top-1/2 z-20 w-[280px] -translate-y-1/2 rounded-[1.25rem] border border-black/[0.06] bg-white/90 p-5 shadow-[0_14px_36px_rgba(35,29,16,0.1)] backdrop-blur-xl @4xl:right-10 @4xl:w-[320px] @4xl:p-6 xl:right-14";
+// Small text label above a block: "FIG. 1 — BUILT IN 3.2S".
+const LABEL = "text-[11px] font-semibold uppercase tracking-[0.16em] text-black/45";
+// The big line of the bottom-left block: a project title, or the invitation.
+const TITLE = "mt-3 text-[clamp(1.6rem,2.7vw,2.5rem)] font-medium leading-[1.02] tracking-[-0.035em] text-[#151515]";
+const ROUND =
+  "inline-flex size-9 items-center justify-center rounded-full border border-black/10 text-black/70 transition hover:border-black/25 hover:text-black disabled:opacity-40";
+const GHOST =
+  "inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-black/55 transition hover:bg-black/[0.05] hover:text-black";
+const KEY =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] border border-black/15 px-1 text-[11px] leading-none text-black/60";
 
 const DESKTOP = "(min-width: 1024px)";
 const subscribeDesktop = (onChange: () => void) => {
@@ -171,10 +176,40 @@ export function BlueprintStage() {
 
   const onReady = useCallback(() => setReady(true), []);
 
+  /** The next or previous figure; from the whole sheet, the first or the last. */
+  const step = useCallback(
+    (dir: 1 | -1) => {
+      const i = focus ? FIGURES.findIndex((f) => f.id === focus) : dir === 1 ? -1 : 0;
+      select(FIGURES[(i + dir + FIGURES.length) % FIGURES.length].id);
+    },
+    [focus, select],
+  );
+
+  // ← → flip through the projects, Esc goes back to the sheet — but only
+  // while the stage is what the visitor is looking at, and never while typing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+      const stage = document.getElementById("stage");
+      if (!stage || stage.offsetParent === null || stage.getBoundingClientRect().bottom < window.innerHeight * 0.5) return;
+      if (e.key === "ArrowRight") step(1);
+      else if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === "Escape") setFocus(null);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [step]);
+
   const focused = focus ? FIGURES.find((f) => f.id === focus)! : null;
   const focusedBuilt = focused ? built[focused.id] !== undefined : false;
   const buildingDef = building ? FIGURES.find((f) => f.id === building)! : null;
   const anyBuilt = Object.keys(built).length > 0 || building !== null;
+  const focusIndex = focused ? FIGURES.indexOf(focused) : -1;
+  const buildingHere = buildingDef !== null && focus === building;
 
   return (
     // A little short of the full screen, so the next section peeks in and
@@ -238,138 +273,152 @@ export function BlueprintStage() {
         )}
       </div>
 
-      {/* Intro: the hero statement, small, so the sheet has the stage. */}
+      {/* Top left: the hero statement, at headline size. The figure sits to
+          the right of and below it. */}
       <div className="pointer-events-none absolute left-10 top-8 z-10 xl:left-14">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black/40">{greeting} — I&apos;m Tony</p>
-        <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-black/70">A Staff Product Designer</p>
+        <p className={LABEL}>
+          {/* On a narrow stage the controls need the room: keep the role, drop the greeting. */}
+          <span className="hidden @4xl:inline">
+            {greeting} — I&apos;m Tony<span className="mx-2 text-black/20">/</span>
+          </span>
+          <span className="text-black/75">A Staff Product Designer</span>
+        </p>
         <h1
-          className="mt-4 text-[clamp(1.2rem,2.05vw,1.85rem)] font-black uppercase leading-[0.98] tracking-[-0.06em] text-[#151515]"
-          style={{ WebkitTextStroke: "2px #ffffff", paintOrder: "stroke" }}
+          className="mt-5 text-[clamp(1.55rem,2.9vw,2.75rem)] font-black uppercase leading-[0.95] tracking-[-0.065em] text-[#151515]"
+          style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
         >
           10+ years<I>shaping</I> interfaces<I>for</I> millions
           <br />
           <I start>at</I> TikTok, Airbnb, CloudKitchens<I>&amp;</I> DiDi
         </h1>
-        {/* The hint has done its job once the visitor has picked something. */}
-        {!focused && !anyBuilt ? <p className="mt-4 text-[12px] font-medium text-black/45">Pick a drawing. My agents build it.</p> : null}
       </div>
 
-      <div className="absolute right-10 top-8 z-30 flex items-center gap-2 xl:right-14">
-        {focused ? (
-          <button
-            type="button"
-            onClick={() => setFocus(null)}
-            className="inline-flex h-9 items-center rounded-full bg-black/[0.05] px-3.5 text-[12px] font-medium text-black/66 transition hover:bg-black/[0.1] hover:text-black"
-          >
-            ← Whole sheet
-          </button>
-        ) : null}
+      {/* Top right: where you are in the set, and the way through it. */}
+      <div className="absolute right-10 top-6 z-30 flex items-center gap-1 xl:right-14">
         {anyBuilt ? (
-          <button
-            type="button"
-            onClick={reset}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-black/[0.05] px-3.5 text-[12px] font-medium text-black/66 transition hover:bg-black/[0.1] hover:text-black"
-          >
+          <button type="button" onClick={reset} className={GHOST}>
             <RotateCcw className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
             Reset
           </button>
         ) : null}
+        {focused ? (
+          <button type="button" onClick={() => setFocus(null)} className={GHOST}>
+            <LayoutGrid className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
+            All
+          </button>
+        ) : null}
+        <span className="mx-2 text-[11px] font-semibold tabular-nums tracking-[0.1em] text-black/45">
+          <span className="text-black/80">{focused ? `0${focusIndex + 1}` : "00"}</span> / 0{FIGURES.length}
+        </span>
+        <button type="button" disabled={!ready} onClick={() => step(-1)} aria-label="Previous project" className={ROUND}>
+          <ArrowLeft className="size-4" strokeWidth={2} aria-hidden="true" />
+        </button>
+        <button type="button" disabled={!ready} onClick={() => step(1)} aria-label="Next project" className={`${ROUND} ml-1`}>
+          <ArrowRight className="size-4" strokeWidth={2} aria-hidden="true" />
+        </button>
       </div>
 
-      {/* Agent log: what each agent is doing, with a pause — the visitor stays
-          in charge. It sits where the result card will appear, so the log
-          turns into the card when the build is done. */}
-      {buildingDef && focus === building ? (
-        <div className={PANEL}>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-black/40">
-              Building {buildingDef.fig}
+      {/* Bottom left: one block of text that is always about what is on the
+          stage — the invitation, then the agents' log, then the case study. */}
+      <div className="absolute bottom-[92px] left-10 z-20 w-[min(340px,40%)] xl:left-14">
+        {focused ? (
+          <>
+            <p className={LABEL}>
+              {focused.fig}
+              <span className="mx-2 text-black/20">—</span>
+              {buildingHere ? (paused ? "Paused" : "Building") : focusedBuilt && built[focused.id] > 0 ? `Built in ${built[focused.id].toFixed(1)}s` : "Built"}
             </p>
-            <button
-              type="button"
-              onClick={togglePause}
-              className="inline-flex h-7 items-center gap-1.5 rounded-full bg-black/[0.05] px-2.5 text-[11px] font-medium text-black/66 transition hover:bg-black/[0.1] hover:text-black"
-            >
-              {paused ? <Play className="size-3" strokeWidth={2.4} aria-hidden="true" /> : <Pause className="size-3" strokeWidth={2.4} aria-hidden="true" />}
-              {paused ? "Resume" : "Pause"}
-            </button>
-          </div>
-          <ul className="mt-3 flex flex-col gap-2">
-            {log.map((line) => (
-              <li key={line.partId} className="flex items-center gap-2 text-[12px] leading-none">
-                <span className="size-2 shrink-0 rounded-full" style={{ background: AGENTS[line.agent].fill, boxShadow: `inset 0 0 0 1px ${AGENTS[line.agent].stroke}` }} />
-                <span className="font-medium text-black/80">{AGENTS[line.agent].short}</span>
-                <span className="truncate text-black/50">{line.label}</span>
-                <span className="ml-auto text-black/40">
-                  {line.done ? <Check className="size-3.5" strokeWidth={2.4} aria-label="done" /> : <span aria-label="working">…</span>}
-                </span>
-              </li>
-            ))}
-            {log.length === 0 ? <li className="text-[12px] leading-none text-black/40">Agents on their way…</li> : null}
-          </ul>
-        </div>
-      ) : null}
-
-      {/* Result card: the built figure's case study. */}
-      {focused && focusedBuilt ? (
-        <div className={PANEL}>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-black/40">
-            {focused.fig}
-            {built[focused.id] > 0 ? ` · Built in ${built[focused.id].toFixed(1)}s` : " · Built"}
-          </p>
-          <h2 className="mt-3 text-2xl font-medium leading-[1.1] tracking-[-0.025em] text-[#151515]">{focused.title}</h2>
-          <p className="mt-3 text-sm leading-6 text-black/60">{focused.desc}</p>
-          <div className="mt-5 flex items-center gap-3">
-            {focused.href ? (
-              <Link
-                href={focused.href}
-                data-cursor="view"
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#171717] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black/75"
-              >
-                Open case study
-                <ArrowUpRight className="size-4" aria-hidden="true" />
-              </Link>
+            <h2 className={TITLE}>{focused.title}</h2>
+            {buildingHere ? (
+              // The agents' log, with a pause: the visitor stays in charge.
+              <>
+                <ul className="mt-5 flex flex-col gap-2">
+                  {log.map((line) => (
+                    <li key={line.partId} className="flex items-center gap-2 text-[12px] leading-none">
+                      <span className="size-2 shrink-0 rounded-full" style={{ background: AGENTS[line.agent].fill, boxShadow: `inset 0 0 0 1px ${AGENTS[line.agent].stroke}` }} />
+                      <span className="font-medium text-black/80">{AGENTS[line.agent].short}</span>
+                      <span className="truncate text-black/50">{line.label}</span>
+                      <span className="ml-auto text-black/40">
+                        {line.done ? <Check className="size-3.5" strokeWidth={2.4} aria-label="done" /> : <span aria-label="working">…</span>}
+                      </span>
+                    </li>
+                  ))}
+                  {log.length === 0 ? <li className="text-[12px] leading-none text-black/40">Agents on their way…</li> : null}
+                </ul>
+                <button type="button" onClick={togglePause} className={`${GHOST} -ml-3 mt-3`}>
+                  {paused ? <Play className="size-3" strokeWidth={2.4} aria-hidden="true" /> : <Pause className="size-3" strokeWidth={2.4} aria-hidden="true" />}
+                  {paused ? "Resume" : "Pause"}
+                </button>
+              </>
             ) : (
-              <span className="inline-flex items-center rounded-full bg-black/[0.05] px-3.5 py-2 text-[12px] font-medium text-black/60">
-                {focused.status}
-              </span>
-            )}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Prompt: ask the agents for a figure. */}
-      <div className="absolute inset-x-0 bottom-6 z-30 flex flex-col items-center gap-2 px-4">
-        <div className="flex max-w-full items-center gap-2 overflow-x-auto rounded-full border border-black/[0.08] bg-white/80 p-1.5 shadow-[0_10px_32px_rgba(35,29,16,0.1)] backdrop-blur-xl">
-          <span className="shrink-0 pl-3 pr-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-black/40">Build</span>
-          {FIGURES.map((f) => {
-            const isBuilt = built[f.id] !== undefined;
-            const isBuilding = building === f.id;
-            const isFocus = focus === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                disabled={!ready}
-                onClick={() => select(f.id)}
-                aria-pressed={isFocus}
-                className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-[13px] font-medium transition disabled:opacity-40 ${
-                  isFocus ? "bg-[#171717] text-white" : "bg-black/[0.05] text-black/70 hover:bg-black/[0.1] hover:text-black"
-                }`}
-              >
-                {isBuilt ? (
-                  <Check className="size-3.5" strokeWidth={2.6} aria-label="built" />
-                ) : isBuilding ? (
-                  <span className="availability-dot" aria-label="building" />
+              <>
+                <p className="mt-4 text-sm leading-6 text-black/60">{focused.desc}</p>
+                {focused.href ? (
+                  <Link
+                    href={focused.href}
+                    data-cursor="view"
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-[#171717] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black/75"
+                  >
+                    Open case study
+                    <ArrowUpRight className="size-4" aria-hidden="true" />
+                  </Link>
                 ) : null}
-                {f.title}
-              </button>
-            );
-          })}
-        </div>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <p className={LABEL}>
+              The sheet<span className="mx-2 text-black/20">—</span>
+              {FIGURES.length} figures
+            </p>
+            <p className={TITLE}>
+              Pick a drawing.
+              <br />
+              <span className="text-black/35">My agents build it.</span>
+            </p>
+            <p className="mt-5 flex items-center gap-1.5 text-[12px] text-black/45">
+              <kbd className={KEY}>←</kbd>
+              <kbd className={KEY}>→</kbd>
+              <span className="ml-1">to flip through</span>
+            </p>
+          </>
+        )}
       </div>
 
-      {/* The five sticker agents. The scene moves them every frame. */}
+      {/* Bottom: the index of projects, the stage's own table of contents. */}
+      <nav aria-label="Projects" className="absolute inset-x-10 bottom-0 z-30 grid h-16 grid-cols-4 border-t border-black/10 xl:inset-x-14">
+        {FIGURES.map((f, i) => {
+          const isBuilt = built[f.id] !== undefined;
+          const isBuilding = building === f.id;
+          const isFocus = focus === f.id;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              disabled={!ready}
+              onClick={() => select(f.id)}
+              aria-pressed={isFocus}
+              className={`group relative flex min-w-0 items-center gap-3 pr-4 text-left transition disabled:opacity-40 ${
+                isFocus ? "text-[#151515]" : "text-black/50 hover:text-black"
+              }`}
+            >
+              <span className={`absolute -top-px left-0 h-[2px] bg-[#151515] transition-all duration-300 ${isFocus ? "w-full" : "w-0 group-hover:w-6"}`} />
+              <span className="text-[11px] font-semibold tabular-nums tracking-[0.1em] opacity-60">0{i + 1}</span>
+              <span className="truncate text-[13px] font-medium">{f.title}</span>
+              {isBuilt ? (
+                <Check className="size-3.5 shrink-0 opacity-60" strokeWidth={2.6} aria-label="built" />
+              ) : isBuilding ? (
+                <span className="availability-dot shrink-0" aria-label="building" />
+              ) : null}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* The five sticker agents. The scene moves them every frame. The
+          pointer is a present-day multiplayer cursor: no tail, soft corners,
+          the agent's colour with a white edge. */}
       <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden="true">
         {AGENTS.map((agent, i) => (
           <div
@@ -379,8 +428,14 @@ export function BlueprintStage() {
             }}
             className="absolute left-0 top-0 opacity-0 will-change-transform"
           >
-            <svg width="18" height="21" viewBox="0 0 18 21" className="drop-shadow-[0_2px_3px_rgba(0,0,0,0.18)]">
-              <path d="M1.2 1.2v15.6l4.3-3.7 2.9 6.3 2.6-1.2-2.9-6.2h5.6L1.2 1.2Z" fill={agent.fill} stroke={INK} strokeWidth="1.4" strokeLinejoin="round" />
+            <svg width="22" height="22" viewBox="0 0 22 22" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.22)]">
+              <path
+                d="M4.2 3.4 18.6 9.1c.5.2.5.9 0 1.1l-5.6 2.1c-.3.1-.5.3-.6.6l-2.2 5.6c-.2.5-.9.5-1.1 0L3.4 4.2c-.2-.5.3-1 .8-.8Z"
+                fill={agent.stroke}
+                stroke="#ffffff"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
             </svg>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -389,7 +444,7 @@ export function BlueprintStage() {
               width={agent.w}
               height={38}
               draggable={false}
-              className="absolute left-[13px] top-[17px] block select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)]"
+              className="absolute left-[16px] top-[17px] block select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)] transition-opacity duration-300"
               style={{ height: 22, width: "auto", maxWidth: "none", transform: `rotate(${i % 2 === 0 ? -2 : 2}deg)` }}
             />
           </div>

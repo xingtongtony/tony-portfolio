@@ -358,7 +358,7 @@ export const FIGURES: FigureDef[] = [
         color: CORAL,
         shapes: [
           { k: "cyl", r: 0.34, h: 0.18, pos: [0.1, 0.21, 0.5], bevel: 0.085 },
-          { k: "torus", R: 0.3, tube: 0.042, pos: [0.1, 0.3, 0.5], rot: flat() },
+          { k: "torus", R: 0.312, tube: 0.028, pos: [0.1, 0.3, 0.5], rot: flat() },
           { k: "cyl", r: 0.27, h: 0.03, pos: [0.1, 0.305, 0.5], color: SAND, bevel: 0.005 },
           // An egg and two scallions.
           { k: "cyl", r: 0.085, h: 0.018, pos: [0.0, 0.326, 0.48], color: WHITE },
@@ -603,10 +603,10 @@ export const FIGURES: FigureDef[] = [
         agent: 0,
         color: WHITE,
         shapes: [
-          { k: "ball", r: 0.16, pos: [0.84, 1.52, -0.5] },
-          { k: "ball", r: 0.21, pos: [1.04, 1.6, -0.5] },
-          { k: "ball", r: 0.15, pos: [1.24, 1.51, -0.5] },
-          { k: "ball", r: 0.13, pos: [0.98, 1.47, -0.42] },
+          { k: "ball", r: 0.16, pos: [-0.7, 1.3, -0.55] },
+          { k: "ball", r: 0.21, pos: [-0.5, 1.38, -0.55] },
+          { k: "ball", r: 0.15, pos: [-0.3, 1.29, -0.55] },
+          { k: "ball", r: 0.13, pos: [-0.56, 1.25, -0.47] },
         ],
       },
     ],

@@ -11,6 +11,7 @@
 //        "label:<text>|<background>|<ink>"  a silk-screened label
 
 import * as THREE from "three";
+import { engine } from "./engine";
 import { PALETTE } from "./figures";
 
 const cache = new Map<string, THREE.Texture>();
@@ -132,7 +133,9 @@ export function getTexture(key: string): THREE.Texture {
   let tex = cache.get(key);
   if (tex) return tex;
   if (key.startsWith("/")) {
-    tex = new THREE.TextureLoader().load(key);
+    tex = new THREE.TextureLoader().load(key, () => {
+      engine.dirty = true;
+    });
   } else if (key.startsWith("label:")) {
     const [text, background = PALETTE.cream, ink = INK] = key.slice(6).split("|");
     tex = new THREE.CanvasTexture(label(text, background, ink));

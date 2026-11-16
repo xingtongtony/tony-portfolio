@@ -35,10 +35,15 @@ export type Engine = {
   agentEls: (HTMLElement | null)[];
   /** DOM labels pinned to 3D points: `cap/<figure>` and `n/<figure>/<numeral>`. */
   labelEls: Record<string, HTMLElement | null>;
+  /**
+   * Set when something outside the frame loop changed the 3D picture (a part
+   * jumped state, a texture arrived). The scene only redraws when it has to.
+   */
+  dirty: boolean;
 };
 
 /** There is one stage on the page, so one engine. */
-export const engine: Engine = { parts: {}, build: null, agentEls: [], labelEls: {} };
+export const engine: Engine = { parts: {}, build: null, agentEls: [], labelEls: {}, dirty: true };
 
 export const now = () => performance.now() / 1000;
 
@@ -51,4 +56,5 @@ export function setPartBuilt(rt: PartRuntime, built: boolean) {
   rt.h.value = built ? 1e3 : -1e3;
   rt.bandOn.value = 0;
   rt.progress = built ? 1 : 0;
+  engine.dirty = true;
 }

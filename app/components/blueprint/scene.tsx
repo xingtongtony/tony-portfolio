@@ -26,7 +26,7 @@ const CAM_UP = new THREE.Vector3().crossVectors(DIR, RIGHT);
 const CAPTION_OFFSET = new THREE.Vector3(0.2, 0, 1.75);
 
 const COL = 4.9; // spacing between columns, world units (= screen units)
-const ROW = 5.8; // spacing between rows on the ground (foreshortened on screen)
+const ROW = 6.5; // spacing between rows on the ground (foreshortened on screen)
 const SLOTS: [number, number][] = [
   [-1, 1],
   [1, 1],
@@ -45,11 +45,18 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
 const damp = (from: number, to: number, k: number, dt: number) => from + (to - from) * (1 - Math.exp(-k * dt));
 
-/** Where an idle agent waits: a row just above the prompt chips. */
+/** Where an idle agent waits: a row along the bottom right, clear of the project text on the left. */
 function dock(i: number, w: number, h: number): [number, number] {
-  const gap = Math.min(150, (w - 60) / 5);
-  return [w / 2 + (i - 2) * gap - 58, h - 126];
+  // A narrow stage has no room for five name tags side by side: the agents
+  // wait as bare cursors there, and show their tags when they go to work.
+  if (w < 896) return [w - 66 - (4 - i) * 34, h - 112];
+  const gap = Math.min(150, (w - 570) / 4);
+  return [w - 190 - (4 - i) * gap, h - 122];
 }
+
+// The shadow-casting lights, so the frame loop can ask them for a finer
+// shadow on the frame that stays on screen (see soft-shadows.ts).
+const shadowLights: (THREE.DirectionalLight | null)[] = [null, null];
 
 export type SceneProps = {
   focus: string | null;
@@ -109,11 +116,16 @@ function Studio() {
 
   return (
     <>
-      <Environment map={environment} environmentIntensity={0.3} />
-      <hemisphereLight args={["#ffffff", PALETTE.ground, 0.8]} />
+      <Environment map={environment} environmentIntensity={0.4} />
+      {/* Warm from above, lilac from below: shaded sides stay coloured, never grey. */}
+      <hemisphereLight args={["#fff5e8", PALETTE.lilac, 0.72]} />
       <directionalLight
+        ref={(light) => {
+          shadowLights[0] = light;
+        }}
+        color="#fff3e2"
         position={[-5, 14, 7]}
-        intensity={1.3}
+        intensity={1.35}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0006}
@@ -126,6 +138,9 @@ function Studio() {
         <orthographicCamera attach="shadow-camera" args={[-9, 9, 9, -9, 8, 26]} />
       </directionalLight>
       <directionalLight
+        ref={(light) => {
+          shadowLights[1] = light;
+        }}
         position={[0.6, 20, 1.2]}
         intensity={0.8}
         castShadow
@@ -152,6 +167,9 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   const fades = useRef(FIGURES.map(() => 0));
   const camTarget = useRef<THREE.Vector3 | null>(null);
   const agentPos = useRef(AGENTS.map(() => ({ x: 0, y: 0, placed: false })));
+  const swayStart = useRef(FIGURES.map(() => -1));
+  // What the last drawn frame looked like, to tell when a new one is needed.
+  const drawn = useRef({ w: 0, h: 0, dpr: 0, linger: 0 });
   // The frame loop reads the latest props through this ref.
   const live = useRef({ focus, reducedMotion, onPartEvent, onBuilt });
   useEffect(() => {
@@ -180,25 +198,29 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     const w = state.size.width;
     const h = state.size.height;
     const time = now();
+    // The 3D picture is expensive to draw (soft shadows on every pixel), so it
+    // is only redrawn when something in it moved. The agents and labels are
+    // DOM and keep animating for free.
+    let dirty = eng.dirty;
+    eng.dirty = false;
 
     // ── Camera: overview of the sheet, or framed on the focused figure ──
     // Same threshold as the overlay's `@4xl` container query (56rem).
     const wide = w >= 896;
-    const padTop = 150; // the intro
-    const padBottom = 196; // the agents' dock and the prompt
+    const padTop = 140; // the headline
+    const padBottom = 104; // the project index
+    // The subject sits right of centre: the left is the headline and the project text.
     const focusIndex = focusId ? FIGURES.findIndex((f) => f.id === focusId) : -1;
+    const shiftRight = w * (focusIndex < 0 ? (wide ? 0.105 : 0.14) : wide ? 0.13 : 0.15);
     let zoomTo: number;
-    let shiftX = 0;
+    const shiftX = -shiftRight;
     const shiftY = (padBottom - padTop) / 2;
     const base = new THREE.Vector3(0, 0.9, 0);
     if (focusIndex < 0) {
-      zoomTo = Math.min(w / 10.2, (h - padTop - padBottom) / 6.3);
+      zoomTo = Math.min((w * (wide ? 0.66 : 0.6)) / 10.2, (h - padTop - padBottom) / 6.7);
     } else {
-      // Leave room for the log / result card to the right of the figure.
-      const panel = wide ? 380 : 316;
       base.copy(positions[focusIndex]).setY(0.95);
-      zoomTo = Math.min((w - panel) / 4.9, (h - padTop - padBottom) / 3.7);
-      shiftX = panel / 2;
+      zoomTo = Math.min((w * 0.62) / 4.9, (h - padTop - padBottom) / 3.7);
     }
     zoomTo = Math.min(210, Math.max(22, zoomTo));
     // Looking at a point to the right of / below the subject moves it left / up.
@@ -209,10 +231,15 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     } else if (reduced) {
       camTarget.current.copy(base);
       cam.zoom = zoomTo;
-    } else {
+    } else if (Math.abs(cam.zoom - zoomTo) > 0.01 || camTarget.current.distanceToSquared(base) > 1e-7) {
       const k = 1 - Math.exp(-4.2 * dt);
       camTarget.current.lerp(base, k);
       cam.zoom = damp(cam.zoom, zoomTo, 4.2, dt);
+      dirty = true;
+    } else {
+      // Arrived: stop exactly on target.
+      camTarget.current.copy(base);
+      cam.zoom = zoomTo;
     }
     cam.position.copy(camTarget.current).addScaledVector(DIR, 40);
     cam.lookAt(camTarget.current);
@@ -222,6 +249,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     // ── Build engine: advance every scheduled part ──
     const build = eng.build;
     if (build) {
+      if (!build.paused) dirty = true;
       const t = (build.paused ? build.pausedAt : time) - build.t0;
       let allDone = true;
       for (const item of build.items) {
@@ -254,6 +282,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       if (!el) continue;
       let [tx, ty] = dock(i, w, h);
       let working = false;
+      let docked = true;
       if (build && !eng.build?.paused) {
         const item = build.items.find((it) => it.agent === i && !it.ended);
         if (item && buildTime >= item.tGo) {
@@ -263,6 +292,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
           tx = ((v.x + 1) / 2) * w + (i - 2) * 26;
           ty = ((1 - v.y) / 2) * h + (i % 2) * 24 - 6;
           working = item.started;
+          docked = false;
         }
       } else if (build?.paused) {
         // Paused: hold wherever the agent is.
@@ -289,6 +319,8 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       }
       el.style.transform = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
       el.style.opacity = "1";
+      const tag = el.lastElementChild as HTMLElement | null;
+      if (tag) tag.style.opacity = docked && !wide ? "0" : "1";
     }
 
     // ── Labels: captions and numerals are DOM elements pinned to 3D points ──
@@ -302,7 +334,12 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     figs.forEach((fig, i) => {
       // While one figure is in focus the others fade into the paper.
       const fadeTo = focusId && fig.def.id !== focusId ? 1 : 0;
-      fades.current[i] = reduced ? fadeTo : damp(fades.current[i], fadeTo, 7, dt);
+      if (Math.abs(fades.current[i] - fadeTo) > 0.003) {
+        fades.current[i] = reduced ? fadeTo : damp(fades.current[i], fadeTo, 7, dt);
+        dirty = true;
+      } else {
+        fades.current[i] = fadeTo;
+      }
       const fade = fades.current[i];
       fig.setFade(fade);
       const callouts = calloutRefs.current[i];
@@ -315,15 +352,45 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       }
     });
 
-    // ── The built, focused figure turns slowly so it reads as an object, not a picture ──
+    // ── A figure that has just been built turns once, slowly, so it reads as
+    // an object rather than a picture — then comes to rest, and so does the GPU.
     figs.forEach((fig, i) => {
       const sway = swayRefs.current[i];
       if (!sway) return;
       const built = Object.values(fig.parts).every((rt) => rt.progress >= 1);
-      const turn = !reduced && built && fig.def.id === focusId ? 0.3 * Math.sin(time * 0.45) : 0;
-      sway.rotation.y = damp(sway.rotation.y, turn, 3, dt);
+      const presenting = !reduced && built && fig.def.id === focusId;
+      if (!presenting) swayStart.current[i] = -1;
+      else if (swayStart.current[i] < 0) swayStart.current[i] = time;
+      const age = presenting ? time - swayStart.current[i] : 0;
+      const turn = presenting && age < 14 ? 0.3 * Math.sin(age * 0.9) * Math.exp(-age / 5) : 0;
+      if (turn !== 0 || Math.abs(sway.rotation.y) > 1e-4) {
+        sway.rotation.y = damp(sway.rotation.y, turn, 3, dt);
+        dirty = true;
+      } else {
+        sway.rotation.y = 0;
+      }
     });
-  });
+
+    // ── Draw, if there is anything new to see ──
+    const seen = drawn.current;
+    const dpr = state.viewport.dpr;
+    if (seen.w !== w || seen.h !== h || seen.dpr !== dpr) {
+      seen.w = w;
+      seen.h = h;
+      seen.dpr = dpr;
+      dirty = true;
+    }
+    // A couple of extra frames after the last change, so nothing is left half-settled.
+    if (dirty) seen.linger = 3;
+    if (seen.linger > 0) {
+      // The last frame of a run is the one that stays up: draw it with the fine shadows.
+      const still = seen.linger === 1 ? 1 : 0;
+      for (const light of shadowLights) if (light) light.shadow.radius = (light.shadow.radius % 1) + still;
+      seen.linger--;
+      state.gl.render(state.scene, state.camera);
+    }
+    // Priority 1 hands rendering to this callback (see above).
+  }, 1);
 
   return (
     <>
