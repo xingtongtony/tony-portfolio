@@ -84,6 +84,13 @@ the sheet.
 - **Ink lines must sit on the surface.** Lines are drawn along the middle of
   each fillet (`softBoxLines`, the inset outline for slabs). A line inside the
   mesh is hidden by the paper fill; one outside it floats.
+- **Two faces in one plane flicker.** If two shapes share a face — same width,
+  same end, same top — the renderer cannot tell which is in front and the
+  surface strobes as soon as anything moves (the slider's fill on its track did
+  this). Make one clearly proud of the other (≥ 0.004) on every side; never
+  give an overlay its base's exact size or height. `npm run check` runs
+  `scripts/blueprint-coplanar.mjs`, which finds these in axis-aligned shapes;
+  tilted and round ones still need a look by eye.
 - **A shimmering model means continuous redraw.** The shadow samples are laid
   out per screen pixel; redraw a moving figure every frame and its penumbras
   crawl. Nothing should move forever — the built figure turns once and stops.

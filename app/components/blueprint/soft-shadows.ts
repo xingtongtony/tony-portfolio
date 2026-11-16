@@ -40,8 +40,8 @@ const HELPERS = /* glsl */ `
 		// move, 1 for the frame that stays on screen once they stop.
 		bool still = light >= 1.0;
 		float lightSize = fract( light );
-		int blockerCount = still ? 32 : 12;
-		int tapCount = still ? 72 : 18;
+		int blockerCount = still ? 32 : 16;
+		int tapCount = still ? 72 : 28;
 
 		// How the receiver's depth changes across the map (receiver-plane bias).
 		vec3 dx = dFdx( coord );

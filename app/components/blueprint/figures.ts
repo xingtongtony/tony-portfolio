@@ -324,7 +324,7 @@ export const FIGURES: FigureDef[] = [
           // Grip ridges on the lid, a lip around the paper slot.
           ...row(3, [0, 0, 0.07], { k: "slab", size: [0.46, 0.028], t: 0.014, r: 0.014, pos: [0.74, 0.668, -0.39], rot: flat(), color: BLUE }),
           { k: "slab", size: [0.66, 0.15], t: 0.016, r: 0.06, pos: [0.74, 0.624, 0.02], rot: flat() },
-          { k: "box", size: [0.56, 0.02, 0.07], pos: [0.74, 0.622, 0.02], color: INKY },
+          { k: "box", size: [0.56, 0.02, 0.07], pos: [0.74, 0.627, 0.02], color: INKY },
           { k: "cyl", r: 0.022, h: 0.012, pos: [0.94, 0.3, 0.224], rot: FACE, color: GREEN, finish: "led" },
           { k: "cyl", r: 0.022, h: 0.012, pos: [0.86, 0.3, 0.224], rot: FACE, color: LILAC },
           { k: "slab", size: [0.18, 0.07], t: 0.016, r: 0.035, pos: [0.6, 0.3, 0.226], color: YELLOW, finish: "soft" },
@@ -442,7 +442,8 @@ export const FIGURES: FigureDef[] = [
         color: CREAM,
         shapes: [
           { k: "slab", size: [1.25, 0.1], t: 0.07, r: 0.05, pos: [-0.65, 0.155, -0.02], rot: flat() },
-          { k: "slab", size: [0.6, 0.1], t: 0.074, r: 0.05, pos: [-0.975, 0.157, -0.02], rot: flat(), color: BLUE },
+          // The fill wraps the track: wider, taller and past its end, so no two faces share a plane.
+          { k: "slab", size: [0.62, 0.124], t: 0.086, r: 0.062, pos: [-0.975, 0.163, -0.02], rot: flat(), color: BLUE },
           { k: "cyl", r: 0.12, h: 0.12, pos: [-0.65, 0.2, -0.02], color: YELLOW, bevel: 0.05 },
           // The value tooltip floating over the thumb.
           { k: "slab", size: [0.26, 0.14], t: 0.07, r: 0.05, pos: [-0.65, 0.46, -0.02], color: PLUM, bevel: 0.022 },

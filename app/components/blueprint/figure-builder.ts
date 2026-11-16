@@ -74,10 +74,10 @@ const FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
 /**
  * Clay is not perfectly smooth. A fine noise, fixed to the object, tilts the
  * shading normal a few degrees, so matte surfaces catch the light with a
- * slight tooth instead of looking like flat vector fills. It fades out when
- * the grain gets smaller than a pixel, so the overview does not shimmer.
+ * slight tooth instead of looking like flat vector fills. It fades out long
+ * before a grain gets as small as a pixel, so nothing shimmers in motion.
  */
-const GRAIN: Record<Finish, number> = { clay: 0.065, soft: 0.03, print: 0.04, screen: 0, led: 0 };
+const GRAIN: Record<Finish, number> = { clay: 0.05, soft: 0.02, print: 0.03, screen: 0, led: 0 };
 const GRAIN_NOISE = /* glsl */ `
 float grainHash( vec3 p ) {
   p = fract( p * 0.3183099 + 0.1 );
@@ -96,9 +96,12 @@ float grainNoise( vec3 x ) {
 `;
 const GRAIN_NORMAL = /* glsl */ `
 if ( uGrain > 0.0 ) {
-  vec3 gp = vGrainPos * 125.0;
+  // Each grain must cover several pixels. At a pixel or less the noise is
+  // sampled differently every frame and the whole surface sparkles when the
+  // figure turns, so the grain is coarse and fades out well before that.
+  vec3 gp = vGrainPos * 52.0;
   float gw = max( fwidth( gp.x ), max( fwidth( gp.y ), fwidth( gp.z ) ) );
-  float ga = uGrain * ( 1.0 - smoothstep( 0.45, 1.1, gw ) );
+  float ga = uGrain * ( 1.0 - smoothstep( 0.2, 0.34, gw ) );
   vec3 g = vec3( grainNoise( gp ), grainNoise( gp + 19.7 ), grainNoise( gp + 43.3 ) ) - 0.5;
   normal = normalize( normal + g * ga );
 }

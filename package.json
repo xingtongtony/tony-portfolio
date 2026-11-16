@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs && node scripts/blueprint-coplanar.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
