@@ -89,13 +89,13 @@ const bufferSize = new THREE.Vector2();
  * the accents read against lilac instead of against white, which is most of
  * what keeps them from looking loud — without competing with the object.
  */
-function makePoolTexture(): THREE.CanvasTexture {
+function makePoolTexture(color: string): THREE.CanvasTexture {
   const size = 512;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const g = canvas.getContext("2d")!;
-  const n = parseInt(PALETTE.ground.slice(1), 16);
+  const n = parseInt(color.slice(1), 16);
   const rgba = (a: number) => `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
   const fade = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
   fade.addColorStop(0, rgba(0.82));
@@ -228,8 +228,8 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   // Where the camera aims for each figure: the middle of what it looks like
   // on screen, so a flat figure and a tall one both sit centred.
   const centers = useRef<THREE.Vector3[]>([]);
-  const pool = useMemo(makePoolTexture, []);
-  useEffect(() => () => pool.dispose(), [pool]);
+  const pools = useMemo(() => FIGURES.map((figure) => makePoolTexture(figure.palette.ground)), []);
+  useEffect(() => () => pools.forEach((texture) => texture.dispose()), [pools]);
   const poolRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   // What the last drawn frame looked like, to tell when a new one is needed.
   const drawn = useRef({ w: 0, h: 0, count: 0, texture: null as THREE.FramebufferTexture | null });
@@ -538,7 +538,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
               ref={(material) => {
                 poolRefs.current[i] = material;
               }}
-              map={pool}
+              map={pools[i]}
               transparent
               opacity={0}
               depthWrite={false}

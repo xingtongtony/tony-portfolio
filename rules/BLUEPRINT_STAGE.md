@@ -31,9 +31,9 @@ that looks rough.
 | Rule | In practice |
 | --- | --- |
 | Flat faces, tight bevels | A solid is flat planes with a small bevel (the default, about 0.02) that catches a line of light — not a big fillet on everything, which reads as an inflated blob and hides the three tones of top, front and side. Nothing is razor-sharp either; hairline plates (< 0.02) are the only unbevelled things. Round things (balls, capsules, rings) are round because the object is, not because the edge was softened. |
-| Harmony over realism | Colour comes from `PALETTE` in `figures.ts` only. A TV may be plum, a counter lilac. Never add a one-off hex to a shape. |
-| One family | All four figures stand on the same `ground` lilac with a lighter `mist` inlay and a darker lower step, so they read as a set. |
-| Two accents | Lilac and plum own most of the area, cream and sand are the neutrals, and only coral and yellow are accents — small, and no others. Green is for plants and "on", blue for glass; both are muted. A figure that uses every colour at equal weight looks busy however nice each colour is. |
+| Harmony over realism | Colour comes from the figure's palette roles in `figures.ts` only. A TV may be plum, a counter lilac. Never add a one-off hex to a shape. |
+| A world each | Every figure has its own palette (`THEMES` in `figures.ts`: lilac, peach, blue, mint), so the four are not one object repeated. The palettes share the same roles and the same recipe, which is what keeps them a set. |
+| Two accents | Inside a world, its own hue (ground, mist, mid, deep) owns most of the area, cream and sand are the neutrals, and only two accents are strong — small, and no others. Green is for plants and "on", blue for glass; both are muted. A figure that uses every colour at equal weight looks busy however nice each colour is. |
 | A scene, not a backdrop | A built figure sits in a pool of the ground colour on the floor that fades to the white page (`makePoolTexture` in `scene.tsx`). The accents then read against lilac instead of white. It must stop short of the neighbouring figures: unbuilt ones are white paper and would show as white shapes on it. |
 | Built like the thing | A roof is boards with thickness that overhang the walls, not a prism with stripes; a window is a frame standing proud with the glass set back, not a disc on the wall. If a part would look stuck on in real life, model how it is actually made. |
 | Matte clay | Default finish is `clay`. `soft` for small pressable things, `print` for paper, `screen` / `led` for things that glow. No metal, no gloss. |
