@@ -12,7 +12,10 @@ object). Re-run it after changing the palette or the logo.
 import json, math, os
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-AZ, EL, S = 0.56, 0.5, 100.0
+# S is pixels per world unit: the loader shows the art at its natural size, so
+# this is what sets how big the object is on the page. Line weight and the
+# numerals do not scale with it.
+AZ, EL, S = 0.56, 0.5, 58.0
 DIR = (math.sin(AZ) * math.cos(EL), math.sin(EL), math.cos(AZ) * math.cos(EL))
 RIGHT = (math.cos(AZ), 0.0, -math.sin(AZ))
 UP = (-math.sin(EL) * math.sin(AZ), math.cos(EL), -math.sin(EL) * math.cos(AZ))
@@ -185,14 +188,14 @@ solid = [proj(p) for f in faces for p in f[3]]
 # The canvas is centred on the object itself, with the same room either side
 # for a numeral, so centring the image centres the object.
 cx = (min(p[0] for p in solid) + max(p[0] for p in solid)) / 2
-half_w = (max(p[0] for p in solid) - min(p[0] for p in solid)) / 2 + 112
+half_w = (max(p[0] for p in solid) - min(p[0] for p in solid)) / 2 + 84
 top_y = min(p[1] for p in solid)
 bot_y = max(p[1] for p in solid)
 # The pool of colour on the floor must fit inside the canvas, or its edge shows as a straight cut.
 pool_x, pool_y = proj((0.2, 0.0, -0.05))
 POOL_RX, POOL_RY = half_w * 0.9, half_w * 0.36
-x0, y0 = cx - half_w, min(top_y - 46, pool_y - POOL_RY - 4)
-W, H = 2 * half_w, max(bot_y + 46, pool_y + POOL_RY + 4) - y0
+x0, y0 = cx - half_w, min(top_y - 34, pool_y - POOL_RY - 4)
+W, H = 2 * half_w, max(bot_y + 34, pool_y + POOL_RY + 4) - y0
 fmt = lambda pts: " ".join("%.1f,%.1f" % (x - x0, y - y0) for x, y in (proj(p) for p in pts))
 at = lambda p: tuple(round(v - o, 1) for v, o in zip(proj(p), (x0, y0)))
 
@@ -200,11 +203,11 @@ line = ['<g fill="%s" stroke="%s" stroke-width="1.25" stroke-linejoin="round">' 
 line += ['<polygon points="%s"/>' % fmt(f[3]) for f in faces if f[2]]
 line.append("</g>")
 # Two patent callouts: a leader from the object to a numeral, one each side.
-edge_l, edge_r = cx - half_w + 46, cx + half_w - 46
+edge_l, edge_r = cx - half_w + 36, cx + half_w - 36
 for label, src, side in (("002", (WIDTH / 2 - 0.12, HEIGHT, ZF), 1), ("004", (-BW / 2 - STEP_OUT + 0.1, STEP_H, BD / 2 + STEP_OUT - 0.12), -1)):
     ax, ay = at(src)
     bx = round((edge_r if side > 0 else edge_l) - x0, 1)
-    by = round(ay - 26, 1)
+    by = round(ay - 18, 1)
     line.append('<path d="M%s %s Q%s %s %s %s" fill="none" stroke="%s" stroke-width="1"/>' % (ax, ay, round((ax + bx) / 2, 1), by, bx, by, INK))
     line.append('<text x="%s" y="%s" text-anchor="%s" font-style="italic" font-size="13" fill="%s" style="font-family:var(--font-serif),Georgia,serif">%s</text>' % (bx + side * 7, round(by + 4.5, 1), "start" if side > 0 else "end", INK, label))
 
@@ -213,8 +216,8 @@ sil = " ".join('M%sZ' % fmt(f[3]).replace(" ", "L") for f in faces if f[1])
 pool_c = (round(pool_x - x0, 1), round(pool_y - y0, 1))
 colour = [
     "<defs>"
-    '<filter id="bp-soft" x="-40%%" y="-40%%" width="180%%" height="180%%"><feGaussianBlur stdDeviation="9"/></filter>'
-    '<filter id="bp-near" x="-40%%" y="-40%%" width="180%%" height="180%%"><feGaussianBlur stdDeviation="3.2"/></filter>'
+    '<filter id="bp-soft" x="-40%%" y="-40%%" width="180%%" height="180%%"><feGaussianBlur stdDeviation="5.4"/></filter>'
+    '<filter id="bp-near" x="-40%%" y="-40%%" width="180%%" height="180%%"><feGaussianBlur stdDeviation="2"/></filter>'
     '<radialGradient id="bp-pool" cx="50%%" cy="50%%" r="50%%"><stop offset="0" stop-color="%s" stop-opacity="0.75"/><stop offset="0.45" stop-color="%s" stop-opacity="0.42"/><stop offset="1" stop-color="%s" stop-opacity="0"/></radialGradient>'
     # Light falls off across the object: brightest toward the key light (upper left), dimmer away from it.
     '<linearGradient id="bp-fall" x1="0.12" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.2"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="%s" stop-opacity="0.2"/></linearGradient>'
@@ -242,7 +245,7 @@ for a, b in zip(poly, poly[1:] + poly[:1]):
         hi.append([(a[0], a[1], ZF), (b[0], b[1], ZF)])
 for seg in hi:
     (ax, ay), (bx, by) = at(seg[0]), at(seg[1])
-    colour.append('<path d="M%s %s L%s %s" stroke="#ffffff" stroke-opacity="0.55" stroke-width="1.1" stroke-linecap="round" fill="none"/>' % (ax, ay, bx, by))
+    colour.append('<path d="M%s %s L%s %s" stroke="#ffffff" stroke-opacity="0.55" stroke-width="0.9" stroke-linecap="round" fill="none"/>' % (ax, ay, bx, by))
 colour.append('<rect x="0" y="0" width="%d" height="%d" fill="url(#bp-fall)" clip-path="url(#bp-sil)"/>' % (round(W), round(H)))
 
 frac = lambda p: (round((proj(p)[0] - x0) / W, 4), round((proj(p)[1] - y0) / H, 4))

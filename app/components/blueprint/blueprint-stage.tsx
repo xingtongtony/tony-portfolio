@@ -306,7 +306,8 @@ export function BlueprintStage() {
               revealed ? "scale-[1.06] lg:translate-x-[140px] xl:translate-x-[162px]" : "scale-100"
             }`}
           >
-            <div className="relative w-[min(460px,58vw)]" style={{ aspectRatio: `${LOADER_ART.width} / ${LOADER_ART.height}` }}>
+            {/* At its natural size: the art is generated at the size it is shown. */}
+            <div className="relative max-w-[80vw]" style={{ width: LOADER_ART.width, aspectRatio: `${LOADER_ART.width} / ${LOADER_ART.height}` }}>
               {/* The drawing appears left to right... */}
               <svg
                 viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
@@ -360,8 +361,8 @@ export function BlueprintStage() {
                         }}
                       >
                         <svg
-                          width="20"
-                          height="20"
+                          width="16"
+                          height="16"
                           viewBox="0 0 22 22"
                           className="block drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]"
                           style={outward < 0 ? { transform: "scaleX(-1)" } : undefined}
@@ -375,8 +376,8 @@ export function BlueprintStage() {
                           width={agent.w}
                           height={38}
                           draggable={false}
-                          className={`absolute top-[16px] block select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)] ${outward < 0 ? "right-[14px]" : "left-[14px]"}`}
-                          style={{ height: 20, width: "auto", maxWidth: "none", transform: `rotate(${outward < 0 ? 2 : -2}deg)` }}
+                          className={`absolute top-[13px] block select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)] ${outward < 0 ? "right-[11px]" : "left-[11px]"}`}
+                          style={{ height: 16, width: "auto", maxWidth: "none", transform: `rotate(${outward < 0 ? 2 : -2}deg)` }}
                         />
                       </div>
                     </div>
