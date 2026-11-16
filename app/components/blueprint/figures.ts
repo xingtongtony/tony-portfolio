@@ -605,10 +605,10 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "cyl", r: 0.08, h: 0.16, pos: [0, 0.74, -0.08] },
             {
               k: "slab",
-              size: [2.2, 1.3],
+              size: [2.2, 1.316],
               t: 0.18,
               r: 0.16,
-              pos: [0, 1.45, -0.08],
+              pos: [0, 1.458, -0.08],
               bevel: 0.025,
             },
           ],
@@ -623,26 +623,26 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             // A dark lip around the panel, then the picture.
             {
               k: "slab",
-              size: [1.9, 1.095],
+              size: [2.06, 1.176],
               t: 0.003,
               r: 0.09,
-              pos: [0, 1.45, 0.0115],
+              pos: [0, 1.458, 0.0115],
               color: INKY,
               finish: "soft",
             },
             {
               k: "slab",
-              size: [1.84, 1.035],
+              size: [2.02, 1.136],
               t: 0.006,
               r: 0.07,
-              pos: [0, 1.45, 0.0135],
+              pos: [0, 1.458, 0.0135],
               map: TV_SCREEN,
             },
             {
               k: "cyl",
               r: 0.012,
               h: 0.006,
-              pos: [0.9, 0.893, 0.012],
+              pos: [0.95, 0.836, 0.012],
               rot: FACE,
               color: CORAL,
               finish: "led",
@@ -911,10 +911,10 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             // Leaning back 0.3 rad on its stand (same tilt as PHONE_FRAME).
             {
               k: "slab",
-              size: [0.76, 1.5],
+              size: [0.76, 1.482],
               t: 0.12,
               r: 0.15,
-              pos: [-0.62, 0.8365, 0.0784],
+              pos: [-0.62, 0.8279, 0.081],
               rot: [-0.3, 0, 0],
               bevel: 0.02,
             },
@@ -930,19 +930,19 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           shapes: [
             {
               k: "slab",
-              size: [0.66, 1.338],
+              size: [0.68, 1.402],
               t: 0.003,
               r: 0.115,
-              pos: [0, 0.75, 0.0615],
+              pos: [0, 0.741, 0.0615],
               color: INKY,
               finish: "soft",
             },
             {
               k: "slab",
-              size: [0.62, 1.298],
+              size: [0.66, 1.382],
               t: 0.006,
               r: 0.1,
-              pos: [0, 0.75, 0.0635],
+              pos: [0, 0.741, 0.0635],
               map: LUTRA_SCREEN,
             },
           ],
@@ -1303,8 +1303,8 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           shapes: [
             { k: "box", size: [0.3, 0.5, 0.2], pos: [0, 0.25, -0.2], color: c.sand },
             { k: "slab", size: [0.8, 1.04], t: 0.06, r: 0.09, pos: [0, 0.52, 0] },
-            { k: "slab", size: [0.68, 0.9], t: 0.012, r: 0.04, pos: [0, 0.52, 0.034], color: c.mist },
-            ...screenBlocks(c, 0.68, 0.9, 0.52, 0.04),
+            { k: "slab", size: [0.68, 0.92], t: 0.012, r: 0.03, pos: [0, 0.52, 0.034], color: c.mist },
+            ...screenBlocks(c, 0.68, 0.92, 0.52, 0.04),
           ],
         },
         {
@@ -1316,8 +1316,8 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           shapes: [
             { k: "box", size: [0.2, 0.36, 0.18], pos: [0, 0.18, -0.17], color: c.sand },
             { k: "slab", size: [0.38, 0.76], t: 0.06, r: 0.08, pos: [0, 0.38, 0] },
-            { k: "slab", size: [0.3, 0.64], t: 0.012, r: 0.05, pos: [0, 0.38, 0.034], color: c.cream },
-            ...screenBlocks(c, 0.3, 0.64, 0.38, 0.04),
+            { k: "slab", size: [0.3, 0.68], t: 0.012, r: 0.04, pos: [0, 0.38, 0.034], color: c.cream },
+            ...screenBlocks(c, 0.3, 0.68, 0.38, 0.04),
           ],
         },
         {
@@ -1751,7 +1751,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           shapes: [
             { k: "box", size: [0.3, 0.6, 0.22], pos: [0, 0.3, -0.2], color: c.sand },
             { k: "slab", size: [0.6, 1.2], t: 0.08, r: 0.1, pos: [0, 0.6, 0] },
-            { k: "slab", size: [0.5, 1.06], t: 0.012, r: 0.06, pos: [0, 0.6, 0.044], color: c.inky, finish: "soft" },
+            { k: "slab", size: [0.5, 1.1], t: 0.012, r: 0.05, pos: [0, 0.6, 0.044], color: c.inky, finish: "soft" },
             // The viewfinder: four corners around the code it has found.
             ...[-1, 1].flatMap((sx) =>
               [-1, 1].flatMap((sy): ShapeDef[] => [
@@ -2184,7 +2184,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           shapes: [
             { k: "box", size: [0.3, 0.6, 0.22], pos: [0, 0.3, -0.2], color: c.sand },
             { k: "slab", size: [0.7, 1.4], t: 0.08, r: 0.11, pos: [0, 0.7, 0] },
-            { k: "slab", size: [0.58, 1.24], t: 0.012, r: 0.07, pos: [0, 0.7, 0.044], color: c.cream },
+            { k: "slab", size: [0.58, 1.28], t: 0.012, r: 0.05, pos: [0, 0.7, 0.044], color: c.cream },
             // A face in the viewfinder, wearing the effect.
             { k: "slab", size: [0.44, 0.26], t: 0.02, r: 0.12, pos: [0, 0.47, 0.058], color: c.lilac },
             { k: "cyl", r: 0.2, h: 0.02, pos: [0, 0.82, 0.06], rot: FACE, color: c.lilac },

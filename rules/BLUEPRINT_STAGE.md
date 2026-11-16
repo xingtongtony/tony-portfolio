@@ -82,12 +82,19 @@ The layout around it (`blueprint-stage.tsx`): headline top left, position and
 arrows top right, one text block bottom left (invitation → agents' log → case
 study, or "Coming soon"), the agents' dock bottom right, and along the bottom
 a rail of project numbers in which the current one opens to show its name.
-There is no overview: one figure is on stage at a time. The figures stand in a
-single row (`GAP` in `scene.tsx`) far enough apart that only one is in view;
-moving to another pans the camera along the row and the lights travel with
-it. The first figure builds itself on arrival. A grid of every drawing was
-tried and dropped — past four figures it was a crowd of small drawings with
-their labels on top of each other.
+The stage is a carousel, not an overview. The figures stand in a single row
+(`GAP` in `scene.tsx`). The one in the middle is full size and full colour;
+its two neighbours are smaller and faded almost into the paper (`GHOST`,
+`NEIGHBOUR_SCALE`), the right one cut by the edge, which is what says "there is
+more this way"; the rest are not drawn. Position along the row is one
+continuous number, so everything — fade, size, camera — follows from distance
+to the middle. It moves by dragging or throwing the stage, a sideways swipe on
+a trackpad, the arrows, the arrow keys, the numbered rail, or clicking a
+neighbour; a small drag falls back, a real one or a flick lands on the next.
+The lights travel with the camera. The first figure builds itself on arrival.
+A grid of every drawing was tried and dropped — past four figures it was a
+crowd of small drawings with their labels on top of each other — and so was a
+single figure alone, which felt empty and gave no sign of the others.
 From `lg` up there is no card grid below:
 the stage is the work section.
 The stage is exactly one screen tall, with the same margin under the index as

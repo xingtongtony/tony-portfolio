@@ -23,10 +23,16 @@ const CAM_UP = new THREE.Vector3().crossVectors(DIR, RIGHT);
 
 const CAPTION_OFFSET = new THREE.Vector3(0.2, 0, 1.75);
 
-// One exhibit at a time. The figures stand in a single row along the camera's
-// right axis, far enough apart that only the one on stage is in view; moving
-// to another pans the camera along the row.
-const GAP = 7;
+// A carousel. The figures stand in a single row along the camera's right axis.
+// The one in the middle is full size and full colour; its neighbours are
+// smaller and faded almost into the paper, enough to say "there is more this
+// way"; the rest are not drawn. Where the camera is along the row is a
+// continuous number (`pos`), so it can be dragged, thrown and snapped.
+const GAP = 4.4;
+/** How far a neighbour is faded into the paper (1 = gone), and how much smaller it is. */
+const GHOST = 0.84;
+const NEIGHBOUR_SCALE = 0.84;
+const smooth = (x: number) => x * x * (3 - 2 * x);
 
 function slotPosition(i: number): THREE.Vector3 {
   return new THREE.Vector3().addScaledVector(RIGHT, i * GAP);
@@ -226,6 +232,22 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   const pools = useMemo(() => FIGURES.map((figure) => makePoolTexture(figure.palette.ground)), []);
   useEffect(() => () => pools.forEach((texture) => texture.dispose()), [pools]);
   const poolRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  // The carousel's position along the row, in figures; see the pointer handlers below.
+  const scrub = useRef({
+    pos: 0,
+    target: 0,
+    zoom: 100,
+    pressed: false,
+    dragging: false,
+    startX: 0,
+    startTarget: 0,
+    lastX: 0,
+    lastT: 0,
+    velocity: 0,
+    pending: -1,
+    pendingUntil: 0,
+    timer: 0,
+  });
   // What the last drawn frame looked like, to tell when a new one is needed.
   const drawn = useRef({ w: 0, h: 0, count: 0, texture: null as THREE.FramebufferTexture | null });
   useEffect(() => {
@@ -237,10 +259,88 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     };
   }, []);
   // The frame loop reads the latest props through this ref.
-  const live = useRef({ focus, reducedMotion, onPartEvent, onBuilt });
+  const live = useRef({ focus, reducedMotion, onPartEvent, onBuilt, onSelect });
   useEffect(() => {
-    live.current = { focus, reducedMotion, onPartEvent, onBuilt };
-  }, [focus, reducedMotion, onPartEvent, onBuilt]);
+    live.current = { focus, reducedMotion, onPartEvent, onBuilt, onSelect };
+  }, [focus, reducedMotion, onPartEvent, onBuilt, onSelect]);
+
+  // Drag, throw, or swipe sideways on a trackpad to move along the row. A
+  // small drag falls back to where it was; a real one, or a quick flick,
+  // lands on the next figure.
+  const canvas = useThree((state) => state.gl.domElement);
+  useEffect(() => {
+    const sc = scrub.current;
+    const last = FIGURES.length - 1;
+    const perFigure = () => GAP * sc.zoom; // pixels between two figures
+    const within = (v: number) => Math.min(last + 0.35, Math.max(-0.35, v));
+    const settle = (at: number) => {
+      const index = Math.min(last, Math.max(0, Math.round(at)));
+      sc.dragging = false;
+      sc.pending = index;
+      sc.pendingUntil = now() + 0.5;
+      sc.target = index;
+      engine.dirty = true;
+      live.current.onSelect(FIGURES[index].id);
+    };
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      sc.pressed = true;
+      sc.startX = e.clientX;
+      sc.startTarget = sc.target;
+      sc.lastX = e.clientX;
+      sc.lastT = e.timeStamp;
+      sc.velocity = 0;
+    };
+    const move = (e: PointerEvent) => {
+      if (!sc.pressed) return;
+      const dx = e.clientX - sc.startX;
+      if (!sc.dragging) {
+        if (Math.abs(dx) < 8) return;
+        sc.dragging = true;
+        canvas.setPointerCapture(e.pointerId);
+        canvas.style.setProperty("cursor", "grabbing");
+      }
+      const ms = Math.max(1, e.timeStamp - sc.lastT);
+      sc.velocity = -(e.clientX - sc.lastX) / perFigure() / (ms / 1000);
+      sc.lastX = e.clientX;
+      sc.lastT = e.timeStamp;
+      sc.target = within(sc.startTarget - dx / perFigure());
+      engine.dirty = true;
+    };
+    const up = (e: PointerEvent) => {
+      if (!sc.pressed) return;
+      sc.pressed = false;
+      if (!sc.dragging) return;
+      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+      canvas.style.setProperty("cursor", "grab");
+      settle(sc.target + Math.min(0.6, Math.max(-0.6, sc.velocity * 0.22)));
+    };
+    const wheel = (e: WheelEvent) => {
+      // Sideways only: vertical scrolling still scrolls the page.
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      sc.dragging = true;
+      sc.target = within(sc.target + e.deltaX / perFigure());
+      engine.dirty = true;
+      window.clearTimeout(sc.timer);
+      sc.timer = window.setTimeout(() => settle(sc.target), 140);
+    };
+    canvas.style.setProperty("touch-action", "pan-y");
+    canvas.style.setProperty("cursor", "grab");
+    canvas.addEventListener("pointerdown", down);
+    canvas.addEventListener("pointermove", move);
+    canvas.addEventListener("pointerup", up);
+    canvas.addEventListener("pointercancel", up);
+    canvas.addEventListener("wheel", wheel, { passive: false });
+    return () => {
+      window.clearTimeout(sc.timer);
+      canvas.removeEventListener("pointerdown", down);
+      canvas.removeEventListener("pointermove", move);
+      canvas.removeEventListener("pointerup", up);
+      canvas.removeEventListener("pointercancel", up);
+      canvas.removeEventListener("wheel", wheel);
+    };
+  }, [canvas]);
 
   // Measure every part once the figures sit in their slots, and hand the
   // runtimes to the engine so the overlay can schedule builds.
@@ -288,45 +388,56 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     let dirty = eng.dirty;
     eng.dirty = false;
 
-    // ── Camera: overview of the sheet, or framed on the focused figure ──
+    // ── Camera: where we are along the row ──
     // Same threshold as the overlay's `@4xl` container query (56rem).
     const wide = w >= 896;
     const padTop = 140; // the headline
     const padBottom = 120; // the project index
-    // The subject sits right of centre: the left is the headline and the project text.
     const focusIndex = focusId ? FIGURES.findIndex((f) => f.id === focusId) : -1;
-    const shiftRight = w * (wide ? 0.13 : 0.15);
-    let zoomTo: number;
-    const shiftX = -shiftRight;
-    const shiftY = (padBottom - padTop) / 2;
-    const base = new THREE.Vector3(0, 0.9, 0);
-    if (focusIndex < 0) {
-      // Nothing on stage (only before the first figure is chosen): the first one, further off.
-      base.copy(centers.current[0] ?? positions[0]);
-      zoomTo = Math.min((w * 0.62) / 6.4, (h - padTop - padBottom) / 4.8);
-    } else {
-      base.copy(centers.current[focusIndex] ?? positions[focusIndex]);
-      zoomTo = Math.min((w * 0.62) / 4.9, (h - padTop - padBottom) / 3.7);
+    const sc = scrub.current;
+    const last = FIGURES.length - 1;
+    if (!sc.dragging) {
+      // Follow the chosen figure. After a drag, hold where it landed until
+      // the overlay has caught up with the choice.
+      if (sc.pending >= 0 && (focusIndex === sc.pending || time > sc.pendingUntil)) sc.pending = -1;
+      sc.target = sc.pending >= 0 ? sc.pending : Math.max(0, focusIndex);
     }
-    zoomTo = Math.min(210, Math.max(22, zoomTo));
+    if (reduced || Math.abs(sc.pos - sc.target) < 0.0008) {
+      if (sc.pos !== sc.target) dirty = true;
+      sc.pos = sc.target;
+    } else {
+      // Tight to the hand while dragging, eased when let go.
+      sc.pos = damp(sc.pos, sc.target, sc.dragging ? 26 : 6.5, dt);
+      dirty = true;
+    }
+    // The figure in the middle sits a little right of centre — the left is
+    // the headline and the project text — leaving the next one peeking in.
+    const shiftX = -w * (wide ? 0.08 : 0.1);
+    const shiftY = (padBottom - padTop) / 2;
+    const lo = Math.min(last, Math.max(0, Math.floor(sc.pos)));
+    const hi = Math.min(last, lo + 1);
+    const base = new THREE.Vector3()
+      .copy(centers.current[lo] ?? positions[lo])
+      .lerp(centers.current[hi] ?? positions[hi], Math.min(1, Math.max(0, sc.pos - lo)));
+    // Dragged past either end: keep going a little, so the end can be felt.
+    if (sc.pos < 0) base.addScaledVector(RIGHT, sc.pos * GAP);
+    if (sc.pos > last) base.addScaledVector(RIGHT, (sc.pos - last) * GAP);
+    const zoomTo = Math.min(210, Math.max(22, Math.min((w * 0.58) / 4.9, (h - padTop - padBottom) / 3.7)));
     // Looking at a point to the right of / below the subject moves it left / up.
     base.addScaledVector(RIGHT, shiftX / zoomTo).addScaledVector(CAM_UP, -shiftY / zoomTo);
     if (!camTarget.current) {
       camTarget.current = base.clone();
       cam.zoom = zoomTo;
-    } else if (reduced) {
-      camTarget.current.copy(base);
-      cam.zoom = zoomTo;
-    } else if (Math.abs(cam.zoom - zoomTo) > 0.01 || camTarget.current.distanceToSquared(base) > 1e-7) {
-      const k = 1 - Math.exp(-4.2 * dt);
-      camTarget.current.lerp(base, k);
-      cam.zoom = damp(cam.zoom, zoomTo, 4.2, dt);
-      dirty = true;
     } else {
-      // Arrived: stop exactly on target.
       camTarget.current.copy(base);
-      cam.zoom = zoomTo;
+      if (reduced || Math.abs(cam.zoom - zoomTo) <= 0.01) {
+        cam.zoom = zoomTo;
+      } else {
+        cam.zoom = damp(cam.zoom, zoomTo, 4.2, dt);
+        dirty = true;
+      }
     }
+    sc.zoom = cam.zoom;
     cam.position.copy(camTarget.current).addScaledVector(DIR, 40);
     cam.lookAt(camTarget.current);
     cam.updateProjectionMatrix();
@@ -426,15 +537,17 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       el.style.visibility = opacity < 0.05 ? "hidden" : "visible";
     };
     figs.forEach((fig, i) => {
-      // While one figure is in focus the others fade into the paper.
-      const fadeTo = focusId && fig.def.id !== focusId ? 1 : 0;
-      if (Math.abs(fades.current[i] - fadeTo) > 0.003) {
-        fades.current[i] = reduced ? fadeTo : damp(fades.current[i], fadeTo, 7, dt);
-        dirty = true;
-      } else {
+      // Distance from the middle of the stage, in figures, decides everything:
+      // 0 is full colour and full size, 1 is a faint, smaller neighbour, and
+      // much beyond that is gone.
+      const away = Math.abs(i - sc.pos);
+      const fadeTo = away <= 1 ? GHOST * smooth(away) : GHOST + (1 - GHOST) * smooth(Math.min(1, (away - 1) / 0.6));
+      if (Math.abs(fades.current[i] - fadeTo) > 0.002) {
         fades.current[i] = fadeTo;
+        dirty = true;
       }
       const fade = fades.current[i];
+      swayRefs.current[i]?.scale.setScalar(1 - (1 - NEIGHBOUR_SCALE) * smooth(Math.min(1, away)));
       fig.setFade(fade);
       // Fully faded is gone: otherwise its paper would cover the focused figure's pool.
       fig.group.visible = fade < 0.985;
@@ -456,7 +569,8 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       const sway = swayRefs.current[i];
       if (!sway) return;
       for (const c of fig.def.callouts) {
-        place(eng.labelEls[`n/${fig.def.id}/${c.n}`], sway.localToWorld(numeralPoint(c, v)), 1 - fade);
+        // Numerals belong to the figure on stage only; a neighbour keeps just its caption.
+        place(eng.labelEls[`n/${fig.def.id}/${c.n}`], sway.localToWorld(numeralPoint(c, v)), fade < 0.5 ? 1 - fade : 0);
       }
     });
 
