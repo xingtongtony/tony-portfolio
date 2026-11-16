@@ -29,6 +29,10 @@ const ROUND =
   "inline-flex size-9 items-center justify-center rounded-full border border-black/10 text-black/70 transition hover:border-black/25 hover:text-black disabled:opacity-40";
 const GHOST =
   "inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-black/55 transition hover:bg-black/[0.05] hover:text-black";
+// The agents' pointer: a present-day multiplayer cursor — no tail, soft corners.
+const CURSOR =
+  "M4.2 3.4 18.6 9.1c.5.2.5.9 0 1.1l-5.6 2.1c-.3.1-.5.3-.6.6l-2.2 5.6c-.2.5-.9.5-1.1 0L3.4 4.2c-.2-.5.3-1 .8-.8Z";
+
 const DESKTOP = "(min-width: 1024px)";
 const subscribeDesktop = (onChange: () => void) => {
   const mq = window.matchMedia(DESKTOP);
@@ -175,6 +179,18 @@ export function BlueprintStage() {
 
   const onReady = useCallback(() => setReady(true), []);
 
+  // The scene takes a moment to arrive: three.js has to download and its
+  // shaders compile on the first draw. Until that draw is on screen a small
+  // loader stands in; then it clears and the scene opens up behind it.
+  const [painted, setPainted] = useState(false);
+  const [loader, setLoader] = useState(true);
+  const onPainted = useCallback(() => setPainted(true), []);
+  useEffect(() => {
+    if (!painted) return;
+    const timer = window.setTimeout(() => setLoader(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [painted]);
+
   /** The next or previous figure; from the whole sheet, the first or the last. */
   const step = useCallback(
     (dir: 1 | -1) => {
@@ -233,18 +249,51 @@ export function BlueprintStage() {
       id="stage"
       className="@container relative -mx-10 -ml-[3.25rem] -mt-3 h-svh min-h-[640px] overflow-hidden xl:-mx-14 xl:-ml-[4.25rem] 2xl:-mx-16 2xl:-ml-[4.75rem]"
     >
-      <div className="absolute inset-0">
+      <div className={`absolute inset-0 transition-opacity duration-700 ${painted ? "opacity-100" : "opacity-0"}`}>
         {desktop ? (
           <Scene
             focus={focus}
             reducedMotion={reducedMotion}
             onReady={onReady}
+            onPainted={onPainted}
             onSelect={select}
             onPartEvent={onPartEvent}
             onBuilt={onBuilt}
           />
         ) : null}
       </div>
+
+      {/* Loading: the five agents circle a blank spot on the sheet. Only
+          transform and opacity move, so it keeps turning while the main thread
+          is busy compiling. When the scene is painted they fly apart and fade. */}
+      {desktop && loader ? (
+        <div
+          role="status"
+          aria-label="Loading the 3D stage"
+          className={`pointer-events-none absolute left-[58%] top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out ${
+            painted ? "scale-[1.7] opacity-0" : "scale-100 opacity-100"
+          }`}
+        >
+          <div className="relative size-[176px]">
+            <div className="absolute inset-0 rounded-full border border-dashed border-black/15" />
+            <div className="absolute inset-0 animate-spin [animation-duration:2.6s]">
+              {AGENTS.map((agent, i) => (
+                <span key={agent.id} className="absolute left-1/2 top-1/2 block size-0" style={{ transform: `rotate(${i * 72}deg) translateY(-88px)` }}>
+                  <svg width="20" height="20" viewBox="0 0 22 22" className="-ml-[10px] -mt-[10px] block drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]">
+                    <path d={CURSOR} fill={agent.stroke} stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              ))}
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[17px] italic leading-none text-[#151515]" style={SERIF}>
+                FIG. 0
+              </span>
+              <span className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">Setting the stage</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Captions and reference numerals, pinned to 3D points by the scene. */}
       <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
@@ -340,7 +389,11 @@ export function BlueprintStage() {
 
       {/* Bottom left: one block of text that is always about what is on the
           stage — the invitation, then the agents' log, then the case study. */}
-      <div className="absolute bottom-[108px] left-[3.25rem] z-20 w-[min(340px,40%)] xl:left-[4.25rem]">
+      <div
+        className={`absolute bottom-[108px] left-[3.25rem] z-20 w-[min(340px,40%)] transition-opacity duration-700 xl:left-[4.25rem] ${
+          painted ? "opacity-100" : "opacity-0"
+        }`}
+      >
         {focused ? (
           <>
             <p className={LABEL}>
@@ -444,7 +497,7 @@ export function BlueprintStage() {
           >
             <svg width="22" height="22" viewBox="0 0 22 22" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.22)]">
               <path
-                d="M4.2 3.4 18.6 9.1c.5.2.5.9 0 1.1l-5.6 2.1c-.3.1-.5.3-.6.6l-2.2 5.6c-.2.5-.9.5-1.1 0L3.4 4.2c-.2-.5.3-1 .8-.8Z"
+                d={CURSOR}
                 fill={agent.stroke}
                 stroke="#ffffff"
                 strokeWidth="1.6"

@@ -121,6 +121,8 @@ export type SceneProps = {
   focus: string | null;
   reducedMotion: boolean;
   onReady: () => void;
+  /** The first frame is on screen (shaders compiled): the loader can go. */
+  onPainted: () => void;
   onSelect: (figId: string) => void;
   onPartEvent: (type: "start" | "end", item: BuildItem) => void;
   onBuilt: (figId: string, seconds: number) => void;
@@ -224,7 +226,7 @@ function Studio() {
   );
 }
 
-function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }: SceneProps) {
+function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt }: SceneProps) {
   const figs = useMemo<BuiltFigure[]>(() => FIGURES.map(createFigure), []);
   const positions = useMemo(() => FIGURES.map((_, i) => slotPosition(i)), []);
   const swayRefs = useRef<(THREE.Group | null)[]>([]);
@@ -271,10 +273,11 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     };
   }, []);
   // The frame loop reads the latest props through this ref.
-  const live = useRef({ focus, reducedMotion, onPartEvent, onBuilt, onSelect });
+  const live = useRef({ focus, reducedMotion, onPartEvent, onBuilt, onSelect, onPainted });
   useEffect(() => {
-    live.current = { focus, reducedMotion, onPartEvent, onBuilt, onSelect };
-  }, [focus, reducedMotion, onPartEvent, onBuilt, onSelect]);
+    live.current = { focus, reducedMotion, onPartEvent, onBuilt, onSelect, onPainted };
+  }, [focus, reducedMotion, onPartEvent, onBuilt, onSelect, onPainted]);
+  const painted = useRef(false);
 
   // Drag, throw, or swipe sideways on a trackpad to move along the row. A
   // small drag falls back to where it was; a real one, or a quick flick,
@@ -664,6 +667,12 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
         sky.shadow.radius = (sky.shadow.radius % 1) + k;
       }
       gl.render(state.scene, state.camera);
+      if (!painted.current) {
+        // That first draw is where the shaders compile, so it can take a
+        // while; once it returns there is a picture to show.
+        painted.current = true;
+        live.current.onPainted();
+      }
       if (k > 0 && seen.texture) {
         blendMaterial.uniforms.map.value = seen.texture;
         blendMaterial.uniforms.opacity.value = k / (k + 1);
