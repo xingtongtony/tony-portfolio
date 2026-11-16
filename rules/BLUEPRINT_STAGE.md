@@ -30,7 +30,7 @@ that looks rough.
 
 | Rule | In practice |
 | --- | --- |
-| Nothing sharp | Every solid is rounded. Leave `bevel` out to get the generous default; hairline plates (< 0.02) are the only exception. |
+| Flat faces, tight bevels | A solid is flat planes with a small bevel (the default, about 0.02) that catches a line of light — not a big fillet on everything, which reads as an inflated blob and hides the three tones of top, front and side. Nothing is razor-sharp either; hairline plates (< 0.02) are the only unbevelled things. Round things (balls, capsules, rings) are round because the object is, not because the edge was softened. |
 | Harmony over realism | Colour comes from `PALETTE` in `figures.ts` only. A TV may be plum, a counter lilac. Never add a one-off hex to a shape. |
 | One family | All four figures stand on the same `ground` lilac with a lighter `mist` inlay, so they read as a set. |
 | Matte clay | Default finish is `clay`. `soft` for small pressable things, `print` for paper, `screen` / `led` for things that glow. No metal, no gloss. |
@@ -59,13 +59,18 @@ their gradient. Lit tops should land near the palette colour, fronts about
 three-quarters of it, shaded sides a little over half. If colours look washed
 out, there is too much ambient light — lower it, do not darken the palette.
 
-Drawing is on demand. The soft shadows are costly, so the frame loop redraws
-the 3D picture only when something in it moved (camera, a build, a fade, the
-turn of a newly built figure) and stops when it is at rest; the agents and
-labels are DOM and keep moving for free. The last frame of every run is drawn
-with fine shadows (four times the samples), so the picture that stays on
-screen has no grain. Anything that changes the picture from outside the loop
-must set `engine.dirty`.
+Drawing is on demand, and the still picture is accumulated. The frame loop
+redraws only when something in the 3D picture moved (camera, a build, a fade,
+the turn of a newly built figure); the agents and labels are DOM and keep
+moving for free. When the picture stops, it is refined the way an offline
+renderer works: several dozen frames are drawn, each with the sky light
+somewhere else overhead and the shadow samples turned, and averaged into the
+frame on screen (`SAMPLES`, `SKY_SPREAD` in `scene.tsx`). That average is what
+makes it look rendered rather than real-time: shadows have no grain, and
+creases and contact lines darken because the sky light has come from all
+around (ambient occlusion). Then drawing stops altogether. Anything that
+changes the picture from outside the loop must set `engine.dirty`. The canvas
+is opaque white for this; the page behind the stage must stay white.
 
 The layout around it (`blueprint-stage.tsx`): headline top left, position and
 arrows top right, one text block bottom left (invitation → agents' log → case

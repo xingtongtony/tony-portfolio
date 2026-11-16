@@ -62,7 +62,7 @@ function displayRgb(hex: string): THREE.Vector3 {
  * the form turns softly at its edges. `screen` and `led` glow.
  */
 const FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
-  clay: { roughness: 0.68, metalness: 0, sheen: 0.3, sheenRoughness: 0.55, sheenColor: "#ffffff" },
+  clay: { roughness: 0.6, metalness: 0, sheen: 0.25, sheenRoughness: 0.55, sheenColor: "#ffffff" },
   // Moulded plastic for the small things you press.
   soft: { roughness: 0.45, metalness: 0, clearcoat: 0.25, clearcoatRoughness: 0.4 },
   // Printed card and paper.
@@ -77,7 +77,7 @@ const FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
  * slight tooth instead of looking like flat vector fills. It fades out long
  * before a grain gets as small as a pixel, so nothing shimmers in motion.
  */
-const GRAIN: Record<Finish, number> = { clay: 0.05, soft: 0.02, print: 0.03, screen: 0, led: 0 };
+const GRAIN: Record<Finish, number> = { clay: 0.03, soft: 0.015, print: 0.02, screen: 0, led: 0 };
 const GRAIN_NOISE = /* glsl */ `
 float grainHash( vec3 p ) {
   p = fract( p * 0.3183099 + 0.1 );
@@ -303,9 +303,13 @@ function fitUv(g: THREE.BufferGeometry, w: number, h: number) {
   uv.needsUpdate = true;
 }
 
-/** Edge radius: the author's, or a generous default for the shape's size. */
+/**
+ * Edge radius: the author's, or a small default. Real objects have flat faces
+ * and a tight bevel that catches a line of light; a big fillet on everything
+ * reads as an inflated blob.
+ */
 function bevelFor(given: number | undefined, smallest: number, max: number): number {
-  return Math.min(given ?? Math.min(0.05, smallest * 0.32), max);
+  return Math.min(given ?? Math.min(0.024, smallest * 0.2), max);
 }
 
 function edgePositions(g: THREE.BufferGeometry): number[] {

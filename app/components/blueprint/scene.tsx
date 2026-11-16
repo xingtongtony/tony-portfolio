@@ -58,6 +58,31 @@ function dock(i: number, w: number, h: number): [number, number] {
 // shadow on the frame that stays on screen (see soft-shadows.ts).
 const shadowLights: (THREE.DirectionalLight | null)[] = [null, null];
 
+// Accumulation (see the end of the frame loop): how many frames are averaged
+// once the picture is still, how far from straight overhead the sky light
+// wanders while they are drawn, and a full-screen quad that lays the running
+// average back over each new frame.
+const SAMPLES = 56;
+const SKY_SPREAD = 1.05;
+const SKY_INTENSITY = 1.1;
+const blendMaterial = new THREE.ShaderMaterial({
+  uniforms: { map: { value: null as THREE.Texture | null }, opacity: { value: 1 } },
+  vertexShader: "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = vec4(position.xy, 0.0, 1.0);\n}",
+  // Straight through: the copy is already display colour, as the canvas is.
+  fragmentShader:
+    "uniform sampler2D map;\nuniform float opacity;\nvarying vec2 vUv;\nvoid main() {\n  gl_FragColor = vec4(texture2D(map, vUv).rgb, opacity);\n}",
+  transparent: true,
+  depthTest: false,
+  depthWrite: false,
+});
+const blendScene = new THREE.Scene();
+const blendQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), blendMaterial);
+blendQuad.frustumCulled = false;
+blendScene.add(blendQuad);
+const blendCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
+blendCamera.position.z = 1;
+const bufferSize = new THREE.Vector2();
+
 export type SceneProps = {
   focus: string | null;
   reducedMotion: boolean;
@@ -116,9 +141,13 @@ function Studio() {
 
   return (
     <>
-      <Environment map={environment} environmentIntensity={0.4} />
+      {/* The page is white and so is the paper; an opaque canvas lets frames be averaged exactly. */}
+      <color attach="background" args={["#ffffff"]} />
+      {/* Little light that nothing can block: most of the ambient comes from
+          the sky light, which casts shadows, so creases and contacts darken. */}
+      <Environment map={environment} environmentIntensity={0.25} />
       {/* Warm from above, lilac from below: shaded sides stay coloured, never grey. */}
-      <hemisphereLight args={["#fff5e8", PALETTE.lilac, 0.72]} />
+      <hemisphereLight args={["#fff5e8", PALETTE.lilac, 0.45]} />
       <directionalLight
         ref={(light) => {
           shadowLights[0] = light;
@@ -141,15 +170,16 @@ function Studio() {
         ref={(light) => {
           shadowLights[1] = light;
         }}
-        position={[0.6, 20, 1.2]}
-        intensity={0.8}
+        position={[0, 20, 0]}
+        intensity={SKY_INTENSITY}
         castShadow
         shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0012}
+        shadow-bias={-0.0004}
         shadow-normalBias={0.02}
-        shadow-radius={0.16}
+        shadow-radius={0.48}
       >
-        <orthographicCamera attach="shadow-camera" args={[-9, 9, 9, -9, 14, 22]} />
+        {/* Deep enough for the light to lean a long way over (see SKY_SPREAD). */}
+        <orthographicCamera attach="shadow-camera" args={[-9, 9, 9, -9, 8, 32]} />
       </directionalLight>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
         <planeGeometry args={[60, 60]} />
@@ -169,7 +199,15 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
   const agentPos = useRef(AGENTS.map(() => ({ x: 0, y: 0, placed: false })));
   const swayStart = useRef(FIGURES.map(() => -1));
   // What the last drawn frame looked like, to tell when a new one is needed.
-  const drawn = useRef({ w: 0, h: 0, dpr: 0, linger: 0 });
+  const drawn = useRef({ w: 0, h: 0, count: 0, texture: null as THREE.FramebufferTexture | null });
+  useEffect(() => {
+    const seen = drawn.current;
+    return () => {
+      seen.texture?.dispose();
+      seen.texture = null;
+      seen.count = 0;
+    };
+  }, []);
   // The frame loop reads the latest props through this ref.
   const live = useRef({ focus, reducedMotion, onPartEvent, onBuilt });
   useEffect(() => {
@@ -371,23 +409,52 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
       }
     });
 
-    // ── Draw, if there is anything new to see ──
+    // ── Draw ──
+    // While anything moves: one frame per tick. Once it stops, the picture is
+    // refined the way an offline renderer does it — several dozen frames, each
+    // with the sky light somewhere else overhead and the shadow samples
+    // turned, averaged into the frame on screen. The average has soft shadows
+    // with no grain and, because the sky light has come from all around,
+    // darker creases and contact lines: ambient occlusion. Then drawing stops.
     const seen = drawn.current;
-    const dpr = state.viewport.dpr;
-    if (seen.w !== w || seen.h !== h || seen.dpr !== dpr) {
-      seen.w = w;
-      seen.h = h;
-      seen.dpr = dpr;
+    const gl = state.gl;
+    gl.getDrawingBufferSize(bufferSize);
+    if (seen.w !== bufferSize.x || seen.h !== bufferSize.y) {
+      seen.w = bufferSize.x;
+      seen.h = bufferSize.y;
+      seen.texture?.dispose();
+      seen.texture = null;
       dirty = true;
     }
-    // A couple of extra frames after the last change, so nothing is left half-settled.
-    if (dirty) seen.linger = 3;
-    if (seen.linger > 0) {
-      // The last frame of a run is the one that stays up: draw it with the fine shadows.
-      const still = seen.linger === 1 ? 1 : 0;
-      for (const light of shadowLights) if (light) light.shadow.radius = (light.shadow.radius % 1) + still;
-      seen.linger--;
-      state.gl.render(state.scene, state.camera);
+    if (dirty) seen.count = 0;
+    if (seen.count < SAMPLES) {
+      const k = seen.count;
+      const [key, sky] = shadowLights;
+      if (key) key.shadow.radius = (key.shadow.radius % 1) + k;
+      if (sky) {
+        // Sample k of a cone around straight up. Sample 0 is straight up,
+        // which is also what every moving frame uses.
+        const cos = 1 - (k / SAMPLES) * (1 - Math.cos(SKY_SPREAD));
+        const sin = Math.sqrt(1 - cos * cos);
+        const around = k * 2.3999632;
+        sky.position.set(sin * Math.cos(around) * 20, cos * 20, sin * Math.sin(around) * 20);
+        // Flat tops get the same light from every sample; only what is in the way differs.
+        sky.intensity = SKY_INTENSITY / cos;
+        sky.shadow.radius = (sky.shadow.radius % 1) + k;
+      }
+      gl.render(state.scene, state.camera);
+      if (k > 0 && seen.texture) {
+        blendMaterial.uniforms.map.value = seen.texture;
+        blendMaterial.uniforms.opacity.value = k / (k + 1);
+        gl.autoClear = false;
+        gl.render(blendScene, blendCamera);
+        gl.autoClear = true;
+      }
+      if (!dirty) {
+        if (!seen.texture) seen.texture = new THREE.FramebufferTexture(bufferSize.x, bufferSize.y);
+        gl.copyFramebufferToTexture(seen.texture);
+        seen.count = k + 1;
+      }
     }
     // Priority 1 hands rendering to this callback (see above).
   }, 1);

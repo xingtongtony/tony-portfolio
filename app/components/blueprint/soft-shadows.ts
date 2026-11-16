@@ -14,11 +14,10 @@
 //   3. Filter — average many depth tests over a disc of that width.
 //
 // Samples sit on a Vogel disc turned by a per-pixel angle, which trades
-// banding for a fine grain. A few samples are enough while the picture moves;
-// the frame that stays on screen is drawn once more with four times as many
-// (the scene adds 1 to the light's size to ask for it), so the still image has
-// no grain and nothing to shimmer. The receiver's own depth slope is carried
-// into every sample so a wide filter does not shadow the surface it is on.
+// banding for a fine grain. One frame alone is grainy; the scene accumulates
+// several dozen once the picture is still, turning the pattern each time (it
+// passes the frame number as the whole part of the light's size), and the
+// average is smooth.
 //
 // Use with <Canvas shadows="basic">. Call before the first material compiles.
 
@@ -36,12 +35,13 @@ const HELPERS = /* glsl */ `
 	}
 
 	float pcssShadow( sampler2D shadowMap, float light, vec3 coord ) {
-		// The whole part of the light's size picks the quality: 0 while things
-		// move, 1 for the frame that stays on screen once they stop.
-		bool still = light >= 1.0;
+		// The whole part of the light's size is the number of the frame being
+		// accumulated; it turns the sample pattern, so the frames differ and
+		// their average has no grain.
+		float frame = floor( light );
 		float lightSize = fract( light );
-		int blockerCount = still ? 32 : 16;
-		int tapCount = still ? 72 : 28;
+		const int blockerCount = 12;
+		const int tapCount = 20;
 
 		// How the receiver's depth changes across the map (receiver-plane bias).
 		vec3 dx = dFdx( coord );
@@ -52,8 +52,8 @@ const HELPERS = /* glsl */ `
 			: vec2( 0.0 );
 		slope = clamp( slope, vec2( -3.0 ), vec2( 3.0 ) );
 
-		float phi = pcssAngle( gl_FragCoord.xy );
-		float search = lightSize * 0.12;
+		float phi = pcssAngle( gl_FragCoord.xy ) + frame * 2.3999632;
+		float search = min( lightSize * 0.12, 0.03 );
 
 		float blockers = 0.0;
 		float blockerDepth = 0.0;
