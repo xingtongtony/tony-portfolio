@@ -192,9 +192,18 @@ animate, so:
 4. Look at the drawing state too (Replay, or a neighbour that is not built
    yet): outlines continuous, no stray or doubled lines.
 5. Go past the last figure and before the first: the row loops with no jump.
-6. Check 1024 × 768 (the project text must not sit on the figure; agents wait
-   as bare cursors) and that a phone-width viewport still shows the sticker
-   hero and the card grid, with no canvas and no loader.
+6. Check the widths between the breakpoint and the design size, in both the
+   building and the built state. The figure's base starts at about 37.5% of
+   the stage's width, and the stage is the viewport minus the sidebar (756px
+   wide in a 1024px window, 968px at 1280, 1128px at 1440):
+   - 1024 × 768 — the project text and the log's ticks must not sit on the
+     figure; agents wait as bare cursors.
+   - 1180 × 800 and 1280 × 800 — the five name tags in the dock must not
+     overlap each other or the block's button.
+   - 1440 × 900 — the design size; nothing here should move when a narrower
+     width is fixed.
+   Then a phone-width viewport: the sticker hero and the card grid, with no
+   canvas and no loader.
 7. `npx tsc --noEmit`, `npm run lint`, `npm run check`, `npm run build`. New
    `@keyframes` or utilities may need a clean restart (`rm -rf .next`) to show.
 

@@ -539,7 +539,10 @@ export function BlueprintStage() {
             {buildingHere ? (
               // The agents' log, with a pause: the visitor stays in charge.
               <>
-                <ul className="mt-5 flex flex-col gap-2">
+                {/* The figure's base starts at about 37.5% of the stage's
+                    width. On a narrower stage that is inside this block, so
+                    the list stops short of it and the ticks stay on paper. */}
+                <ul className="mt-5 flex max-w-[clamp(220px,37.5cqw-83px,340px)] flex-col gap-2">
                   {log.map((line) => (
                     <li key={line.partId} className="flex items-center gap-2 text-[12px] leading-none">
                       <span className="size-2 shrink-0 rounded-full" style={{ background: AGENTS[line.agent].fill, boxShadow: `inset 0 0 0 1px ${AGENTS[line.agent].stroke}` }} />

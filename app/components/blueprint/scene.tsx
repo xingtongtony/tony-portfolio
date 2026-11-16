@@ -57,7 +57,12 @@ function dock(i: number, w: number, h: number): [number, number] {
   // A narrow stage has no room for five name tags side by side: the agents
   // wait as bare cursors there, and show their tags when they go to work.
   if (w < 896) return [w - 66 - (4 - i) * 34, h - 128];
-  const gap = Math.min(150, (w - 570) / 4);
+  const roomy = Math.min(150, (w - 570) / 4);
+  // A tag and its cursor need about 115px. Where the stage cannot give them
+  // that to the right of the text block, the row runs further left, as far
+  // as the block's button (which ends at about 235px), rather than letting
+  // the tags overlap.
+  const gap = Math.max(roomy, Math.min(117, (w - 450) / 4));
   return [w - 190 - (4 - i) * gap, h - 138];
 }
 
