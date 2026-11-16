@@ -1,19 +1,22 @@
 # Blueprint Stage — 3D rules
 
-The homepage's first screen from `lg` up: four patent-style line drawings that
+The homepage's first screen from `lg` up: a sheet of patent-style line drawings that
 sticker "agents" build into small clay dioramas, one per case study. Code lives
 in `app/components/blueprint/`. Phones and tablets keep the sticker hero and
 never download three.js.
 
-Read this before touching anything in that folder. For the step-by-step of
-adding or restyling a figure, use the `blueprint-figure` skill
-(`.claude/skills/blueprint-figure/SKILL.md`).
+Read this before touching anything in that folder. The modelling standard — what
+Tony has sent back and the rule each became — and the step-by-step for a
+figure are in the `blueprint-figure` skill
+(`.claude/skills/blueprint-figure/SKILL.md`); keep the two in step.
 
 ## 1. What it must stay
 
-- **Real work only.** Every figure is a case study that already has a page on
-  the site and links to it. Never add a figure, chip or placeholder for work
-  that is not published (this was done once with "Agent products" and removed).
+- **Real work only.** Every figure is a case study that has a page on the site
+  and links to it. Finished work that is not written up yet may be shown only
+  when Tony asks for it: in the grey `mono` palette, with "Coming soon" where
+  the link would be. Never add a figure, chip or placeholder because a project
+  was mentioned (this was done once with "Agent products" and removed).
 - **One concept.** Drawing → object. Each solid exists as a line drawing and as
   a clay object; a per-part height uniform sweeps one into the other. Do not
   add a second mechanic.
@@ -32,7 +35,7 @@ that looks rough.
 | --- | --- |
 | Flat faces, tight bevels | A solid is flat planes with a small bevel (the default, about 0.02) that catches a line of light — not a big fillet on everything, which reads as an inflated blob and hides the three tones of top, front and side. Nothing is razor-sharp either; hairline plates (< 0.02) are the only unbevelled things. Round things (balls, capsules, rings) are round because the object is, not because the edge was softened. |
 | Harmony over realism | Colour comes from the figure's palette roles in `figures.ts` only. A TV may be plum, a counter lilac. Never add a one-off hex to a shape. |
-| A world each | Every figure has its own palette (`THEMES` in `figures.ts`: lilac, peach, blue, mint), so the four are not one object repeated. The palettes share the same roles and the same recipe, which is what keeps them a set. |
+| A world each | Every figure has its own palette (`THEMES` in `figures.ts`), so the sheet is not one object repeated; unwritten work uses the grey `mono` one. The palettes share the same roles and the same recipe, which is what keeps them a set. |
 | Two accents | Inside a world, its own hue (ground, mist, mid, deep) owns most of the area, cream and sand are the neutrals, and only two accents are strong — small, and no others. Green is for plants and "on", blue for glass; both are muted. A figure that uses every colour at equal weight looks busy however nice each colour is. |
 | A scene, not a backdrop | A built figure sits in a pool of the ground colour on the floor that fades to the white page (`makePoolTexture` in `scene.tsx`). The accents then read against lilac instead of white. It must stop short of the neighbouring figures: unbuilt ones are white paper and would show as white shapes on it. |
 | Built like the thing | A roof is boards with thickness that overhang the walls, not a prism with stripes; a window is a frame standing proud with the glass set back, not a disc on the wall. If a part would look stuck on in real life, model how it is actually made. |
@@ -77,7 +80,11 @@ is opaque white for this; the page behind the stage must stay white.
 
 The layout around it (`blueprint-stage.tsx`): headline top left, position and
 arrows top right, one text block bottom left (invitation → agents' log → case
-study), the agents' dock bottom right, and the project index along the bottom.
+study, or "Coming soon"), the agents' dock bottom right, and along the bottom
+a rail of project numbers in which the current one opens to show its name.
+Figures stand in rows of four (`SLOTS`), the last row pushed right so the
+bottom-left stays free for the text. From `lg` up there is no card grid below:
+the stage is the work section.
 The stage is exactly one screen tall, with the same margin under the index as
 over the eyebrow. The camera aims at the middle of each figure as seen on
 screen (`centers` in `scene.tsx`), so a flat figure and a tall one both sit

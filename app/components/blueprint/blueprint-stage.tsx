@@ -23,7 +23,8 @@ const STAGGER = 0.25; // seconds between consecutive parts setting off
 // Small text label above a block: "FIG. 1 — BUILT IN 3.2S".
 const LABEL = "text-[11px] font-semibold uppercase tracking-[0.16em] text-black/45";
 // The big line of the bottom-left block: a project title, or the invitation.
-const TITLE = "mt-3 text-[clamp(1.6rem,2.7vw,2.5rem)] font-medium leading-[1.02] tracking-[-0.035em] text-[#151515]";
+// Smaller on a narrow stage, where the sheet of drawings needs the room.
+const TITLE = "mt-3 text-[1.3rem] font-medium leading-[1.04] tracking-[-0.035em] text-[#151515] @4xl:text-[clamp(1.6rem,2.7vw,2.5rem)]";
 const ROUND =
   "inline-flex size-9 items-center justify-center rounded-full border border-black/10 text-black/70 transition hover:border-black/25 hover:text-black disabled:opacity-40";
 const GHOST =
@@ -53,7 +54,7 @@ function I({ children, start = false }: { children: ReactNode; start?: boolean }
 /**
  * The homepage's first screen from lg up — "blueprints built by agents".
  *
- * A sheet of patent-style line drawings, one per project. The visitor asks for
+ * A sheet of patent-style line drawings, one per published case study. The visitor asks for
  * one (chip, caption or the drawing itself); the five sticker agents fly over
  * and build it part by part into the real object, logging what they do. The
  * visitor can pause, redirect to another drawing mid-build, or reset. When a
@@ -308,7 +309,7 @@ export function BlueprintStage() {
           </button>
         ) : null}
         <span className="mx-2 text-[11px] font-semibold tabular-nums tracking-[0.1em] text-black/45">
-          <span className="text-black/80">{focused ? `0${focusIndex + 1}` : "00"}</span> / 0{FIGURES.length}
+          <span className="text-black/80">{String(focusIndex + 1).padStart(2, "0")}</span> / {String(FIGURES.length).padStart(2, "0")}
         </span>
         <button type="button" disabled={!ready} onClick={() => step(-1)} aria-label="Previous project" className={ROUND}>
           <ArrowLeft className="size-4" strokeWidth={2} aria-hidden="true" />
@@ -362,7 +363,12 @@ export function BlueprintStage() {
                     Open case study
                     <ArrowUpRight className="size-4" aria-hidden="true" />
                   </Link>
-                ) : null}
+                ) : (
+                  // Finished work whose case study is not written up yet.
+                  <span className="mt-5 inline-flex items-center rounded-full border border-black/15 px-4 py-2.5 text-sm font-semibold text-black/60">
+                    {focused.status ?? "Coming soon"}
+                  </span>
+                )}
               </>
             )}
           </>
@@ -387,7 +393,7 @@ export function BlueprintStage() {
       </div>
 
       {/* Bottom: the index of projects, the stage's own table of contents. */}
-      <nav aria-label="Projects" className="absolute inset-x-10 bottom-0 z-30 grid h-20 grid-cols-4 border-t border-black/10 xl:inset-x-14">
+      <nav aria-label="Projects" className="absolute inset-x-10 bottom-0 z-30 flex h-20 items-stretch border-t border-black/10 xl:inset-x-14">
         {FIGURES.map((f, i) => {
           const isBuilt = built[f.id] !== undefined;
           const isBuilding = building === f.id;
@@ -399,13 +405,19 @@ export function BlueprintStage() {
               disabled={!ready}
               onClick={() => select(f.id)}
               aria-pressed={isFocus}
-              className={`group relative flex min-w-0 items-center gap-3 pr-4 text-left transition disabled:opacity-40 ${
-                isFocus ? "text-[#151515]" : "text-black/50 hover:text-black"
+              aria-label={f.title}
+              title={f.title}
+              // A rail of numbers; the current project opens to show its name.
+              className={`group relative flex min-w-0 items-center gap-2 text-left transition disabled:opacity-40 ${
+                isFocus ? "flex-1 pr-4 text-[#151515]" : "w-[3.25rem] shrink-0 text-black/45 hover:text-black"
               }`}
             >
-              <span className={`absolute -top-px left-0 h-[2px] bg-[#151515] transition-all duration-300 ${isFocus ? "w-full" : "w-0 group-hover:w-6"}`} />
-              <span className="text-[11px] font-semibold tabular-nums tracking-[0.1em] opacity-60">0{i + 1}</span>
-              <span className="truncate text-[13px] font-medium">{f.title}</span>
+              <span className={`absolute -top-px left-0 h-[2px] bg-[#151515] transition-all duration-300 ${isFocus ? "w-full" : "w-0 group-hover:w-5"}`} />
+              <span className="text-[11px] font-semibold tabular-nums tracking-[0.1em]">{String(i + 1).padStart(2, "0")}</span>
+              {isFocus ? <span className="truncate text-[13px] font-medium">{f.title}</span> : null}
+              {isFocus && !f.href ? (
+                <span className="shrink-0 rounded-full bg-black/[0.06] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-black/55">Soon</span>
+              ) : null}
               {isBuilt ? (
                 <Check className="size-3.5 shrink-0 opacity-60" strokeWidth={2.6} aria-label="built" />
               ) : isBuilding ? (

@@ -25,13 +25,22 @@ const CAM_UP = new THREE.Vector3().crossVectors(DIR, RIGHT);
 
 const CAPTION_OFFSET = new THREE.Vector3(0.2, 0, 1.75);
 
-const COL = 4.9; // spacing between columns, world units (= screen units)
-const ROW = 6.5; // spacing between rows on the ground (foreshortened on screen)
+const COL = 4.4; // spacing between columns, world units (= screen units)
+const ROW = 7.1; // spacing between rows on the ground (foreshortened on screen)
+// Eleven figures in three rows: four, four, and three pushed to the right so
+// the bottom-left corner stays free for the stage's text.
 const SLOTS: [number, number][] = [
-  [-1, 1],
-  [1, 1],
-  [-1, -1],
-  [1, -1],
+  [-3, 2],
+  [-1, 2],
+  [1, 2],
+  [3, 2],
+  [-3, 0],
+  [-1, 0],
+  [1, 0],
+  [3, 0],
+  [-1, -2],
+  [1, -2],
+  [3, -2],
 ];
 
 function slotPosition(i: number): THREE.Vector3 {
@@ -186,12 +195,12 @@ function Studio() {
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0006}
         shadow-normalBias={0.02}
-        shadow-radius={0.22}
+        shadow-radius={0.14}
         shadow-intensity={0.8}
       >
         {/* Depth range kept tight around the scene: precision, and it is the
             unit the light size is measured in. */}
-        <orthographicCamera attach="shadow-camera" args={[-9, 9, 9, -9, 8, 26]} />
+        <orthographicCamera attach="shadow-camera" args={[-14, 14, 14, -14, 8, 26]} />
       </directionalLight>
       <directionalLight
         ref={(light) => {
@@ -203,10 +212,10 @@ function Studio() {
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
-        shadow-radius={0.48}
+        shadow-radius={0.31}
       >
         {/* Deep enough for the light to lean a long way over (see SKY_SPREAD). */}
-        <orthographicCamera attach="shadow-camera" args={[-9, 9, 9, -9, 8, 32]} />
+        <orthographicCamera attach="shadow-camera" args={[-14, 14, 14, -14, 8, 32]} />
       </directionalLight>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
         <planeGeometry args={[60, 60]} />
@@ -300,13 +309,14 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
     const padBottom = 120; // the project index
     // The subject sits right of centre: the left is the headline and the project text.
     const focusIndex = focusId ? FIGURES.findIndex((f) => f.id === focusId) : -1;
-    const shiftRight = w * (focusIndex < 0 ? (wide ? 0.105 : 0.14) : wide ? 0.13 : 0.15);
+    const shiftRight = w * (focusIndex < 0 ? 0.035 : wide ? 0.13 : 0.15);
     let zoomTo: number;
     const shiftX = -shiftRight;
     const shiftY = (padBottom - padTop) / 2;
     const base = new THREE.Vector3(0, 0.9, 0);
     if (focusIndex < 0) {
-      zoomTo = Math.min((w * (wide ? 0.66 : 0.6)) / 10.2, (h - padTop - padBottom) / 6.7);
+      // The sheet is four columns wide and three rows deep.
+      zoomTo = Math.min((w * 0.9) / (4 * COL + 1.8), (h - padTop - padBottom) / 10.6);
     } else {
       base.copy(centers.current[focusIndex] ?? positions[focusIndex]);
       zoomTo = Math.min((w * 0.62) / 4.9, (h - padTop - padBottom) / 3.7);
@@ -533,7 +543,7 @@ function Stage({ focus, reducedMotion, onReady, onSelect, onPartEvent, onBuilt }
           {/* Sized to stop short of the neighbouring figures: an unbuilt one is
               white paper, and would show as a white shape against the colour. */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.2, -0.006, -0.1]} renderOrder={-1}>
-            <planeGeometry args={[6.8, 6.8]} />
+            <planeGeometry args={[6.2, 6.2]} />
             <meshBasicMaterial
               ref={(material) => {
                 poolRefs.current[i] = material;

@@ -111,6 +111,48 @@ function qr(): HTMLCanvasElement {
   return c;
 }
 
+/** A TikCode-like pattern: rings of dots around a blank centre, with three markers. */
+function tikcode(ink: string): HTMLCanvasElement {
+  const [c, g] = canvas(512, 512);
+  g.fillStyle = "#FFFFFF";
+  g.fillRect(0, 0, 512, 512);
+  g.fillStyle = ink;
+  const r = rng(29);
+  for (let ring = 0; ring < 4; ring++) {
+    const radius = 118 + ring * 36;
+    const count = 22 + ring * 8;
+    for (let i = 0; i < count; i++) {
+      if (r() < 0.26) continue;
+      const a = (i / count) * Math.PI * 2 + ring * 0.2;
+      g.beginPath();
+      g.arc(256 + Math.cos(a) * radius, 256 + Math.sin(a) * radius, 8.5 + (r() > 0.7 ? 3 : 0), 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  // Three position markers, as on any scannable code.
+  for (const a of [-2.35, -0.79, 2.35]) {
+    const x = 256 + Math.cos(a) * 205;
+    const y = 256 + Math.sin(a) * 205;
+    g.fillStyle = "#FFFFFF";
+    g.beginPath();
+    g.arc(x, y, 34, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = ink;
+    g.beginPath();
+    g.arc(x, y, 26, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = "#FFFFFF";
+    g.beginPath();
+    g.arc(x, y, 15, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = ink;
+    g.beginPath();
+    g.arc(x, y, 8, 0, Math.PI * 2);
+    g.fill();
+  }
+  return c;
+}
+
 function label(text: string, background: string, ink: string): HTMLCanvasElement {
   const [c, g] = canvas(768, 96);
   g.fillStyle = background;
@@ -127,7 +169,7 @@ function label(text: string, background: string, ink: string): HTMLCanvasElement
   return c;
 }
 
-const DRAWINGS: Record<string, () => HTMLCanvasElement> = { receipt, qr };
+const DRAWINGS: Record<string, (ink: string) => HTMLCanvasElement> = { receipt, qr, tikcode };
 
 export function getTexture(key: string): THREE.Texture {
   let tex = cache.get(key);
@@ -140,7 +182,9 @@ export function getTexture(key: string): THREE.Texture {
     const [text, background = PALETTE.cream, ink = INK] = key.slice(6).split("|");
     tex = new THREE.CanvasTexture(label(text, background, ink));
   } else {
-    tex = new THREE.CanvasTexture(DRAWINGS[key.slice(5)]());
+    // "proc:<name>" or "proc:<name>|<ink colour>".
+    const [name, ink = INK] = key.slice(5).split("|");
+    tex = new THREE.CanvasTexture(DRAWINGS[name](ink));
   }
   // Colour maps are sRGB; a little anisotropy keeps them crisp at the
   // glancing angle the camera looks from.

@@ -1,72 +1,100 @@
 ---
 name: blueprint-figure
-description: Add, restyle or refine one of the 3D clay figures on the homepage blueprint stage (app/components/blueprint). Use when asked to add a project to the 3D stage, make a model more detailed or rounder, change its colours, or fix its lighting, shadows or line drawing.
+description: Build, restyle or refine a 3D clay figure on the homepage blueprint stage (app/components/blueprint). Use when asked to add a project to the 3D stage, make a model more detailed, more real or better shaped, change its colours or materials, or fix its lighting, shadows, flicker or line drawing.
 ---
 
 # Blueprint figure
 
-Read `rules/BLUEPRINT_STAGE.md` first. It holds the art direction and the
-things that break; this file is the procedure.
+`rules/BLUEPRINT_STAGE.md` explains how the stage works and why. This file is
+the modelling standard and the procedure. Both came out of Tony's reviews —
+when they disagree with a hunch, they win.
 
-## Before you start
+## The standard
 
-- The figure must be a case study that already has a page under `app/work/`.
-  If it does not, stop and say so — do not add a placeholder.
-- The stage shows four figures in a 2 × 2 grid (`SLOTS` in `scene.tsx`). A fifth
-  needs a layout decision from Tony, not just data.
+Tony judges these against offline clay renders, by eye, enlarged. What he has
+sent back, and the rule each became:
 
-## 1. Compose it on paper
+| He said | Rule |
+| --- | --- |
+| "It looks like 3D modelling, not real" | A solid is **flat faces with a tight bevel** (default ≈ 0.02) that catches a line of light. A big fillet on everything reads as an inflated blob and hides the three tones of top, front and side. Round things are round because the object is. |
+| "The roof is fake. The window is fake." | **Build it the way it is made.** A roof is boards with thickness that overhang the walls; a window is a frame standing proud with the glass set back; a chimney comes through the roof and has a cap. If a part would look stuck on in real life, it will here. |
+| "Too little detail, it's crude" | **Three scales, always**: the big masses, the mid parts (drawer fronts, lids, rims, steps), and the small things (pulls, grille dots, knobs, glazing bars). A part that is one plain block is not finished. |
+| "Other renders have gaps between things" | Contact and crevice darkening comes from the renderer (the still frame is accumulated with a wandering sky light). It only shows if parts actually **sit on, in or against** each other — let small things sink 0.002–0.01 into their support; never float them. |
+| "It keeps flickering" | **No two faces in one plane.** An overlay must be clearly proud of its base (≥ 0.004) on every side, and never the same width, end or height as it. `npm run check` finds these in axis-aligned shapes. |
+| "The shape looks lopsided" | **Keep symmetric things square to the viewer.** Do not tilt a heart, a face or a logo for liveliness; turn it about the vertical axis only. |
+| "The colours are too busy" | **Per figure: one hue owns the area, two neutrals, two accents.** Green is for plants and "on", blue for glass. Never a colour per part. |
+| "Now it's monotonous" | **Every figure has its own palette** (`THEMES`). Same roles, same recipe, different hue. |
+| "Some figures sit low" | Nothing to do per figure: the camera centres on each figure's extent on screen. But keep floating things (clouds, hearts) inside a sensible height — they move the centre. |
+| "The shadows are too hard / too real" | Nothing to do per figure. Do not add lights or change shadow settings to fix one model. |
 
-Write the scene as a short list before any coordinates:
+Two more that are his decisions, not style:
 
-- **Ground** — a `ground` slab with a `mist` inlay. Same for every figure.
-- **Hero object** — the one thing that says what the project is (a TV, a phone
-  on a stand, a tray of components, a house).
+- A figure is a **published case study** with a link. Work that is finished but
+  not written up may be added **only when Tony asks**, in the `mono` palette,
+  with `status: SOON` and no `href`. Never add one because he mentioned a project.
+- Screens show the **real UI** (a crop in `public/portfolio/blueprints/`) when
+  the project is one product. When the subject is structure or layout
+  (a restructure, a cross-platform system), clay blocks stand in for the UI.
+
+## Procedure
+
+### 1. Compose it in words
+
+- **Hero object** — the one thing that says what the project is.
 - **Two or three supporting objects** that tell the story around it.
-- **Small things** — pulls, knobs, dots, rims, bars. Plan at least six.
+- **Small things** — at least six.
 - **One or two toy accents** — a ball, a ring, an arch, a cloud.
 
-Then split it into 5–8 **parts**. A part is what one agent builds and what one
-line of the log names ("Console", "Order ticket"), so name them like objects.
+Split it into 5–8 **parts**. A part is what one agent builds and one line of
+the log names ("Console", "Order ticket"), so name them like objects.
 
-## 2. Author it in `figures.ts`
+### 2. Author it in `figures.ts`
 
-Figure space: ground at `y = 0`, front faces `+z`, footprint about 2.9 × 1.9,
-tallest point about 2.1. The camera looks from the front-right and above, so
-tall things go at the back or left, and anything behind a taller object to its
-front-right is hidden.
+A figure is one entry in `BUILDERS`: a palette from `THEMES` and a function of
+that palette, `(c) => ({ id, fig, title, desc, href, parts, callouts })`. Start
+`parts` with `{ id: "ground", ..., shapes: plinth(c) }`.
 
-- Shapes: `box`, `slab` (rounded rectangle, extruded), `cyl` (set
-  `bevel = r` for a capsule), `ball`, `torus`, `arch`, `poly` (give `r` to
-  round its corners). Helpers: `flat()`, `lying()`, `FACE`, `row()`, `heart()`.
-- Colour: `PALETTE` constants only. Check the figure against the other three —
-  the same five accents, no new hue.
-- Finish: leave it as `clay` unless the thing is pressed (`soft`), printed
-  (`print`) or glows (`screen`, `led`).
-- A screen is a thin `slab` with `finish: "screen"` and `map` set to a crop of
-  the real UI in `public/portfolio/blueprints/`, on a dark `inky` lip one size
-  larger. Keep the crop's aspect ratio in the slab's size.
-- Stack by arithmetic: an object's centre `y` is the top of what it stands on
-  plus half its height. Let small things sink a hair (0.002–0.01) into their
-  support rather than float.
-- Add three `callouts` (numerals `n02 / n04 / n06` for figure `n`) pointing at
-  three different parts, with leaders that do not cross the figure.
+- **Space**: ground at `y = 0`, front faces `+z`, footprint about 2.9 × 1.9,
+  tallest point about 2.1. The base's top is at 0.107. The camera looks from the
+  front-right and above: tall things go at the back or left; anything behind a
+  taller object to its front-right is hidden.
+- **Shapes**: `box`, `slab` (rounded rectangle, extruded; `r` = half its size
+  makes a disc), `cyl` (`bevel = r` for a capsule), `ball`, `torus`, `arch`,
+  `poly` (`r` rounds its corners). Helpers: `flat()`, `lying()`, `FACE`,
+  `row()`, `heart()`, `sparkle()`, `plinth()`, `screenBlocks()`.
+- **Colour**: palette roles only — `c.ground / mist / lilac / plum / inky`
+  (the world's hue, light to dark), `c.cream / sand` (neutrals),
+  `c.coral / yellow` (the two accents), `c.green / blue` (plants, glass).
+- **Finish**: leave it `clay` unless pressed (`soft`), printed (`print`) or
+  glowing (`screen`, `led`). No metal, no gloss.
+- **Tilted things** go in a part with a `frame`, authored upright inside it.
+- **Stack by arithmetic**: centre `y` = top of the support + half the height.
+- **Callouts**: three, numbered `n02 / n04 / n06` for figure `n`, on three
+  different parts, with leaders that do not cross the figure.
+- **Slots**: `SLOTS` in `scene.tsx` has one entry per figure. A new figure needs
+  a slot, and the overview's zoom divisors may need retuning.
 
-## 3. Look at it
+### 3. Look at it
 
-Follow "Checking your work" in the rules file. For each figure, check:
+The stage needs ≥ 1024px and a visible browser pane (a hidden one does not
+animate). Wait until the index buttons are enabled, build the figure, then
+**wait about ten seconds**: the picture is only final after the turn ends and
+the frames have accumulated. Enlarge by scaling the `<canvas>` (`#stage canvas`,
+CSS transform), never `#stage`.
 
-- [ ] Drawing state: outlines are rounded and continuous; no doubled lines.
-- [ ] Nothing floats, nothing is hidden behind something else by accident.
-- [ ] Every part has small detail; no plain blocks.
-- [ ] Shadows: crisp at contact, wide and soft further out, never black.
-- [ ] Colours sit in the same family as the other three figures.
-- [ ] The callout numerals and the caption do not overlap the object.
-- [ ] 1440 × 900 and 1024 × 768 both frame it with the result card clear.
+- [ ] Flat faces, tight bevels; three tones on every block.
+- [ ] Nothing floats; nothing is hidden by accident; nothing strobes when it turns.
+- [ ] Every part has small detail.
+- [ ] Parts are made the way the real thing is made.
+- [ ] One hue, two neutrals, two accents; sits well beside the other figures.
+- [ ] Drawing state (reload, do not build): outlines continuous, no doubled lines.
+- [ ] Numerals and caption clear of the object, at 1440 × 900 and 1024 × 768.
 
-## 4. Finish
+### 4. Finish
 
-- `npx tsc --noEmit`, `npm run lint`, `npm run check`, `npm run build`.
-- If the art direction or a rule changed, record it in
-  `rules/BLUEPRINT_STAGE.md` in the same change.
-- Show Tony screenshots before it goes to `main`. He reviews this by eye.
+- `npx tsc --noEmit`, `npm run lint`, `npm run check` (includes the shared-face
+  check), `npm run build`.
+- If a review changes a rule, change this file and `rules/BLUEPRINT_STAGE.md`
+  in the same commit.
+- Push to a branch and show Tony before `main`. He reviews this by eye, and a
+  new look is not approved until he has seen it.
