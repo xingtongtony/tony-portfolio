@@ -492,3 +492,51 @@ img {
     display: none;
   }
 }
+
+/* Page loader (app/components/blueprint/blueprint-stage.tsx).
+   A drawing is wiped in, then built from the ground up, by moving a clipping
+   window one way and its contents the other — transform and opacity only, so
+   it stays smooth while the main thread is busy compiling the 3D scene. */
+@keyframes bp-wipe-x {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes bp-wipe-x-inner {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes bp-rise {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes bp-rise-inner {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+@keyframes bp-lift {
+  from { transform: translateY(0); }
+  to { transform: translateY(var(--bp-lift)); }
+}
+@keyframes bp-scribble {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(4px, -2px); }
+  50% { transform: translate(-3px, 1px); }
+  75% { transform: translate(2px, 3px); }
+}
+@keyframes bp-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Their own layers, painted up front: content that starts wholly outside its
+   clip is otherwise not rasterised when a compositor animation brings it in. */
+.bp-layer {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-anim {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

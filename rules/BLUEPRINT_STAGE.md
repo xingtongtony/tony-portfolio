@@ -113,6 +113,31 @@ centred. The figure sits right of centre; the camera's `shiftRight` and paddings
 `scene.tsx` must agree with those blocks. ← → switch projects, Esc returns to
 the sheet.
 
+### The page loader
+
+three.js has to download and its shaders compile on the first draw, so from
+`lg` up a loader covers the whole page (sidebar included) until the stage's
+first frame is painted. It is not a spinner: it shows FIG. 0 — the logo as a
+clay block on the same plinth the projects stand on — first as a patent
+drawing wiped in, then built from the ground up while two agents ride the
+build front. It is the stage's mechanic in miniature, so the wait is the first
+demonstration of the idea. When the scene is ready it clears, and the row of
+drawings is there at about the same scale, about to close in.
+
+- The art is generated, not drawn: `scripts/blueprint-loader-art.py` projects
+  real geometry with the stage's camera and writes `loader-art.ts` with a line
+  layer and a colour layer that register exactly. Re-run it after changing the
+  palette or the logo; never edit the output by hand.
+- Only transform and opacity move (a clipping window goes one way, its
+  contents the other), so it stays smooth while the main thread compiles. The
+  moving layers need `will-change: transform` (`.bp-layer`): content that
+  starts wholly outside its clip is otherwise not painted when it slides in.
+- It plays once per visit, holds for at least `LOADER_MIN` so the build is
+  never cut short, gives up after 9s, and its progress line marks real
+  milestones (page live, scene assembled, first frame drawn), not a made-up
+  percentage. Below `lg` it never shows.
+- New `@keyframes` in `globals.css` need a clean dev-server restart to appear.
+
 ## 4. Things that will bite
 
 - **three.js 0.18x shadows are not the ones in older tutorials.**

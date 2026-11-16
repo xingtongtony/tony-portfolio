@@ -2,11 +2,12 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Pause, Play, RotateCcw } from "lucide-react";
 import { engine, now, setPartBuilt, type BuildItem } from "./engine";
 import { AGENTS, FIGURES } from "./figures";
+import { LOADER_ART } from "./loader-art";
 import { getGreeting } from "../hero-intro";
 
 // three.js only runs in the browser, and it is heavy: load the scene as its
@@ -32,6 +33,17 @@ const GHOST =
 // The agents' pointer: a present-day multiplayer cursor — no tail, soft corners.
 const CURSOR =
   "M4.2 3.4 18.6 9.1c.5.2.5.9 0 1.1l-5.6 2.1c-.3.1-.5.3-.6.6l-2.2 5.6c-.2.5-.9.5-1.1 0L3.4 4.2c-.2-.5.3-1 .8-.8Z";
+
+// The loader plays once per visit: coming back to the homepage from a case
+// study should not sit through it again. (Module state survives client-side
+// navigation; a reload starts over.)
+let loaderPlayed = false;
+// Long enough for the drawing to appear and be built before it is taken away.
+const LOADER_MIN = 2500;
+const EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
+const WIPE = 900; // the drawing is wiped in
+const BUILD_AT = 800; // then built from the ground up...
+const BUILD = 1500; // ...over this long
 
 const DESKTOP = "(min-width: 1024px)";
 const subscribeDesktop = (onChange: () => void) => {
@@ -180,16 +192,29 @@ export function BlueprintStage() {
   const onReady = useCallback(() => setReady(true), []);
 
   // The scene takes a moment to arrive: three.js has to download and its
-  // shaders compile on the first draw. Until that draw is on screen a small
-  // loader stands in; then it clears and the scene opens up behind it.
+  // shaders compile on the first draw. Until that draw is on screen a loader
+  // covers the whole page; then it clears and the scene opens up behind it.
   const [painted, setPainted] = useState(false);
-  const [loader, setLoader] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
+  const [minDone, setMinDone] = useState(false);
+  const [loader, setLoader] = useState(() => !loaderPlayed);
   const onPainted = useCallback(() => setPainted(true), []);
   useEffect(() => {
-    if (!painted) return;
-    const timer = window.setTimeout(() => setLoader(false), 700);
+    loaderPlayed = true;
+    const timer = window.setTimeout(() => setMinDone(true), LOADER_MIN);
     return () => window.clearTimeout(timer);
-  }, [painted]);
+  }, []);
+  // Never hold the page hostage: if the scene has not arrived in a while, show the page anyway.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTimedOut(true), 9000);
+    return () => window.clearTimeout(timer);
+  }, []);
+  const revealed = (painted || timedOut) && minDone;
+  useEffect(() => {
+    if (!revealed) return;
+    const timer = window.setTimeout(() => setLoader(false), 800);
+    return () => window.clearTimeout(timer);
+  }, [revealed]);
 
   /** The next or previous figure; from the whole sheet, the first or the last. */
   const step = useCallback(
@@ -241,10 +266,106 @@ export function BlueprintStage() {
   const buildingHere = buildingDef !== null && focus === building;
 
   return (
-    // Exactly one screen, with the same margin under the project index as
-    // over the eyebrow line. It reaches 12px further left than the page
-    // column, to the sidebar's edge, so a neighbouring figure comes out from
-    // under the sidebar with no gap.
+    <>
+      {/* Page loader. It covers the whole page — sidebar included — until the
+          stage's first frame is painted, so nothing is seen half-arrived.
+
+          What it shows is FIG. 0: the logo as a clay block on the same plinth
+          the projects stand on, drawn with the stage's camera, line weight
+          and numerals (loader-art.ts, generated from real geometry). The
+          drawing is wiped in; then two agents carry the build front up it and
+          the object appears from the ground — the stage's own mechanic, so
+          the loader is the first demonstration of the idea, not a spinner.
+          When the scene is ready it clears, and the row of drawings is there
+          at about the same scale, about to close in.
+
+          It is in the server HTML and shown by CSS from lg up, so the page
+          never flashes before it; below lg there is nothing heavy to wait for
+          and it never shows. It sits outside #stage because a container-query
+          root would capture a fixed child. The left padding is the sidebar's
+          column, so the art sits where the stage's centre will be. */}
+      {loader ? (
+        <div
+          role="status"
+          aria-label="Loading"
+          className={`fixed inset-0 z-[100] hidden items-center justify-center bg-white transition-opacity duration-700 lg:flex lg:pl-[280px] xl:pl-[324px] ${
+            revealed ? "pointer-events-none opacity-0" : "opacity-100"
+          }`}
+        >
+          <div className={`flex flex-col items-center transition-transform duration-700 ease-out ${revealed ? "scale-[1.1]" : "scale-100"}`}>
+            <div className="relative w-[min(560px,62vw)]" style={{ aspectRatio: `${LOADER_ART.width} / ${LOADER_ART.height}` }}>
+              {/* The drawing, wiped in from the left. */}
+              <div className="bp-anim bp-layer absolute inset-0 overflow-hidden" style={{ animation: `bp-wipe-x ${WIPE}ms ${EASE} both` }}>
+                <svg
+                  viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
+                  className="bp-anim bp-layer block size-full"
+                  style={{ animation: `bp-wipe-x-inner ${WIPE}ms ${EASE} both` }}
+                  aria-hidden="true"
+                  dangerouslySetInnerHTML={{ __html: LOADER_ART.line }}
+                />
+              </div>
+              {/* The object, built from the ground up over it. */}
+              <div className="bp-anim bp-layer absolute inset-0 overflow-hidden" style={{ animation: `bp-rise ${BUILD}ms ${EASE} ${BUILD_AT}ms both` }}>
+                <svg
+                  viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
+                  className="bp-anim bp-layer block size-full"
+                  style={{ animation: `bp-rise-inner ${BUILD}ms ${EASE} ${BUILD_AT}ms both` }}
+                  aria-hidden="true"
+                  dangerouslySetInnerHTML={{ __html: LOADER_ART.colour }}
+                />
+              </div>
+              {/* Two agents ride the build front, one each side. */}
+              {[
+                { agent: AGENTS[2], left: "24%", flip: false },
+                { agent: AGENTS[1], left: "76%", flip: true },
+              ].map(({ agent, left, flip }, i) => (
+                // A layer the size of the art: moving it by a share of its own
+                // height keeps the agents on the build front at any size.
+                <div
+                  key={agent.id}
+                  className="bp-anim pointer-events-none absolute inset-0"
+                  style={{ "--bp-lift": "-58%", animation: `bp-lift ${BUILD}ms ${EASE} ${BUILD_AT}ms both` } as CSSProperties}
+                  aria-hidden="true"
+                >
+                  <div className="bp-anim absolute top-[80%]" style={{ left, animation: `bp-fade 300ms ease-out ${BUILD_AT - 250 + i * 120}ms both` }}>
+                    <div className="bp-anim" style={{ animation: `bp-scribble 620ms ease-in-out ${BUILD_AT}ms ${Math.round(BUILD / 620)}` }}>
+                      <svg width="20" height="20" viewBox="0 0 22 22" className="block drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]" style={flip ? { transform: "scaleX(-1)" } : undefined}>
+                        <path d={CURSOR} fill={agent.stroke} stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
+                      </svg>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={agent.src}
+                        alt=""
+                        width={agent.w}
+                        height={38}
+                        draggable={false}
+                        className={`absolute top-[16px] block select-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)] ${flip ? "right-[14px]" : "left-[14px]"}`}
+                        style={{ height: 20, width: "auto", maxWidth: "none", transform: `rotate(${flip ? 2 : -2}deg)` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Captioned like every figure on the stage. */}
+            <div className="bp-anim mt-1 text-center" style={{ animation: `bp-fade 500ms ease-out 350ms both` }}>
+              <span className="block text-[15px] italic leading-none text-[#151515]" style={SERIF}>
+                FIG. 0
+              </span>
+              <span className="mt-2 block text-[10px] font-semibold uppercase leading-none tracking-[0.16em] text-black/45">Tony Xing — Portfolio</span>
+              {/* Real milestones, not a made-up percentage: the page is live, the scene is assembled, the first frame is drawn. */}
+              <span className="mx-auto mt-4 block h-px w-16 overflow-hidden bg-black/10">
+                <span
+                  className="block h-px origin-left bg-[#151515] transition-transform duration-700 ease-out"
+                  style={{ transform: `scaleX(${painted ? 1 : ready ? 0.7 : 0.3})` }}
+                />
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Exactly one screen, with the same margin under the project index as over the eyebrow line. It reaches 12px further left than the page column, to the sidebar's edge, so a neighbouring figure comes out from under the sidebar with no gap. */}
     <div
       id="stage"
       className="@container relative -mx-10 -ml-[3.25rem] -mt-3 h-svh min-h-[640px] overflow-hidden xl:-mx-14 xl:-ml-[4.25rem] 2xl:-mx-16 2xl:-ml-[4.75rem]"
@@ -262,38 +383,6 @@ export function BlueprintStage() {
           />
         ) : null}
       </div>
-
-      {/* Loading: the five agents circle a blank spot on the sheet. Only
-          transform and opacity move, so it keeps turning while the main thread
-          is busy compiling. When the scene is painted they fly apart and fade. */}
-      {desktop && loader ? (
-        <div
-          role="status"
-          aria-label="Loading the 3D stage"
-          className={`pointer-events-none absolute left-[58%] top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out ${
-            painted ? "scale-[1.7] opacity-0" : "scale-100 opacity-100"
-          }`}
-        >
-          <div className="relative size-[176px]">
-            <div className="absolute inset-0 rounded-full border border-dashed border-black/15" />
-            <div className="absolute inset-0 animate-spin [animation-duration:2.6s]">
-              {AGENTS.map((agent, i) => (
-                <span key={agent.id} className="absolute left-1/2 top-1/2 block size-0" style={{ transform: `rotate(${i * 72}deg) translateY(-88px)` }}>
-                  <svg width="20" height="20" viewBox="0 0 22 22" className="-ml-[10px] -mt-[10px] block drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]">
-                    <path d={CURSOR} fill={agent.stroke} stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              ))}
-            </div>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-[17px] italic leading-none text-[#151515]" style={SERIF}>
-                FIG. 0
-              </span>
-              <span className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45">Setting the stage</span>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {/* Captions and reference numerals, pinned to 3D points by the scene. */}
       <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
@@ -518,5 +607,6 @@ export function BlueprintStage() {
         ))}
       </div>
     </div>
+    </>
   );
 }
