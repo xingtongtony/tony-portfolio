@@ -78,7 +78,7 @@ type Layout = "wide" | "compact";
 const PRESS_V = 0.32; // top/bottom: vertical intrusion ÷ sticker height
 const PRESS_H = 0.1; // left/right: horizontal intrusion ÷ sticker width
 
-function getGreeting(hour: number): string {
+export function getGreeting(hour: number): string {
   if (hour >= 5 && hour < 12) return "Good morning";
   if (hour >= 12 && hour < 18) return "Good afternoon";
   if (hour >= 18 && hour < 23) return "Good evening";

@@ -289,6 +289,8 @@ Rule: never paste a component at its source styling — it must end up using `--
 
 ## 8. Hero — editorial mixed-weight pattern
 
+> From `lg` up the homepage opens with the 3D blueprint stage instead of this board (the same greeting and statement sit above it). The hero below is what phones and tablets see. The stage has its own rules: `rules/BLUEPRINT_STAGE.md`.
+
 The homepage hero (`app/components/hero-intro.tsx`) is a reusable board layout: an oversized statement that alternates **heavy black UPPERCASE sans** (Geist `font-black`) with **medium serif italic lowercase** (Newsreader 500), plus **floating color tags** (short self-descriptions sourced from the résumé). These are the parts that are easy to get wrong — encode them if rebuilding the pattern:
 
 **Overlap + white seam.** Italic words are pulled into the neighbouring black words with negative `-ml`/`-mr` so the two faces overlap. The headline carries a white `-webkit-text-stroke` (`4px`) with `paint-order: stroke`; on the white page it's invisible *except* where letters overlap, where it cuts a clean white seam between the two faces.

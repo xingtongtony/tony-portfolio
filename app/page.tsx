@@ -5,6 +5,7 @@ import { PortfolioShell } from "./components/portfolio-shell";
 import { StaggerGrid, StaggerItem } from "./components/motion";
 import { HeroIntro } from "./components/hero-intro";
 import { NextSectionButton } from "./components/next-section-button";
+import { BlueprintStage } from "./components/blueprint/blueprint-stage";
 
 const work = [
   {
@@ -160,8 +161,14 @@ const marqueeCompanies = [
 export default function Home() {
   return (
     <PortfolioShell sidebarTheme="light">
+      {/* First screen. From lg: the blueprint stage — patent drawings that the
+          sticker agents build into objects. Below lg: the sticker hero (the
+          3D stage is neither shown nor downloaded there). */}
+      <div className="hidden lg:block">
+        <BlueprintStage />
+      </div>
       <div className="mx-auto w-full max-w-[1280px]">
-        <div className="marquee-viewport -mx-6 hidden overflow-hidden py-1 sm:-mx-10 sm:block xl:-mx-14 2xl:-mx-16">
+        <div className="marquee-viewport -mx-6 hidden overflow-hidden py-1 sm:-mx-10 sm:block lg:hidden">
           <div className="marquee-track flex min-w-max text-lg font-semibold tracking-[-0.045em] text-black/18 sm:text-2xl">
             {[0, 1].map((group) => (
               <div
@@ -181,7 +188,7 @@ export default function Home() {
 
         <section
           id="about"
-          className="flex min-h-[calc(100svh-48px)] scroll-mt-8 items-center py-14 lg:py-16"
+          className="flex min-h-[calc(100svh-48px)] scroll-mt-8 items-center py-14 lg:hidden"
         >
           {/* pb biases the centered block upward: the bottom-hanging stickers
               add visual weight below the headline, so true optical center sits
@@ -357,7 +364,7 @@ export default function Home() {
           </footer>
         </section>
       </div>
-      <NextSectionButton theme="light" rootSelector="main" />
+      <NextSectionButton theme="light" rootSelector="main" yieldTo="#stage" />
     </PortfolioShell>
   );
 }

@@ -10,3 +10,4 @@ Before making portfolio design, content, routing, or asset changes, read and fol
 
 - `rules/PORTFOLIO_WORKING_RULES.md` — binding rules + process spec (judgment, anti-patterns, workflow, content voice).
 - `rules/DESIGN_SYSTEM.md` — token reference (color, type, spacing, radii, shadows, motion, components).
+- `rules/BLUEPRINT_STAGE.md` — the 3D blueprint stage on the homepage (art direction, how figures are built, how to check them). For adding or restyling a figure, use the `blueprint-figure` skill in `.claude/skills/`.

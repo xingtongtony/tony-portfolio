@@ -57,6 +57,7 @@ The desired homepage structure is inspired by Alex Nguyen's portfolio:
 - Right side: independently scrollable content flow with company strip, selected work, side/coming-soon projects, experience, about, and contact.
 - The structure should feel close to the reference: editorial, compact, content-heavy, and portfolio-first.
 - Do not replace this with a generic centered landing page unless explicitly requested.
+- From `lg` up, the first screen of the right side is the 3D blueprint stage (`app/components/blueprint/`); below `lg` it is the sticker hero. Its rules are in `rules/BLUEPRINT_STAGE.md` — every figure on it must be a published case study.
 
 ## Case Study Page Model
 

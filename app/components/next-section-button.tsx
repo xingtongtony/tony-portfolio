@@ -28,9 +28,16 @@ const THEME = {
 export function NextSectionButton({
   theme = "dark",
   rootSelector = "article",
+  yieldTo,
 }: {
   theme?: "dark" | "light";
   rootSelector?: string;
+  /**
+   * Selector of an element that has its own controls at the bottom centre of
+   * the screen (the homepage's blueprint stage). While it covers the pill's
+   * spot, the pill stays out of the way.
+   */
+  yieldTo?: string;
 } = {}) {
   const [sections, setSections] = useState<Section[]>([]);
   const [activeIdx, setActiveIdx] = useState(-1);
@@ -38,6 +45,7 @@ export function NextSectionButton({
   // or a `.screen-shadow` light image) — flip the pill to its light variant so
   // the dark frosted chrome stays legible on top of white imagery.
   const [overLight, setOverLight] = useState(false);
+  const [yielding, setYielding] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -87,6 +95,12 @@ export function NextSectionButton({
       if (atBottom) active = list.length - 1;
       setActiveIdx((prev) => (prev === active ? prev : active));
 
+      // Step aside while the `yieldTo` element is shown and still reaches the
+      // pill's spot (display:none → no offsetParent → never yields).
+      const host = yieldTo ? document.querySelector<HTMLElement>(yieldTo) : null;
+      const covered = !!host && host.offsetParent !== null && host.getBoundingClientRect().bottom > window.innerHeight - 96;
+      setYielding((prev) => (prev === covered ? prev : covered));
+
       // Is a bright/light surface directly behind the pill? Sample a few points
       // across the pill and look at the topmost element that isn't the pill (or
       // one of its ancestors). If it sits inside a light region, invert the pill.
@@ -119,9 +133,9 @@ export function NextSectionButton({
       window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [rootSelector]);
+  }, [rootSelector, yieldTo]);
 
-  const nextSection = sections[activeIdx + 1];
+  const nextSection = yielding ? undefined : sections[activeIdx + 1];
   const activeTheme = overLight ? "light" : theme;
 
   const handleClick = () => {
