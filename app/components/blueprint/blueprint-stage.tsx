@@ -529,7 +529,7 @@ export function BlueprintStage() {
             <p className={LABEL}>
               {focused.fig}
               <span className="mx-2 text-black/20">—</span>
-              {buildingHere ? (paused ? "Paused" : "Building") : !focusedBuilt ? "Drawing" : built[focused.id] > 0 ? `Built in ${built[focused.id].toFixed(1)}s` : "Built"}
+              {buildingHere ? (paused ? "Paused" : "Building") : !focusedBuilt ? "Drawing" : built[focused.id] >= 0.1 ? `Built in ${built[focused.id].toFixed(1)}s` : "Built"}
             </p>
             <h2 className={TITLE}>{focused.title}</h2>
             {buildingHere ? (
