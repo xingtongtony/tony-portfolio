@@ -7,19 +7,19 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { engine, now, type BuildItem } from "./engine";
 import { createFigure, HULL_U, measureFigure, type BuiltFigure } from "./figure-builder";
-import { AGENTS, FIGURES, INK, PALETTE, type CalloutDef, type Vec3 } from "./figures";
+import { AGENTS, FIGURES, INK, type CalloutDef, type Vec3 } from "./figures";
 import { installSoftShadows } from "./soft-shadows";
 
 installSoftShadows();
 
-// One fixed axonometric view, like a sheet of patent drawings: an orthographic
-// camera looking down from the front-right. Figures are laid out along the
-// camera's own right axis, so every one is seen from the same angle.
+// The fixed azimuth keeps the carousel on one axis. Flat exhibits can lift
+// the camera to show their face as they come into focus.
 const AZ = 0.56;
 const EL = 0.5;
 const DIR = new THREE.Vector3(Math.sin(AZ) * Math.cos(EL), Math.sin(EL), Math.cos(AZ) * Math.cos(EL));
 const RIGHT = new THREE.Vector3(Math.cos(AZ), 0, -Math.sin(AZ));
-const CAM_UP = new THREE.Vector3().crossVectors(DIR, RIGHT);
+const direction = new THREE.Vector3();
+const cameraUp = new THREE.Vector3();
 
 const CAPTION_OFFSET = new THREE.Vector3(0.2, 0, 1.75);
 
@@ -76,7 +76,7 @@ const shadowLights: (THREE.DirectionalLight | null)[] = [null, null];
 // average back over each new frame.
 const SAMPLES = 56;
 const SKY_SPREAD = 1.05;
-const SKY_INTENSITY = 1.1;
+const SKY_INTENSITY = 0.96;
 const blendMaterial = new THREE.ShaderMaterial({
   uniforms: { map: { value: null as THREE.Texture | null }, opacity: { value: 1 } },
   vertexShader: "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = vec4(position.xy, 0.0, 1.0);\n}",
@@ -162,11 +162,10 @@ export default function Scene(props: SceneProps) {
  *          cannot reach — the foot of every object, the gaps between parts —
  *          darkens a touch, which reads as ambient occlusion.
  *   FILL — a neutral room environment (generated in code, no HDR to download)
- *          plus a sky/ground fill whose ground colour is the lilac of the
- *          bases, so shaded sides pick up a little of it.
+ *          plus a warm sky and a quiet, neutral ground fill.
  *
  * `shadow-radius` is each light's size (see soft-shadows.ts). An invisible
- * floor catches the shadows on the white page, tinted plum.
+ * floor catches the shadows on the white page with a faint cool tint.
  */
 function Studio() {
   const gl = useThree((state) => state.gl);
@@ -186,9 +185,9 @@ function Studio() {
       <color attach="background" args={["#ffffff"]} />
       {/* Little light that nothing can block: most of the ambient comes from
           the sky light, which casts shadows, so creases and contacts darken. */}
-      <Environment map={environment} environmentIntensity={0.25} />
-      {/* Warm from above, lilac from below: shaded sides stay coloured, never grey. */}
-      <hemisphereLight args={["#fff5e8", PALETTE.lilac, 0.45]} />
+      <Environment map={environment} environmentIntensity={0.22} />
+      {/* The floor fill is quiet enough to keep the grey models neutral. */}
+      <hemisphereLight args={["#fff5e8", "#d4ced0", 0.36]} />
       <directionalLight
         ref={(light) => {
           shadowLights[0] = light;
@@ -199,7 +198,7 @@ function Studio() {
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0006}
-        shadow-normalBias={0.02}
+        shadow-normalBias={0.012}
         shadow-radius={0.22}
         shadow-intensity={0.8}
       >
@@ -216,7 +215,7 @@ function Studio() {
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
-        shadow-normalBias={0.02}
+        shadow-normalBias={0.012}
         shadow-radius={0.48}
       >
         {/* Deep enough for the light to lean a long way over (see SKY_SPREAD). */}
@@ -225,7 +224,7 @@ function Studio() {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
         {/* Long enough for the whole row. */}
         <planeGeometry args={[400, 400]} />
-        <shadowMaterial transparent color={PALETTE.plum} opacity={0.4} />
+        <shadowMaterial transparent color="#6b647b" opacity={0.34} />
       </mesh>
     </>
   );
@@ -365,28 +364,13 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
   // runtimes to the engine so the overlay can schedule builds.
   useLayoutEffect(() => {
     const box = new THREE.Box3();
-    const corner = new THREE.Vector3();
     figs.forEach((fig, i) => {
       measureFigure(fig);
       for (const [partId, rt] of Object.entries(fig.parts)) {
         engine.parts[`${fig.def.id}/${partId}`] = rt;
       }
-      // The figure's extent as the camera sees it: across (RIGHT) and up (CAM_UP).
       box.setFromObject(fig.group);
-      const across = [Infinity, -Infinity];
-      const up = [Infinity, -Infinity];
-      for (let c = 0; c < 8; c++) {
-        corner.set(c & 1 ? box.max.x : box.min.x, c & 2 ? box.max.y : box.min.y, c & 4 ? box.max.z : box.min.z);
-        across[0] = Math.min(across[0], corner.dot(RIGHT));
-        across[1] = Math.max(across[1], corner.dot(RIGHT));
-        up[0] = Math.min(up[0], corner.dot(CAM_UP));
-        up[1] = Math.max(up[1], corner.dot(CAM_UP));
-      }
-      const origin = positions[i];
-      centers.current[i] = origin
-        .clone()
-        .addScaledVector(RIGHT, (across[0] + across[1]) / 2 - origin.dot(RIGHT))
-        .addScaledVector(CAM_UP, (up[0] + up[1]) / 2 - origin.dot(CAM_UP));
+      centers.current[i] = box.getCenter(new THREE.Vector3());
     });
     onReady();
     // Runs once: the figures never move after mount.
@@ -411,7 +395,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     // Same threshold as the overlay's `@4xl` container query (56rem).
     const wide = w >= 896;
     const padTop = 140; // the headline
-    const padBottom = 120; // the project index
+    const padBottom = 162; // caption, index and clear space beside the project text
     const focusIndex = focusId ? FIGURES.findIndex((f) => f.id === focusId) : -1;
     const sc = scrub.current;
     const count = FIGURES.length;
@@ -448,17 +432,24 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     }
     // The figure in the middle sits a little right of centre — the left is
     // the headline and the project text — leaving the next one peeking in.
-    const shiftX = -w * (wide ? 0.08 : 0.1) * (1 - opening);
+    const shiftX = -w * (wide ? 0.1 : 0.115) * (1 - opening);
     const shiftY = (padBottom - padTop) / 2;
     const slotCentre = (slot: number, out: THREE.Vector3) => {
       const i = wrap(slot, count);
       return out.copy(centers.current[i] ?? positions[i]).addScaledVector(RIGHT, (slot - i) * GAP);
     };
     const lo = Math.floor(sc.pos);
+    const current = FIGURES[wrap(lo, count)].presentation;
+    const next = FIGURES[wrap(lo + 1, count)].presentation;
+    const blend = smooth(sc.pos - lo);
+    const elevation = mix(mix(current?.elevation ?? EL, next?.elevation ?? EL, blend), EL, opening);
+    const scale = mix(mix(current?.scale ?? 1, next?.scale ?? 1, blend), 1, opening);
+    direction.set(Math.sin(AZ) * Math.cos(elevation), Math.sin(elevation), Math.cos(AZ) * Math.cos(elevation));
+    cameraUp.crossVectors(direction, RIGHT);
     const base = slotCentre(lo, new THREE.Vector3()).lerp(slotCentre(lo + 1, scratch), sc.pos - lo);
-    const zoomTo = Math.min(210, Math.max(22, Math.min((w * 0.58) / 4.9, (h - padTop - padBottom) / 3.7))) * (1 - 0.6 * opening);
+    const zoomTo = Math.min(210, Math.max(22, Math.min((w * 0.58) / 4.9, (h - padTop - padBottom) / 3.7) * scale)) * (1 - 0.6 * opening);
     // Looking at a point to the right of / below the subject moves it left / up.
-    base.addScaledVector(RIGHT, shiftX / zoomTo).addScaledVector(CAM_UP, -shiftY / zoomTo);
+    base.addScaledVector(RIGHT, shiftX / zoomTo).addScaledVector(cameraUp, -shiftY / zoomTo);
     if (!camTarget.current) {
       camTarget.current = base.clone();
       cam.zoom = zoomTo;
@@ -472,7 +463,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       }
     }
     sc.zoom = cam.zoom;
-    cam.position.copy(camTarget.current).addScaledVector(DIR, 40);
+    cam.position.copy(camTarget.current).addScaledVector(direction, 40);
     cam.lookAt(camTarget.current);
     cam.updateProjectionMatrix();
     HULL_U.value = 1.3 / cam.zoom;
@@ -559,7 +550,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
         pos.y = damp(pos.y, ty, 7, dt);
       }
       el.style.transform = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
-      el.style.opacity = "1";
+      el.style.opacity = build ? "1" : "0.50";
       const tag = el.lastElementChild as HTMLElement | null;
       if (tag) tag.style.opacity = docked && !wide ? "0" : "1";
     }

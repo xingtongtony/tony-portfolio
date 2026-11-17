@@ -62,12 +62,12 @@ function displayRgb(hex: string): THREE.Vector3 {
  * the form turns softly at its edges. `screen` and `led` glow.
  */
 const FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
-  clay: { roughness: 0.56, metalness: 0, specularIntensity: 0.55, sheen: 0.25, sheenRoughness: 0.55, sheenColor: "#ffffff" },
+  clay: { roughness: 0.65, metalness: 0, specularIntensity: 0.48, sheen: 0.18, sheenRoughness: 0.65, sheenColor: "#ffffff" },
   // Moulded plastic for the small things you press.
   soft: { roughness: 0.45, metalness: 0, clearcoat: 0.25, clearcoatRoughness: 0.4 },
   // Printed card and paper.
-  print: { roughness: 0.92, metalness: 0 },
-  screen: { roughness: 0.16, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08 },
+  print: { roughness: 0.94, metalness: 0, specularIntensity: 0.22 },
+  screen: { roughness: 0.25, metalness: 0, clearcoat: 0.42, clearcoatRoughness: 0.24 },
   led: { roughness: 0.4, metalness: 0 },
 };
 
@@ -141,7 +141,7 @@ function fillMaterial(
     // Clay and soft plastic let a little light through, so their shade keeps
     // its colour instead of going grey. A trace of self-colour stands in for that.
     params.emissive = color;
-    params.emissiveIntensity = 0.07;
+    params.emissiveIntensity = 0.045;
   }
   const m = new THREE.MeshPhysicalMaterial(params);
   m.onBeforeCompile = (shader) => {
@@ -484,6 +484,7 @@ export function createFigure(def: FigureDef): BuiltFigure {
     if (part.frame) {
       pg.position.set(part.frame.pos[0], part.frame.pos[1], part.frame.pos[2]);
       pg.rotation.set(part.frame.rot[0], part.frame.rot[1], part.frame.rot[2]);
+      if (part.frame.scale !== undefined) pg.scale.setScalar(part.frame.scale);
     }
     const rt: PartRuntime = {
       h: { value: -1e3 },

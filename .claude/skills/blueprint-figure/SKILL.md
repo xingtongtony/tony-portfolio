@@ -26,7 +26,7 @@ sent back, and the rule each became:
 | "Now it's monotonous" | **Every figure has its own palette** (`THEMES`). Same roles, same recipe, different hue. |
 | "The interface is too small, and the padding round the screen is uneven" | **A screen fills its body up to one even bezel.** Size the body to the screen, not the other way round: body = screen + 2 × bezel on both axes (the screen keeps the image's aspect ratio), and screen corner radius = body radius − bezel so the corners are concentric. Keep the bezel thin; the interface is the subject. |
 | "Some figures sit low" | Nothing to do per figure: the camera centres on each figure's extent on screen. But keep floating things (clouds, hearts) inside a sensible height — they move the centre. |
-| "The shadows are too hard / too real" | Nothing to do per figure. Do not add lights or change shadow settings to fix one model. |
+| "The shadows are too hard / too real" | Compare the shared studio lighting across a pale, saturated and monochrome model. Keep contact edges grounded and the shadows beyond them soft. |
 
 Two more that are his decisions, not style:
 
@@ -41,6 +41,9 @@ Two more that are his decisions, not style:
 
 ### 1. Compose it in words
 
+- **Design decision** — identify the interaction or insight in the case study
+  that the visitor should recognize at homepage size. Use the published
+  description and cover as the reference for work marked Coming soon.
 - **Hero object** — the one thing that says what the project is.
 - **Two or three supporting objects** that tell the story around it.
 - **Small things** — at least six.
@@ -69,6 +72,8 @@ that palette, `(c) => ({ id, fig, title, desc, href, parts, callouts })`. Start
 - **Finish**: leave it `clay` unless pressed (`soft`), printed (`print`) or
   glowing (`screen`, `led`). No metal, no gloss.
 - **Tilted things** go in a part with a `frame`, authored upright inside it.
+- **Camera** — when a flat figure's main face foreshortens too much, use
+  `presentation` to give it a higher view at the centre of the carousel.
 - **Stack by arithmetic**: centre `y` = top of the support + half the height.
 - **Callouts**: three, numbered `n02 / n04 / n06` for figure `n`, on three
   different parts, with leaders that do not cross the figure.
@@ -88,6 +93,7 @@ CSS transform), never `#stage`.
 - [ ] Every part has small detail.
 - [ ] Parts are made the way the real thing is made.
 - [ ] One hue, two neutrals, two accents; sits well beside the other figures.
+- [ ] The main design decision reads in the normal homepage composition.
 - [ ] Drawing state (reload, do not build): outlines continuous, no doubled lines.
 - [ ] Numerals and caption clear of the object, at 1440 × 900 and 1024 × 768.
 
