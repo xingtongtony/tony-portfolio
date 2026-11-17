@@ -111,6 +111,15 @@ sharp. Position along the row is continuous, so fade, size, focus and camera
 follow the distance to the middle. It moves by dragging or throwing the stage, a sideways swipe on
 a trackpad, the arrows, the arrow keys, the numbered rail, or clicking a
 neighbour; a small drag falls back, a real one or a flick lands on the next.
+
+From `lg` up the stage is the whole homepage: exactly one screen, with nothing
+under it and no page to scroll (Experience and Contact are on the About page).
+So the gesture that would scroll a page turns the row instead — wheel or swipe
+down for the next figure, up for the one before, as do ↓ ↑ and Page Down / Up.
+One gesture turns it once, however long a trackpad keeps coasting; the next
+turn needs a pause or a fresh push. This only happens while the page cannot
+scroll (`scrollHeight` ≤ the window's height): on a window too short for the
+stage's minimum height the wheel scrolls the page as usual.
 The row is a loop: each figure stands at whichever copy of its slot is nearest
 the camera (`shifts`), so the last figure is the first one's left neighbour and
 going past either end just carries on. The page opens far enough out to show
@@ -223,6 +232,9 @@ animate, so:
      width is fixed.
    Then a phone-width viewport: the sticker hero and the card grid, with no
    canvas and no loader.
+   And at 1440 × 900 the page must not scroll at all (`scrollHeight` equals the
+   window's height): scrolling down over the figure, the project text and the
+   index each turns the row by one.
 7. `npx tsc --noEmit`, `npm run lint`, `npm run check`, `npm run build`. New
    `@keyframes` or utilities may need a clean restart (`rm -rf .next`) to show.
 

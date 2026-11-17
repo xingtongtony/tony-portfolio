@@ -5,7 +5,7 @@ import { TonyLogo } from "../tony-logo";
 import { SidebarProjects } from "./sidebar-projects";
 import { RootBackground } from "./root-background";
 import { MobileHeader, type ShellTheme } from "./mobile-header";
-import { EMAIL_HREF, EXTERNAL_LINKS } from "../lib/site-links";
+import { ABOUT_HREF, EMAIL_HREF, EXTERNAL_LINKS } from "../lib/site-links";
 
 type SidebarTheme = "home" | "tiktok-tv" | "light";
 
@@ -17,6 +17,8 @@ type PortfolioShellProps = {
   /** Colour for the overscroll/rubber-band canvas — set on dark pages so they
    *  don't flash white when you bounce past the top or bottom. */
   rootBg?: string;
+  /** The page being shown, when it is one the sidebar links to. */
+  current?: "about";
 };
 
 const sidebarThemes: Record<SidebarTheme, ShellTheme> = {
@@ -68,6 +70,7 @@ export function PortfolioShell({
   mainClassName = "bg-white text-[#171717]",
   contentClassName = "min-w-0 px-6 pb-5 pt-2 sm:px-10 xl:px-14 lg:pb-9 lg:pt-3 2xl:px-16",
   rootBg,
+  current,
 }: PortfolioShellProps) {
   const theme = sidebarThemes[sidebarTheme];
 
@@ -107,6 +110,15 @@ export function PortfolioShell({
 
         <div className="flex flex-col gap-8">
           <div className="flex flex-col items-start gap-4">
+            <Link
+              href={ABOUT_HREF}
+              aria-current={current === "about" ? "page" : undefined}
+              className={`inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
+                current === "about" ? (theme.tone === "dark" ? "text-white" : "text-black") : `${theme.nav} ${theme.navHover}`
+              }`}
+            >
+              About
+            </Link>
             {EXTERNAL_LINKS.map((link) => (
               <a
                 key={link.label}

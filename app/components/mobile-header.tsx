@@ -7,7 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, X } from "lucide-react";
 import { TonyLogo } from "../tony-logo";
 import { SidebarProjects } from "./sidebar-projects";
-import { EMAIL_HREF, EXTERNAL_LINKS } from "../lib/site-links";
+import { ABOUT_HREF, EMAIL_HREF, EXTERNAL_LINKS } from "../lib/site-links";
 
 /** The shell's per-page palette (see PortfolioShell `sidebarThemes`). */
 export type ShellTheme = {
@@ -189,6 +189,13 @@ export function MobileHeader({ theme }: { theme: ShellTheme }) {
 
               <div className="mt-auto flex flex-col gap-5 pt-14">
                 <div className="flex flex-wrap gap-x-6">
+                  <Link
+                    href={ABOUT_HREF}
+                    onClick={close}
+                    className={`inline-flex items-center gap-1 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${theme.nav} ${theme.navHover}`}
+                  >
+                    About
+                  </Link>
                   {EXTERNAL_LINKS.map((link) => (
                     <a
                       key={link.label}

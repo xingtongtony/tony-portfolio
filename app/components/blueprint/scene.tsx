@@ -330,6 +330,13 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     pending: 0,
     pendingUntil: 0,
     timer: 0,
+    // An up-and-down wheel gesture: how far it has gone, whether it has
+    // already turned the row, when, and how big its last event was.
+    wheelSum: 0,
+    wheelStepped: false,
+    wheelAt: 0,
+    wheelLast: 0,
+    wheelIdle: 0,
   });
   // What the last drawn frame looked like, to tell when a new one is needed.
   const drawn = useRef({ w: 0, h: 0, count: 0, texture: null as THREE.FramebufferTexture | null });
@@ -399,29 +406,62 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       settle(sc.target + Math.min(0.6, Math.max(-0.6, sc.velocity * 0.22)));
     };
     const wheel = (e: WheelEvent) => {
-      // Sideways only: vertical scrolling still scrolls the page.
-      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        // Sideways: the row follows the fingers.
+        e.preventDefault();
+        sc.dragging = true;
+        sc.target = sc.target + e.deltaX / perFigure();
+        engine.dirty = true;
+        window.clearTimeout(sc.timer);
+        sc.timer = window.setTimeout(() => settle(sc.target), 140);
+        return;
+      }
+      // Up and down scrolls the page wherever there is page to scroll. On the
+      // desktop homepage the stage is the whole page, and that gesture would
+      // do nothing — so there it turns the row instead: down for the next
+      // figure, up for the one before.
+      if (document.documentElement.scrollHeight > window.innerHeight + 1) return;
       e.preventDefault();
-      sc.dragging = true;
-      sc.target = sc.target + e.deltaX / perFigure();
-      engine.dirty = true;
-      window.clearTimeout(sc.timer);
-      sc.timer = window.setTimeout(() => settle(sc.target), 140);
+      const size = Math.abs(e.deltaY) * (e.deltaMode === 1 ? 16 : 1);
+      // A trackpad keeps sending events while it coasts. One gesture turns
+      // the row once; the next turn needs a pause, or a fresh push (an event
+      // much bigger than the one before it, which a coast never has).
+      const freshPush = sc.wheelStepped && now() - sc.wheelAt > 0.45 && size >= 12 && size > sc.wheelLast * 2.5;
+      sc.wheelLast = size;
+      window.clearTimeout(sc.wheelIdle);
+      sc.wheelIdle = window.setTimeout(() => {
+        sc.wheelSum = 0;
+        sc.wheelStepped = false;
+      }, 180);
+      if (freshPush) {
+        sc.wheelSum = 0;
+        sc.wheelStepped = false;
+      }
+      if (sc.wheelStepped || sc.pressed || sc.dragging) return;
+      sc.wheelSum += Math.sign(e.deltaY) * size;
+      if (Math.abs(sc.wheelSum) < 20) return;
+      sc.wheelStepped = true;
+      sc.wheelAt = now();
+      settle(Math.round(sc.target) + Math.sign(sc.wheelSum));
     };
+    // Over the whole stage, not only the canvas: the pointer may be on the
+    // project text or the index when the visitor scrolls.
+    const surface = canvas.closest<HTMLElement>("#stage") ?? canvas;
     canvas.style.setProperty("touch-action", "pan-y");
     canvas.style.setProperty("cursor", "grab");
     canvas.addEventListener("pointerdown", down);
     canvas.addEventListener("pointermove", move);
     canvas.addEventListener("pointerup", up);
     canvas.addEventListener("pointercancel", up);
-    canvas.addEventListener("wheel", wheel, { passive: false });
+    surface.addEventListener("wheel", wheel, { passive: false });
     return () => {
       window.clearTimeout(sc.timer);
+      window.clearTimeout(sc.wheelIdle);
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
       canvas.removeEventListener("pointerup", up);
       canvas.removeEventListener("pointercancel", up);
-      canvas.removeEventListener("wheel", wheel);
+      surface.removeEventListener("wheel", wheel);
     };
   }, [canvas]);
 

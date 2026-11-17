@@ -260,8 +260,11 @@ export function BlueprintStage() {
       if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
       const stage = document.getElementById("stage");
       if (!stage || stage.offsetParent === null || stage.getBoundingClientRect().bottom < window.innerHeight * 0.5) return;
-      if (e.key === "ArrowRight") step(1);
-      else if (e.key === "ArrowLeft") step(-1);
+      // Where the stage is the whole page, up and down have nothing to
+      // scroll: they flip through the projects as well.
+      const fixed = document.documentElement.scrollHeight <= window.innerHeight + 1;
+      if (e.key === "ArrowRight" || (fixed && (e.key === "ArrowDown" || e.key === "PageDown"))) step(1);
+      else if (e.key === "ArrowLeft" || (fixed && (e.key === "ArrowUp" || e.key === "PageUp"))) step(-1);
       else return;
       e.preventDefault();
     };
