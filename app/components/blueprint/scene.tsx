@@ -2,13 +2,14 @@
 
 import { Environment, QuadraticBezierLine } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { engine, now, type BuildItem } from "./engine";
 import { createFigure, HULL_U, measureFigure, type BuiltFigure } from "./figure-builder";
 import { AGENTS, FIGURES, INK, type CalloutDef, type Vec3 } from "./figures";
 import { installSoftShadows } from "./soft-shadows";
+import { createStudioAtmosphere, displayRgb, STUDIO_ATMOSPHERE, type StudioAtmosphere } from "./studio-atmosphere";
 
 installSoftShadows();
 
@@ -70,6 +71,13 @@ function dock(i: number, w: number, h: number): [number, number] {
 // The shadow-casting lights, so the frame loop can ask them for a finer
 // shadow on the frame that stays on screen (see soft-shadows.ts).
 const shadowLights: (THREE.DirectionalLight | null)[] = [null, null];
+const neutralBounce = new THREE.Color("#d4ced0");
+const studioWhite = new THREE.Vector3(1, 1, 1);
+const studioThemes = FIGURES.map(({ palette }) => ({
+  wall: displayRgb(palette.ground).lerp(displayRgb(palette.lilac), 0.54),
+  bounce: displayRgb(palette.lilac),
+  fill: neutralBounce.clone().lerp(new THREE.Color(palette.ground), 0.43),
+}));
 
 // Accumulation (see the end of the frame loop): how many frames are averaged
 // once the picture is still, how far from straight overhead the sky light
@@ -164,33 +172,6 @@ const blendCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
 blendCamera.position.z = 1;
 const bufferSize = new THREE.Vector2();
 
-/**
- * The scene around a built figure: a pool of the ground colour on the floor
- * that fades out to the white page. It gives the object a world to sit in —
- * the accents read against lilac instead of against white, which is most of
- * what keeps them from looking loud — without competing with the object.
- */
-function makePoolTexture(color: string): THREE.CanvasTexture {
-  const size = 512;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const g = canvas.getContext("2d")!;
-  const n = parseInt(color.slice(1), 16);
-  const rgba = (a: number) => `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-  const fade = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  fade.addColorStop(0, rgba(0.82));
-  fade.addColorStop(0.3, rgba(0.66));
-  fade.addColorStop(0.62, rgba(0.26));
-  fade.addColorStop(0.85, rgba(0.06));
-  fade.addColorStop(1, rgba(0));
-  g.fillStyle = fade;
-  g.fillRect(0, 0, size, size);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
-
 export type SceneProps = {
   focus: string | null;
   reducedMotion: boolean;
@@ -203,6 +184,8 @@ export type SceneProps = {
 };
 
 export default function Scene(props: SceneProps) {
+  const atmosphere = useMemo(() => createStudioAtmosphere(), []);
+  const bounce = useRef<THREE.HemisphereLight>(null);
   return (
     <Canvas
       orthographic
@@ -215,8 +198,8 @@ export default function Scene(props: SceneProps) {
       // sticker colours true instead of washing them out like a filmic curve.
       gl={{ antialias: true, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1 }}
     >
-      <Studio />
-      <Stage {...props} />
+      <Studio atmosphere={atmosphere} bounce={bounce} />
+      <Stage {...props} atmosphere={atmosphere} bounce={bounce} />
     </Canvas>
   );
 }
@@ -236,7 +219,12 @@ export default function Scene(props: SceneProps) {
  * `shadow-radius` is each light's size (see soft-shadows.ts). An invisible
  * floor catches the shadows on the white page with a faint cool tint.
  */
-function Studio() {
+type StudioProps = {
+  atmosphere: StudioAtmosphere;
+  bounce: RefObject<THREE.HemisphereLight | null>;
+};
+
+function Studio({ atmosphere, bounce }: StudioProps) {
   const gl = useThree((state) => state.gl);
   const environment = useMemo(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
@@ -250,13 +238,23 @@ function Studio() {
 
   return (
     <>
-      {/* The page is white and so is the paper; an opaque canvas lets frames be averaged exactly. */}
-      <color attach="background" args={["#ffffff"]} />
+      {/* The opaque backdrop fills the frame behind the models and shadow catcher. */}
+      <mesh frustumCulled={false} renderOrder={-10}>
+        <planeGeometry args={[2, 2]} />
+        <shaderMaterial
+          uniforms={atmosphere}
+          vertexShader={fullscreenVertex}
+          fragmentShader={STUDIO_ATMOSPHERE + "void main() { gl_FragColor = vec4(studioPaper(), 1.0); }"}
+          depthTest={false}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </mesh>
       {/* Little light that nothing can block: most of the ambient comes from
           the sky light, which casts shadows, so creases and contacts darken. */}
       <Environment map={environment} environmentIntensity={0.22} />
       {/* The floor fill is quiet enough to keep the grey models neutral. */}
-      <hemisphereLight args={["#fff5e8", "#d4ced0", 0.36]} />
+      <hemisphereLight ref={bounce} args={["#fff5e8", neutralBounce, 0.36]} />
       <directionalLight
         ref={(light) => {
           shadowLights[0] = light;
@@ -293,14 +291,14 @@ function Studio() {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
         {/* Long enough for the whole row. */}
         <planeGeometry args={[400, 400]} />
-        <shadowMaterial transparent color="#6b647b" opacity={0.34} />
+        <shadowMaterial transparent color="#584f67" opacity={0.40} />
       </mesh>
     </>
   );
 }
 
-function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt }: SceneProps) {
-  const figs = useMemo<BuiltFigure[]>(() => FIGURES.map(createFigure), []);
+function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt, atmosphere, bounce }: SceneProps & StudioProps) {
+  const figs = useMemo<BuiltFigure[]>(() => FIGURES.map((figure) => createFigure(figure, atmosphere)), [atmosphere]);
   const positions = useMemo(() => FIGURES.map((_, i) => slotPosition(i)), []);
   const swayRefs = useRef<(THREE.Group | null)[]>([]);
   const calloutRefs = useRef<(THREE.Group | null)[]>([]);
@@ -312,9 +310,6 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
   // on screen, so a flat figure and a tall one both sit centred.
   const centers = useRef<THREE.Vector3[]>([]);
   const focusHalfWidths = useRef<number[]>([]);
-  const pools = useMemo(() => FIGURES.map((figure) => makePoolTexture(figure.palette.ground)), []);
-  useEffect(() => () => pools.forEach((texture) => texture.dispose()), [pools]);
-  const poolRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   // The row is a loop: each figure stands at whichever copy of its slot is
   // nearest the camera. `shifts` is how far along the row that copy is.
   const outerRefs = useRef<(THREE.Group | null)[]>([]);
@@ -516,8 +511,10 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       return out.copy(centers.current[i] ?? positions[i]).addScaledVector(RIGHT, (slot - i) * GAP);
     };
     const lo = Math.floor(sc.pos);
-    const current = FIGURES[wrap(lo, count)].presentation;
-    const next = FIGURES[wrap(lo + 1, count)].presentation;
+    const currentIndex = wrap(lo, count);
+    const nextIndex = wrap(lo + 1, count);
+    const current = FIGURES[currentIndex].presentation;
+    const next = FIGURES[nextIndex].presentation;
     const blend = smooth(sc.pos - lo);
     const elevation = mix(mix(current?.elevation ?? EL, next?.elevation ?? EL, blend), EL, opening);
     const scale = mix(mix(current?.scale ?? 1, next?.scale ?? 1, blend), 1, opening);
@@ -543,7 +540,17 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     cam.position.copy(camTarget.current).addScaledVector(direction, 40);
     cam.lookAt(camTarget.current);
     cam.updateProjectionMatrix();
+    cam.updateMatrixWorld();
     HULL_U.value = 1.3 / cam.zoom;
+    // Keep the cove behind the figure as the camera moves, and carry its
+    // light through the same fractional position used by the carousel.
+    const wallFoot = scratch.copy(positions[0]).addScaledVector(RIGHT, sc.pos * GAP).addScaledVector(BACK, 2.2).project(cam);
+    const currentStudio = studioThemes[currentIndex];
+    const nextStudio = studioThemes[nextIndex];
+    atmosphere.uStudioSweep.value.set((wallFoot.x + 1) / 2, (wallFoot.y + 1) / 2, Math.max(0.12, cam.zoom * 1.04 / h));
+    atmosphere.uStudioWall.value.lerpVectors(currentStudio.wall, nextStudio.wall, blend).lerp(studioWhite, opening * 0.65);
+    atmosphere.uStudioBounce.value.lerpVectors(currentStudio.bounce, nextStudio.bounce, blend).lerp(studioWhite, opening * 0.65);
+    bounce.current?.groundColor.lerpColors(currentStudio.fill, nextStudio.fill, blend);
     // The lights travel with the camera, so their shadow maps only ever have
     // to cover the figure on stage — however long the row gets.
     for (const light of shadowLights) {
@@ -670,20 +677,8 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       const fade = fades.current[i];
       swayRefs.current[i]?.scale.setScalar(1 - (1 - NEIGHBOUR_SCALE) * smooth(Math.min(1, away)) * (1 - opening));
       fig.setFade(fade);
-      // Fully faded is gone: otherwise its paper would cover the focused figure's pool.
+      // Skip figures whose silhouettes have faded into the studio.
       fig.group.visible = fade < 0.985;
-      // The pool of colour under the figure appears as it is built.
-      const poolMaterial = poolRefs.current[i];
-      if (poolMaterial) {
-        const parts = Object.values(fig.parts);
-        const to = (parts.reduce((sum, rt) => sum + rt.progress, 0) / parts.length) * (1 - fade);
-        if (Math.abs(poolMaterial.opacity - to) > 0.004) {
-          poolMaterial.opacity = reduced ? to : damp(poolMaterial.opacity, to, 5, dt);
-          dirty = true;
-        } else {
-          poolMaterial.opacity = to;
-        }
-      }
       const callouts = calloutRefs.current[i];
       if (callouts) callouts.visible = fade < 0.5;
       place(eng.labelEls[`cap/${fig.def.id}`], v.add(CAPTION_OFFSET), 1 - fade);
@@ -725,6 +720,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     const seen = drawn.current;
     const gl = state.gl;
     gl.getDrawingBufferSize(bufferSize);
+    atmosphere.uStudioBuffer.value.copy(bufferSize);
     if (seen.w !== bufferSize.x || seen.h !== bufferSize.y) {
       seen.w = bufferSize.x;
       seen.h = bufferSize.y;
@@ -796,22 +792,6 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
             outerRefs.current[i] = el;
           }}
         >
-          {/* The floor's pool of colour: below the shadow catcher, drawn first. */}
-          {/* Sized to stop short of the neighbouring figures: an unbuilt one is
-              white paper, and would show as a white shape against the colour. */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.2, -0.006, -0.1]} renderOrder={-1}>
-            <planeGeometry args={[6.2, 6.2]} />
-            <meshBasicMaterial
-              ref={(material) => {
-                poolRefs.current[i] = material;
-              }}
-              map={pools[i]}
-              transparent
-              opacity={0}
-              depthWrite={false}
-              toneMapped={false}
-            />
-          </mesh>
           <group
             ref={(el) => {
               swayRefs.current[i] = el;

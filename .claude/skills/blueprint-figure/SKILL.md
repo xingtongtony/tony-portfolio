@@ -99,7 +99,9 @@ CSS transform), never `#stage`.
 - [ ] Parts are made the way the real thing is made.
 - [ ] One hue, two neutrals, two accents; sits well beside the other figures.
 - [ ] The main design decision reads in the normal homepage composition.
-- [ ] Drawing state (reload, do not build): outlines continuous, no doubled lines.
+- [ ] Drawing state: continuous ink and a fill that matches the studio behind it.
+- [ ] Studio light stays behind the object and its shadows. While dragging,
+      the environment moves continuously between adjacent palette colours.
 - [ ] Numerals and caption clear of the object, at 1440 × 900 and 1024 × 768.
 
 ### 4. Finish

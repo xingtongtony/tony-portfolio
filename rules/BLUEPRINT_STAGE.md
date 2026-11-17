@@ -38,7 +38,7 @@ that looks rough.
 | Harmony over realism | Colour comes from the figure's palette roles in `figures.ts` only. A TV may be plum, a counter lilac. Never add a one-off hex to a shape. |
 | A world each | Every figure has its own palette (`THEMES` in `figures.ts`), so the sheet is not one object repeated; unwritten work uses the grey `mono` one. The palettes share the same roles and the same recipe, which is what keeps them a set. |
 | Two accents | Inside a world, its own hue (ground, mist, mid, deep) owns most of the area, cream and sand are the neutrals, and only two accents are strong — small, and no others. Green is for plants and "on", blue for glass; both are muted. A figure that uses every colour at equal weight looks busy however nice each colour is. |
-| A scene, not a backdrop | A built figure sits in a pool of the ground colour on the floor that fades to the white page (`makePoolTexture` in `scene.tsx`). The accents then read against lilac instead of white. It must stop short of the neighbouring figures: unbuilt ones are white paper and would show as white shapes on it. |
+| Shared studio | The figures share a seamless studio sweep. The wall, floor, and reflected light interpolate between the palettes of adjacent exhibits as the carousel moves. The studio fades to white along the copy column and the bottom. Draft fills and faded ink sample the same background at their screen position. |
 | Built like the thing | A roof is boards with thickness that overhang the walls, not a prism with stripes; a window is a frame standing proud with the glass set back, not a disc on the wall. If a part would look stuck on in real life, model how it is actually made. |
 | Matte clay | Default finish is `clay`. `soft` for small pressable things, `print` for paper, `screen` / `led` for things that glow. No metal, no gloss. |
 | Detail earns the close-up | A figure needs three scales: the big masses, the mid parts (drawer fronts, lids, rims), and the small things (pulls, grille dots, knobs, glazing bars). If a part is one plain block, it is not finished. |
@@ -55,6 +55,7 @@ that looks rough.
 | --- | --- |
 | `figures.ts` | Data: `THEMES` (one palette per figure), `AGENTS`, and `FIGURES` — each figure is parts, each part is a list of solids (`box`, `slab`, `cyl`, `ball`, `torus`, `arch`, `poly`). |
 | `figure-builder.ts` | Turns that data into meshes, ink lines and silhouette hulls; the build shader; finishes and clay grain. |
+| `studio-atmosphere.ts` | Display-space wall and floor lighting shared by the backdrop and patent drawing shaders. |
 | `soft-shadows.ts` | Replaces three.js's basic shadow lookup with area-light shadows (PCSS). |
 | `scene.tsx` | Canvas, the carousel's position and camera, the lights, accumulation, and the frame loop that drives builds, agents and labels. |
 | `engine.ts` | State shared by the scene and the DOM layer. Must stay free of three.js imports, or three lands in every page's first load. |
@@ -83,8 +84,8 @@ frame on screen (`SAMPLES`, `SKY_SPREAD` in `scene.tsx`). That average is what
 makes it look rendered rather than real-time: shadows have no grain, and
 creases and contact lines darken because the sky light has come from all
 around (ambient occlusion). Then drawing stops altogether. Anything that
-changes the picture from outside the loop must set `engine.dirty`. The canvas
-is opaque white for this; the page behind the stage must stay white.
+changes the picture from outside the loop must set `engine.dirty`. The studio
+is opaque for accumulation. Match the paper-white edges to the page.
 
 The layout around it (`blueprint-stage.tsx`): one strong headline line with one
 quiet line of proof under it (not the full statement at display size — twelve
@@ -207,8 +208,9 @@ animate, so:
    makes the renderer re-measure and blanks the view. Compare it to the case
    study, then check which detail reads first at the original size.
 4. Look at the drawing state too (Replay, or a neighbour that is not built
-   yet): outlines continuous, no stray or doubled lines.
-5. Go past the last figure and before the first: the row loops with no jump.
+   yet). Check the outline and how the fill meets the studio.
+5. Pause a drag between two distinct palettes and check for an intermediate
+   colour. Loop past the last figure and verify the first palette returns.
 6. Check the widths between the breakpoint and the design size, in both the
    building and the built state. The figure's base starts at about 37.5% of
    the stage's width, and the stage is the viewport minus the sidebar (756px
