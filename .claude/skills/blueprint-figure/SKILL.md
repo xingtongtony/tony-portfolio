@@ -60,10 +60,13 @@ A figure is one entry in `BUILDERS`: a palette from `THEMES` and a function of
 that palette, `(c) => ({ id, fig, title, desc, href, parts, callouts })`. Start
 `parts` with `{ id: "ground", ..., shapes: plinth(c) }`.
 
-- **Space**: ground at `y = 0`, front faces `+z`, footprint about 2.9 × 1.9,
-  tallest point about 2.1. The base's top is at 0.107. The camera looks from the
-  front-right and above: tall things go at the back or left; anything behind a
-  taller object to its front-right is hidden.
+- **Space**: ground at `y = 0`, front faces `+z`, tallest point about 2.1.
+  The camera looks from the front-right and above. Tall objects read best at
+  the back or left.
+- **Plinth**: `plinth()` supplies two centred rounded tiers with an even inset.
+  The default top height is 0.107. Adjust the deck's width and depth so the
+  whole footprint, including rotated parts, has clearance inside its rounded
+  edge.
 - **Shapes**: `box`, `slab` (rounded rectangle, extruded; `r` = half its size
   makes a disc), `cyl` (`bevel = r` for a capsule), `ball`, `torus`, `arch`,
   `poly` (`r` rounds its corners). Helpers: `flat()`, `lying()`, `FACE`,

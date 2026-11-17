@@ -341,7 +341,6 @@ export const PALETTE: Palette = THEMES.lilac;
 
 // The definitions below are written with these role names. They hold the
 // palette of the figure being defined; FIGURES sets them before each one.
-let GROUND = "";
 let MIST = "";
 let LILAC = "";
 let PLUM = "";
@@ -354,7 +353,6 @@ let BLUE = "";
 let GREEN = "";
 let WHITE = "";
 function use(p: Palette) {
-  GROUND = p.ground;
   MIST = p.mist;
   LILAC = p.lilac;
   PLUM = p.plum;
@@ -390,12 +388,32 @@ const QR_FRAME = {
 };
 const TV_ANGLE = { pos: [0, 0, -0.02] as Vec3, rot: [0, 0.18, 0] as Vec3 };
 
-/** The base every figure stands on: a lower step, the base, and its lighter inlay. */
-function plinth(c: Palette): ShapeDef[] {
+/** Two centered tiers with an even setback, sized to fit each figure's props. */
+function plinth(c: Palette, [width, depth]: [number, number] = [2.8, 1.9], top = 0.107): ShapeDef[] {
+  const radius = 0.29;
+  const setback = 0.13;
+  const lowerThickness = 0.04;
+  const deckBottom = 0.034; // Slight overlap joins the tiers below the bevel.
   return [
-    { k: "slab", size: [2.9, 1.9], t: 0.1, r: 0.36, pos: [0, 0.05, 0], rot: flat() },
-    { k: "slab", size: [2.6, 1.6], t: 0.012, r: 0.26, pos: [0, 0.101, 0], rot: flat(), color: c.mist },
-    { k: "slab", size: [3.2, 2.2], t: 0.04, r: 0.46, pos: [0, 0.02, 0], rot: flat(), color: c.lilac },
+    {
+      k: "slab",
+      size: [width + 2 * setback, depth + 2 * setback],
+      t: lowerThickness,
+      r: radius + setback,
+      pos: [0, lowerThickness / 2, 0],
+      rot: flat(),
+      color: c.lilac,
+    },
+    {
+      k: "slab",
+      size: [width, depth],
+      t: top - deckBottom,
+      r: radius,
+      pos: [0, (top + deckBottom) / 2, 0],
+      rot: flat(),
+      color: c.mist,
+      bevel: 0.012,
+    },
   ];
 }
 
@@ -459,7 +477,7 @@ const SOON = "Coming soon";
 const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
   [
     THEMES.lilac,
-    () => ({
+    (c) => ({
       id: "tv",
       fig: "FIG. 1",
       title: "TikTok TV Revamp",
@@ -470,37 +488,8 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           id: "rug",
           label: "Rug",
           agent: 1,
-          color: GROUND,
-          shapes: [
-            {
-              k: "slab",
-              size: [2.9, 1.8],
-              t: 0.08,
-              r: 0.42,
-              pos: [0, 0.04, 0],
-              rot: flat(),
-            },
-            // A lighter field woven into the rug.
-            {
-              k: "slab",
-              size: [2.56, 1.46],
-              t: 0.012,
-              r: 0.3,
-              pos: [0, 0.082, 0],
-              rot: flat(),
-              color: MIST,
-            },
-            // A lower, wider step under the base, as on a plinth.
-            {
-              k: "slab",
-              size: [3.2, 2.1],
-              t: 0.04,
-              r: 0.5,
-              pos: [0, 0.02, 0],
-              rot: flat(),
-              color: LILAC,
-            },
-          ],
+          color: c.ground,
+          shapes: plinth(c, [2.95, 1.9], 0.088),
         },
         {
           id: "console",
@@ -870,7 +859,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
   ],
   [
     THEMES.peach,
-    () => ({
+    (c) => ({
       id: "lutra",
       fig: "FIG. 2",
       title: "CloudKitchens Lutra App",
@@ -881,35 +870,8 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           id: "counter",
           label: "Counter",
           agent: 1,
-          color: GROUND,
-          shapes: [
-            {
-              k: "slab",
-              size: [2.8, 1.7],
-              t: 0.12,
-              r: 0.36,
-              pos: [0, 0.06, 0],
-              rot: flat(),
-            },
-            {
-              k: "slab",
-              size: [2.5, 1.4],
-              t: 0.012,
-              r: 0.26,
-              pos: [0, 0.121, 0],
-              rot: flat(),
-              color: MIST,
-            },
-            {
-              k: "slab",
-              size: [3.1, 2.0],
-              t: 0.045,
-              r: 0.46,
-              pos: [0, 0.0225, 0],
-              rot: flat(),
-              color: LILAC,
-            },
-          ],
+          color: c.ground,
+          shapes: plinth(c, [2.8, 1.9], 0.127),
         },
         {
           id: "phone",
@@ -1271,7 +1233,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         desc: "An iPad experience that keeps videos, navigation and conversation in view.",
         href: "/work/tiktok-multi-platform",
         parts: [
-          { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
+          { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c, [2.8, 2.2]) },
           {
             id: "tablet",
             label: "Landscape iPad",
@@ -1343,7 +1305,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
   ],
   [
     THEMES.blue,
-    () => ({
+    (c) => ({
       id: "ds",
       fig: "FIG. 5",
       title: "TikTok Design System",
@@ -1355,42 +1317,16 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           id: "tray",
           label: "Tray",
           agent: 1,
-          color: GROUND,
+          color: c.ground,
           shapes: [
-            {
-              k: "slab",
-              size: [2.9, 2.0],
-              t: 0.12,
-              r: 0.36,
-              pos: [0, 0.06, 0],
-              rot: flat(),
-            },
-            // The tray's lighter well, where the components sit.
-            {
-              k: "slab",
-              size: [2.66, 1.66],
-              t: 0.012,
-              r: 0.26,
-              pos: [0, 0.121, -0.1],
-              rot: flat(),
-              color: MIST,
-            },
-            {
-              k: "slab",
-              size: [3.2, 2.3],
-              t: 0.045,
-              r: 0.46,
-              pos: [0, 0.0225, 0],
-              rot: flat(),
-              color: LILAC,
-            },
+            ...plinth(c, [3, 2.1], 0.127),
             // Silk-screened nameplate.
             {
               k: "slab",
               size: [0.9, 0.1125],
               t: 0.006,
               r: 0.03,
-              pos: [-0.82, 0.124, 0.84],
+              pos: [-0.82, 0.128, 0.84],
               rot: flat(),
               map: `label:TIKTOK DS · KIT 01|${LILAC}|${INKY}`,
               finish: "print",
@@ -1707,7 +1643,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
   ],
   [
     THEMES.mint,
-    () => ({
+    (c) => ({
       id: "wishlist",
       fig: "FIG. 7",
       title: "Airbnb Wishlist",
@@ -1718,34 +1654,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           id: "ground",
           label: "Ground",
           agent: 1,
-          color: GROUND,
+          color: c.ground,
           shapes: [
-            {
-              k: "slab",
-              size: [2.8, 1.9],
-              t: 0.1,
-              r: 0.36,
-              pos: [0, 0.05, 0],
-              rot: flat(),
-            },
-            {
-              k: "slab",
-              size: [2.5, 1.6],
-              t: 0.012,
-              r: 0.26,
-              pos: [0, 0.101, 0],
-              rot: flat(),
-              color: MIST,
-            },
-            {
-              k: "slab",
-              size: [3.1, 2.2],
-              t: 0.04,
-              r: 0.46,
-              pos: [0, 0.02, 0],
-              rot: flat(),
-              color: LILAC,
-            },
+            ...plinth(c, [2.95, 2.1]),
             // Stepping stones up to the door.
             {
               k: "cyl",
@@ -1990,7 +1901,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         desc: "An AR effect creation tool for TikTok creators.",
         status: SOON,
         parts: [
-          { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
+          { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c, [2.9, 1.9]) },
           {
             id: "phone",
             label: "AR preview",
@@ -2063,7 +1974,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       desc: "Campaign tools to attract and allocate traffic to listings from hosts in China.",
       status: SOON,
       parts: [
-        { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
+        { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c, [2.85, 2]) },
         {
           id: "listing",
           label: "Promoted listing",
@@ -2198,7 +2109,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       desc: "A workspace for the China supply team to track listings and their performance.",
       status: SOON,
       parts: [
-        { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
+        { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c, [2.8, 2]) },
         {
           id: "monitor",
           label: "Listing workspace",

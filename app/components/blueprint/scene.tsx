@@ -78,13 +78,81 @@ const shadowLights: (THREE.DirectionalLight | null)[] = [null, null];
 const SAMPLES = 56;
 const SKY_SPREAD = 1.05;
 const SKY_INTENSITY = 0.96;
+const fullscreenVertex = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = vec4(position.xy, 0.0, 1.0);
+  }
+`;
 const blendMaterial = new THREE.ShaderMaterial({
   uniforms: { map: { value: null as THREE.Texture | null }, opacity: { value: 1 } },
-  vertexShader: "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = vec4(position.xy, 0.0, 1.0);\n}",
+  vertexShader: fullscreenVertex,
   // Straight through: the copy is already display colour, as the canvas is.
   fragmentShader:
     "uniform sampler2D map;\nuniform float opacity;\nvarying vec2 vUv;\nvoid main() {\n  gl_FragColor = vec4(texture2D(map, vUv).rgb, opacity);\n}",
   transparent: true,
+  depthTest: false,
+  depthWrite: false,
+});
+const previewFocusMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    map: { value: null as THREE.Texture | null },
+    cssPixel: { value: new THREE.Vector2() },
+    slotCenter: { value: 0 },
+    slotSpacing: { value: 1 },
+    slotProgress: { value: 0 },
+    focusHalfWidth: { value: 0 },
+  },
+  vertexShader: fullscreenVertex,
+  fragmentShader: /* glsl */ `
+    varying vec2 vUv;
+    uniform sampler2D map;
+    uniform vec2 cssPixel;
+    uniform float slotCenter;
+    uniform float slotSpacing;
+    uniform float slotProgress;
+    uniform float focusHalfWidth;
+
+    float blurRadius(float distanceFromCenter) {
+      return 2.0 * smoothstep(0.12, 1.0, distanceFromCenter)
+           + 2.4 * smoothstep(1.0, 2.65, distanceFromCenter);
+    }
+
+    vec3 pairedSample(vec2 offset) {
+      return texture2D(map, vUv + offset).rgb + texture2D(map, vUv - offset).rgb;
+    }
+
+    void main() {
+      float slot = (vUv.x - slotCenter) / slotSpacing;
+      float left = floor(slot);
+      // Switch between whole previews in the gap between them. As a figure
+      // moves towards the centre, its entire preview comes into focus.
+      float radius = mix(
+        blurRadius(abs(left - slotProgress)),
+        blurRadius(abs(left + 1.0 - slotProgress)),
+        smoothstep(0.45, 0.55, fract(slot))
+      );
+      float nearest = floor(slotProgress + 0.5);
+      float settled = 1.0 - smoothstep(0.05, 0.30, abs(nearest - slotProgress));
+      float outsideFigure = smoothstep(focusHalfWidth, focusHalfWidth + 0.04, abs(slot - nearest));
+      radius *= mix(1.0, outsideFigure, settled);
+
+      vec3 color = texture2D(map, vUv).rgb;
+      if (radius > 0.04) {
+        vec2 spread = cssPixel * radius;
+        // Stagger samples across the width of the blur to soften fine lines.
+        color = color * 0.188
+          + pairedSample(spread * vec2( 0.31,  0.06)) * 0.123
+          + pairedSample(spread * vec2(-0.08,  0.39)) * 0.100
+          + pairedSample(spread * vec2( 0.46,  0.52)) * 0.068
+          + pairedSample(spread * vec2(-0.66,  0.19)) * 0.052
+          + pairedSample(spread * vec2( 0.18, -0.72)) * 0.042
+          + pairedSample(spread * vec2( 0.91, -0.37)) * 0.021;
+      }
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `,
   depthTest: false,
   depthWrite: false,
 });
@@ -243,6 +311,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
   // Where the camera aims for each figure: the middle of what it looks like
   // on screen, so a flat figure and a tall one both sit centred.
   const centers = useRef<THREE.Vector3[]>([]);
+  const focusHalfWidths = useRef<number[]>([]);
   const pools = useMemo(() => FIGURES.map((figure) => makePoolTexture(figure.palette.ground)), []);
   useEffect(() => () => pools.forEach((texture) => texture.dispose()), [pools]);
   const poolRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
@@ -365,13 +434,20 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
   // runtimes to the engine so the overlay can schedule builds.
   useLayoutEffect(() => {
     const box = new THREE.Box3();
+    const extent = new THREE.Vector3();
     figs.forEach((fig, i) => {
       measureFigure(fig);
       for (const [partId, rt] of Object.entries(fig.parts)) {
         engine.parts[`${fig.def.id}/${partId}`] = rt;
       }
       box.setFromObject(fig.group);
-      centers.current[i] = box.getCenter(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      centers.current[i] = center;
+      box.getSize(extent);
+      const projectedHalfWidth = (extent.x * Math.abs(RIGHT.x) + extent.z * Math.abs(RIGHT.z)) / 2;
+      const centerOffset = Math.abs(center.clone().sub(positions[i]).dot(RIGHT));
+      // Leave room for the small display turn after the figure is built.
+      focusHalfWidths.current[i] = (projectedHalfWidth + centerOffset + 0.14) / GAP;
     });
     onReady();
     // Runs once: the figures never move after mount.
@@ -673,12 +749,6 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
         sky.shadow.radius = (sky.shadow.radius % 1) + k;
       }
       gl.render(state.scene, state.camera);
-      if (!painted.current) {
-        // That first draw is where the shaders compile, so it can take a
-        // while; once it returns there is a picture to show.
-        painted.current = true;
-        live.current.onPainted();
-      }
       if (k > 0 && seen.texture) {
         blendMaterial.uniforms.map.value = seen.texture;
         blendMaterial.uniforms.opacity.value = k / (k + 1);
@@ -686,10 +756,31 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
         gl.render(blendScene, blendCamera);
         gl.autoClear = true;
       }
-      if (!dirty) {
-        if (!seen.texture) seen.texture = new THREE.FramebufferTexture(bufferSize.x, bufferSize.y);
-        gl.copyFramebufferToTexture(seen.texture);
-        seen.count = k + 1;
+      if (!seen.texture) {
+        seen.texture = new THREE.FramebufferTexture(bufferSize.x, bufferSize.y);
+        seen.texture.magFilter = THREE.LinearFilter;
+        seen.texture.minFilter = THREE.LinearFilter;
+      }
+      // Keep the sharp frame for shadow accumulation. Apply preview blur to
+      // the displayed copy so it never compounds across samples.
+      gl.copyFramebufferToTexture(seen.texture);
+      if (!dirty) seen.count = k + 1;
+
+      const preview = previewFocusMaterial.uniforms;
+      v.copy(positions[0]).addScaledVector(RIGHT, lo * GAP).project(cam);
+      preview.map.value = seen.texture;
+      preview.cssPixel.value.set(1 / w, 1 / h);
+      preview.slotCenter.value = (v.x + 1) / 2;
+      preview.slotSpacing.value = GAP * cam.zoom / w;
+      preview.slotProgress.value = sc.pos - lo;
+      preview.focusHalfWidth.value = focusHalfWidths.current[wrap(Math.round(sc.pos), count)] ?? 0;
+      blendQuad.material = previewFocusMaterial;
+      gl.render(blendScene, blendCamera);
+      blendQuad.material = blendMaterial;
+      if (!painted.current) {
+        // The first draw compiles the scene and the display pass.
+        painted.current = true;
+        live.current.onPainted();
       }
     }
     // Priority 1 hands rendering to this callback (see above).

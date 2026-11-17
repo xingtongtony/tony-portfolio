@@ -43,6 +43,7 @@ that looks rough.
 | Matte clay | Default finish is `clay`. `soft` for small pressable things, `print` for paper, `screen` / `led` for things that glow. No metal, no gloss. |
 | Detail earns the close-up | A figure needs three scales: the big masses, the mid parts (drawer fronts, lids, rims), and the small things (pulls, grille dots, knobs, glazing bars). If a part is one plain block, it is not finished. |
 | Make the design decision visible | Start from the case study's distinctive interaction or insight. The main object should communicate it at homepage size. For a forthcoming case study, base the model on the public project description and cover. |
+| Shared plinth | Every exhibit uses two centred rounded rectangles with an even inset. Size the deck to the model's projected footprint on the ground, including rotated parts. Leave visible clearance inside the rounded deck edge while preserving the scale and placement of the subject. |
 | Screen textures | FIG. 1 uses the TV dynamic-background demo (`tv-01.mp4`) and FIG. 2 uses the Order Booster demo (`ck-16.mp4`). Crop to the active UI at the aspect ratio of the model's display. Cut off the source device frame, status bar or letterboxing, and let the picture meet the single physical bezel. |
 | Detail in relief | For a motif that loses its detail at model scale, use geometry sized for the homepage. In FIG. 6 a thin square rim makes the code area distinct from the plaque and its label. The three Code Eyes sit at the top-left, top-right, and bottom-left within that rim. The main panel and phone share the framed relief. |
 | Listing photos | FIG. 7 uses two high-resolution photos for its illustrative listings. Each gets the same aspect ratio, inset, and corner radius. The examples use [Antonio Araujo's pool photo](https://unsplash.com/photos/a-small-pool-with-lounge-chairs-next-to-it-A12OW0VfVMo) and [andy chiu's interior photo](https://unsplash.com/photos/modern-living-room-with-arched-doorways-and-comfortable-seating-NDDArq0m0-Q) under the [Unsplash License](https://unsplash.com/license). |
@@ -102,9 +103,11 @@ The stage is a carousel, not an overview. The figures stand in a single row
 (`GAP` in `scene.tsx`). The one in the middle is full size and full colour;
 its two neighbours are smaller and faded almost into the paper (`GHOST`,
 `NEIGHBOUR_SCALE`), the right one cut by the edge, which is what says "there is
-more this way"; the rest are not drawn. Position along the row is one
-continuous number, so everything — fade, size, camera — follows from distance
-to the middle. It moves by dragging or throwing the stage, a sideways swipe on
+more this way"; the rest are not drawn. The focused exhibit stays sharp while
+previews soften with distance. Apply the softness to the displayed frame after
+shadow accumulation so it stays consistent as shadows refine and captions stay
+sharp. Position along the row is continuous, so fade, size, focus and camera
+follow the distance to the middle. It moves by dragging or throwing the stage, a sideways swipe on
 a trackpad, the arrows, the arrow keys, the numbered rail, or clicking a
 neighbour; a small drag falls back, a real one or a flick lands on the next.
 The row is a loop: each figure stands at whichever copy of its slot is nearest
