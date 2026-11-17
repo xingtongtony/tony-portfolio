@@ -5,11 +5,11 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { engine, now, type BuildItem } from "./engine";
+import { engine, now, rewindTime, type BuildItem } from "./engine";
 import { createFigure, HULL_U, measureFigure, type BuiltFigure } from "./figure-builder";
 import { AGENTS, FIGURES, INK, type CalloutDef, type Vec3 } from "./figures";
 import { installSoftShadows } from "./soft-shadows";
-import { createStudioAtmosphere, displayRgb, STUDIO_ATMOSPHERE, type StudioAtmosphere } from "./studio-atmosphere";
+import { createStudioAtmosphere, displayRgb, paperCss, STUDIO_ATMOSPHERE, STUDIO_DEPTH, type StudioAtmosphere } from "./studio-atmosphere";
 
 installSoftShadows();
 
@@ -32,7 +32,7 @@ const CAPTION_OFFSET = new THREE.Vector3(0.2, 0, 1.75);
 // continuous number (`pos`), so it can be dragged, thrown and snapped.
 const GAP = 4.4;
 /** How far a neighbour is faded into the paper (1 = gone), and how much smaller it is. */
-const GHOST = 0.84;
+const GHOST = 0.7;
 const NEIGHBOUR_SCALE = 0.84;
 const smooth = (x: number) => x * x * (3 - 2 * x);
 const wrap = (i: number, n: number) => ((i % n) + n) % n;
@@ -58,14 +58,14 @@ const damp = (from: number, to: number, k: number, dt: number) => from + (to - f
 function dock(i: number, w: number, h: number): [number, number] {
   // A narrow stage has no room for five name tags side by side: the agents
   // wait as bare cursors there, and show their tags when they go to work.
-  if (w < 896) return [w - 66 - (4 - i) * 34, h - 128];
+  if (w < 896) return [w - 66 - (4 - i) * 34, h - 88];
   const roomy = Math.min(150, (w - 570) / 4);
   // A tag and its cursor need about 115px. Where the stage cannot give them
   // that to the right of the text block, the row runs further left, as far
   // as the block's button (which ends at about 235px), rather than letting
   // the tags overlap.
   const gap = Math.max(roomy, Math.min(117, (w - 450) / 4));
-  return [w - 190 - (4 - i) * gap, h - 138];
+  return [w - 190 - (4 - i) * gap, h - 98];
 }
 
 // The shadow-casting lights, so the frame loop can ask them for a finer
@@ -123,7 +123,7 @@ const previewFocusMaterial = new THREE.ShaderMaterial({
     uniform float focusHalfWidth;
 
     float blurRadius(float distanceFromCenter) {
-      return 2.0 * smoothstep(0.12, 1.0, distanceFromCenter)
+      return 0.9 * smoothstep(0.12, 1.0, distanceFromCenter)
            + 2.4 * smoothstep(1.0, 2.65, distanceFromCenter);
     }
 
@@ -355,6 +355,31 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
   }, [focus, reducedMotion, onPartEvent, onBuilt, onSelect, onPainted]);
   const painted = useRef(false);
 
+  // The page the stage is on, to paint it the studio's paper colour.
+  const page = useRef<HTMLElement | null>(null);
+  const paperShown = useRef("");
+  const stageCanvas = useThree((state) => state.gl.domElement);
+  useEffect(() => {
+    const el = stageCanvas.closest("main");
+    page.current = el;
+    paperShown.current = "";
+    return () => {
+      el?.style.removeProperty("--studio-paper");
+      page.current = null;
+    };
+  }, [stageCanvas]);
+  // The canvas is wider than the stage: it runs on to the left, under the
+  // navigation panel, so a neighbour leaving that way passes beneath it
+  // instead of being cut off at its edge. Everything below is laid out in
+  // the stage's own pixels; this is how far the canvas starts before them.
+  const stageInset = useRef(0);
+  const canvasWidth = useThree((state) => state.size.width);
+  useLayoutEffect(() => {
+    const stage = stageCanvas.closest("#stage");
+    stageInset.current = stage ? Math.max(0, stage.getBoundingClientRect().left - stageCanvas.getBoundingClientRect().left) : 0;
+    engine.dirty = true;
+  }, [stageCanvas, canvasWidth]);
+
   // Drag, throw, or swipe sideways on a trackpad to move along the row. A
   // small drag falls back to where it was; a real one, or a quick flick,
   // lands on the next figure.
@@ -494,7 +519,10 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     const eng = engine;
     const { focus: focusId, reducedMotion: reduced } = live.current;
     const cam = state.camera as THREE.OrthographicCamera;
-    const w = state.size.width;
+    // `w` is the stage's width; the canvas is `inset` pixels wider, on the left.
+    const canvasW = state.size.width;
+    const inset = Math.min(stageInset.current, canvasW * 0.5);
+    const w = canvasW - inset;
     const h = state.size.height;
     const time = now();
     // The 3D picture is expensive to draw (soft shadows on every pixel), so it
@@ -507,7 +535,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     // Same threshold as the overlay's `@4xl` container query (56rem).
     const wide = w >= 896;
     const padTop = 140; // the headline
-    const padBottom = 162; // caption, index and clear space beside the project text
+    const padBottom = 118; // caption, index and clear space beside the project text
     const focusIndex = focusId ? FIGURES.findIndex((f) => f.id === focusId) : -1;
     const sc = scrub.current;
     const count = FIGURES.length;
@@ -544,7 +572,9 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     }
     // The figure in the middle sits a little right of centre — the left is
     // the headline and the project text — leaving the next one peeking in.
-    const shiftX = -w * (wide ? 0.1 : 0.115) * (1 - opening);
+    // (The camera looks at the middle of the canvas, which is half the inset
+    // to the left of the middle of the stage.)
+    const shiftX = -inset / 2 - w * (wide ? 0.1 : 0.115) * (1 - opening);
     const shiftY = (padBottom - padTop) / 2;
     const slotCentre = (slot: number, out: THREE.Vector3) => {
       const i = wrap(slot, count);
@@ -584,12 +614,19 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     HULL_U.value = 1.3 / cam.zoom;
     // Keep the cove behind the figure as the camera moves, and carry its
     // light through the same fractional position used by the carousel.
-    const wallFoot = scratch.copy(positions[0]).addScaledVector(RIGHT, sc.pos * GAP).addScaledVector(BACK, 2.2).project(cam);
+    const wallFoot = scratch.copy(positions[0]).addScaledVector(RIGHT, sc.pos * GAP).addScaledVector(BACK, STUDIO_DEPTH).project(cam);
     const currentStudio = studioThemes[currentIndex];
     const nextStudio = studioThemes[nextIndex];
     atmosphere.uStudioSweep.value.set((wallFoot.x + 1) / 2, (wallFoot.y + 1) / 2, Math.max(0.12, cam.zoom * 1.04 / h));
     atmosphere.uStudioWall.value.lerpVectors(currentStudio.wall, nextStudio.wall, blend).lerp(studioWhite, opening * 0.65);
     atmosphere.uStudioBounce.value.lerpVectors(currentStudio.bounce, nextStudio.bounce, blend).lerp(studioWhite, opening * 0.65);
+    // The page around the canvas is the same sheet of paper: hand its colour
+    // to CSS (the sidebar's column, the headline's seam) whenever it changes.
+    const paper = paperCss(atmosphere.uStudioWall.value);
+    if (paper !== paperShown.current) {
+      paperShown.current = paper;
+      page.current?.style.setProperty("--studio-paper", paper);
+    }
     bounce.current?.groundColor.lerpColors(currentStudio.fill, nextStudio.fill, blend);
     // The lights travel with the camera, so their shadow maps only ever have
     // to cover the figure on stage — however long the row gets.
@@ -601,17 +638,32 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     shadowLights[0]?.position.copy(camTarget.current).add(KEY_OFFSET);
 
     // ── Build engine: advance every scheduled part ──
+    // A part at `t` seconds into its figure's schedule: how far it is built.
+    const showPart = (item: BuildItem, t: number) => {
+      const rt = eng.parts[`${item.figId}/${item.partId}`];
+      const p = item.tEnd > item.tStart ? clamp01((t - item.tStart) / (item.tEnd - item.tStart)) : t >= item.tStart ? 1 : 0;
+      rt.progress = p;
+      rt.h.value = p <= 0 ? -1e3 : p >= 1 ? 1e3 : rt.minY - 0.02 + (rt.maxY - rt.minY + 0.04) * ease(p);
+      rt.bandOn.value = p > 0 && p < 1 ? 1 : 0;
+      return p;
+    };
+    // Figures the visitor has left play their schedule backwards, part by
+    // part, until they are drawings again.
+    if (eng.rewinds.length > 0) {
+      dirty = true;
+      for (const rewind of eng.rewinds) {
+        const t = rewindTime(rewind, time);
+        for (const item of rewind.items) showPart(item, t);
+      }
+      eng.rewinds = eng.rewinds.filter((rewind) => rewindTime(rewind, time) > 0);
+    }
     const build = eng.build;
     if (build) {
       if (!build.paused) dirty = true;
       const t = (build.paused ? build.pausedAt : time) - build.t0;
       let allDone = true;
       for (const item of build.items) {
-        const rt = eng.parts[`${item.figId}/${item.partId}`];
-        const p = item.tEnd > item.tStart ? clamp01((t - item.tStart) / (item.tEnd - item.tStart)) : t >= item.tStart ? 1 : 0;
-        rt.progress = p;
-        rt.h.value = p <= 0 ? -1e3 : p >= 1 ? 1e3 : rt.minY - 0.02 + (rt.maxY - rt.minY + 0.04) * ease(p);
-        rt.bandOn.value = p > 0 && p < 1 ? 1 : 0;
+        const p = showPart(item, t);
         if (p > 0 && !item.started) {
           item.started = true;
           live.current.onPartEvent("start", item);
@@ -647,7 +699,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
           if (outer) v.add(outer.position).sub(positions[figureIndex]);
           v.project(cam);
           // Spread agents that share a spot so their name tags don't stack.
-          tx = ((v.x + 1) / 2) * w + (i - 2) * 26;
+          tx = ((v.x + 1) / 2) * canvasW - inset + (i - 2) * 26;
           ty = ((1 - v.y) / 2) * h + (i % 2) * 24 - 6;
           working = item.started;
           docked = false;
@@ -685,7 +737,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     const place = (el: HTMLElement | null | undefined, p: THREE.Vector3, opacity: number) => {
       if (!el) return;
       p.project(cam);
-      el.style.transform = `translate3d(${(((p.x + 1) / 2) * w).toFixed(1)}px, ${(((1 - p.y) / 2) * h).toFixed(1)}px, 0)`;
+      el.style.transform = `translate3d(${(((p.x + 1) / 2) * canvasW - inset).toFixed(1)}px, ${(((1 - p.y) / 2) * h).toFixed(1)}px, 0)`;
       el.style.opacity = opacity.toFixed(2);
       el.style.visibility = opacity < 0.05 ? "hidden" : "visible";
     };
@@ -761,6 +813,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     const gl = state.gl;
     gl.getDrawingBufferSize(bufferSize);
     atmosphere.uStudioBuffer.value.copy(bufferSize);
+    atmosphere.uStudioFrame.value.set(inset / canvasW, canvasW / w);
     if (seen.w !== bufferSize.x || seen.h !== bufferSize.y) {
       seen.w = bufferSize.x;
       seen.h = bufferSize.y;
@@ -805,7 +858,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       const preview = previewFocusMaterial.uniforms;
       v.copy(positions[0]).addScaledVector(RIGHT, lo * GAP).project(cam);
       preview.map.value = seen.texture;
-      preview.cssPixel.value.set(1 / w, 1 / h);
+      preview.cssPixel.value.set(1 / canvasW, 1 / h);
       preview.slotCenter.value = (v.x + 1) / 2;
       preview.slotSpacing.value = GAP * cam.zoom / w;
       preview.slotProgress.value = sc.pos - lo;

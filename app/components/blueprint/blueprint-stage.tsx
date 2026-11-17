@@ -4,8 +4,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Pause, Play, RotateCcw } from "lucide-react";
-import { engine, now, setPartBuilt, type BuildItem } from "./engine";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Pause, Play } from "lucide-react";
+import { engine, now, rewindTime, setPartBuilt, type BuildItem, type Rewind } from "./engine";
 import { AGENTS, FIGURES } from "./figures";
 import { LOADER_ART } from "./loader-art";
 import { getGreeting } from "../hero-intro";
@@ -20,6 +20,28 @@ const SERIF = { fontFamily: "var(--font-serif), Georgia, serif" };
 
 const TRAVEL = 0.5; // seconds an agent takes to reach its part
 const STAGGER = 0.25; // seconds between consecutive parts setting off
+const REWIND = 0.9; // seconds a finished figure takes to run back to its drawing
+
+/** Who builds which part of a figure, and when: the schedule a build plays and a rewind plays backwards. */
+function planBuild(figId: string, instant: boolean): BuildItem[] {
+  const def = FIGURES.find((f) => f.id === figId)!;
+  const agentFree = AGENTS.map(() => 0);
+  return def.parts.map((part, i) => {
+    const rt = engine.parts[`${figId}/${part.id}`];
+    const tGo = instant ? 0 : Math.max(agentFree[part.agent], i * STAGGER);
+    const tStart = instant ? 0 : tGo + TRAVEL;
+    // Taller parts take a little longer to fill.
+    const tEnd = instant ? 0 : tStart + 0.55 + Math.min(0.5, (rt.maxY - rt.minY) * 0.35);
+    agentFree[part.agent] = tEnd + 0.05;
+    return { figId, partId: part.id, label: part.label, agent: part.agent, tGo, tStart, tEnd, started: false, ended: false };
+  });
+}
+
+/** A schedule played backwards from `from` seconds; a whole one takes REWIND seconds. */
+function rewindFrom(figId: string, items: BuildItem[], from: number): Rewind {
+  const whole = Math.max(...items.map((item) => item.tEnd));
+  return { figId, items, from, start: now(), rate: Math.max(1, whole / REWIND) };
+}
 
 // Small text label above a block: "FIG. 1 — BUILT IN 3.2S".
 const LABEL = "text-[11px] font-semibold uppercase tracking-[0.16em] text-black/45";
@@ -73,8 +95,9 @@ function I({ children, start = false }: { children: ReactNode; start?: boolean }
  * the stage; the five sticker agents fly over and build it part by part into
  * the object, logging what they do. The first one builds itself; arrows, keys
  * or the numbered rail bring on the next, which slides in from the side and
- * is built in turn. The visitor can pause, move on mid-build, replay, or open
- * the selected case study while its figure builds.
+ * is built in turn — and the one that was left runs backwards to its drawing,
+ * so every arrival plays the idea again. The visitor can pause, move on
+ * mid-build, or open the selected case study while its figure builds.
  *
  * The "agents" are choreographed, not a model: the schedule below decides who
  * builds what and when.
@@ -111,21 +134,18 @@ export function BlueprintStage() {
   const [built, setBuilt] = useState<Record<string, number>>({}); // figure id → seconds it took
   const [log, setLog] = useState<LogLine[]>([]);
 
+  /** Build a figure from wherever it is: its drawing, or part-way back to it. */
   const startBuild = useCallback(
     (figId: string) => {
       const eng = engine;
-      const def = FIGURES.find((f) => f.id === figId)!;
-      const agentFree = AGENTS.map(() => 0);
-      const items: BuildItem[] = def.parts.map((part, i) => {
-        const rt = eng.parts[`${figId}/${part.id}`];
-        const tGo = reducedMotion ? 0 : Math.max(agentFree[part.agent], i * STAGGER);
-        const tStart = reducedMotion ? 0 : tGo + TRAVEL;
-        // Taller parts take a little longer to fill.
-        const tEnd = reducedMotion ? 0 : tStart + 0.55 + Math.min(0.5, (rt.maxY - rt.minY) * 0.35);
-        agentFree[part.agent] = tEnd + 0.05;
-        return { figId, partId: part.id, label: part.label, agent: part.agent, tGo, tStart, tEnd, started: false, ended: false };
-      });
-      eng.build = { figId, t0: now(), items, paused: false, pausedAt: 0 };
+      // Caught on its way back: carry on from there instead of starting over.
+      const returning = eng.rewinds.find((rewind) => rewind.figId === figId);
+      const at = returning ? rewindTime(returning, now()) : 0;
+      eng.rewinds = eng.rewinds.filter((rewind) => rewind !== returning);
+      const items = returning
+        ? returning.items.map((item) => ({ ...item, started: false, ended: false }))
+        : planBuild(figId, reducedMotion);
+      eng.build = { figId, t0: now() - at, items, paused: false, pausedAt: 0 };
       setBuilding(figId);
       setPaused(false);
       setLog([]);
@@ -133,26 +153,44 @@ export function BlueprintStage() {
     [reducedMotion],
   );
 
+  // Arriving at a figure builds it; leaving it plays the build backwards, to
+  // the drawing it started as. So every arrival shows the idea again, and
+  // there is nothing to replay.
   const select = useCallback(
     (figId: string) => {
       const eng = engine;
       if (!ready) return;
-      // Redirecting mid-build: the agents finish the old figure at once and
-      // move on, so nothing is left half-drawn.
+      const at = now();
+      // The figure that was being built is left part-way: back it goes from there.
       if (eng.build && eng.build.figId !== figId) {
-        const old = eng.build;
-        for (const item of old.items) setPartBuilt(eng.parts[`${item.figId}/${item.partId}`], true);
+        const left = eng.build;
         eng.build = null;
-        setBuilt((b) => ({ ...b, [old.figId]: 0 }));
+        if (reducedMotion) for (const item of left.items) setPartBuilt(eng.parts[`${item.figId}/${item.partId}`], false);
+        else eng.rewinds.push(rewindFrom(left.figId, left.items, (left.paused ? left.pausedAt : at) - left.t0));
         setBuilding(null);
+        setPaused(false);
       }
+      // And so does any other figure that is still standing.
+      for (const f of FIGURES) {
+        if (f.id === figId || eng.rewinds.some((rewind) => rewind.figId === f.id)) continue;
+        if (!f.parts.some((part) => eng.parts[`${f.id}/${part.id}`].progress > 0)) continue;
+        if (reducedMotion) {
+          for (const part of f.parts) setPartBuilt(eng.parts[`${f.id}/${part.id}`], false);
+        } else {
+          const items = planBuild(f.id, false);
+          eng.rewinds.push(rewindFrom(f.id, items, Math.max(...items.map((item) => item.tEnd))));
+        }
+      }
+      engine.dirty = true;
+      // Only the figure on stage can be built.
+      setBuilt((b) => (figId in b ? { [figId]: b[figId] } : {}));
       setFocus(figId);
-      const alreadyBuilt = Object.values(FIGURES.find((f) => f.id === figId)!.parts).every(
-        (part) => eng.parts[`${figId}/${part.id}`].progress >= 1,
-      );
-      if (!alreadyBuilt && eng.build?.figId !== figId) startBuild(figId);
+      const standing =
+        !eng.rewinds.some((rewind) => rewind.figId === figId) &&
+        FIGURES.find((f) => f.id === figId)!.parts.every((part) => eng.parts[`${figId}/${part.id}`].progress >= 1);
+      if (!standing && eng.build?.figId !== figId) startBuild(figId);
     },
-    [ready, startBuild],
+    [ready, reducedMotion, startBuild],
   );
 
   const togglePause = () => {
@@ -166,16 +204,6 @@ export function BlueprintStage() {
       b.paused = true;
     }
     setPaused(b.paused);
-  };
-
-  /** Take every figure back to its drawing, and build the one on stage again. */
-  const replay = () => {
-    const eng = engine;
-    if (!focus || !ready) return;
-    eng.build = null;
-    for (const rt of Object.values(eng.parts)) setPartBuilt(rt, false);
-    setBuilt({});
-    startBuild(focus);
   };
 
   const onPartEvent = useCallback((type: "start" | "end", item: BuildItem) => {
@@ -414,9 +442,15 @@ export function BlueprintStage() {
       {/* Exactly one screen, with the same margin under the project index as over the eyebrow line. It reaches 12px further left than the page column, to the sidebar's edge, so a neighbouring figure comes out from under the sidebar with no gap. */}
     <div
       id="stage"
-      className="@container relative -mx-10 -ml-[3.25rem] -mt-3 h-svh min-h-[640px] overflow-hidden xl:-mx-14 xl:-ml-[4.25rem] 2xl:-mx-16 2xl:-ml-[4.75rem]"
+      className="@container relative -mx-10 -ml-[3.25rem] -mt-3 h-svh min-h-[640px] xl:-mx-14 xl:-ml-[4.25rem] 2xl:-mx-16 2xl:-ml-[4.75rem]"
     >
-      <div className={`absolute inset-0 transition-opacity duration-700 ${painted ? "opacity-100" : "opacity-0"}`}>
+      {/* The canvas is wider than the stage: it runs on to the left as far as
+          the edge of the window (the navigation column is 280px, 324px from
+          xl, less its 12px margin), under the navigation panel. A neighbour
+          leaving that way passes beneath the panel instead of being cut off
+          at its edge. The stage does not clip — its layers do, each for
+          itself — and the scene measures the overhang (see `stageInset`). */}
+      <div className={`absolute inset-y-0 -left-[268px] right-0 transition-opacity duration-700 xl:-left-[312px] ${painted ? "opacity-100" : "opacity-0"}`}>
         {desktop && sceneOn ? (
           <Scene
             focus={focus}
@@ -429,6 +463,30 @@ export function BlueprintStage() {
           />
         ) : null}
       </div>
+
+      {/* Depth of field for the neighbour on the left: it goes out of focus as
+          it nears the navigation, most of all just before it passes under.
+          Three sheets of backdrop blur, each stronger and narrower than the
+          last and each fading out to the right, add up to a blur that grows
+          towards the left. (The panel itself is frosted, and finishes it.) */}
+      {[
+        { blur: 1, width: "24%" },
+        { blur: 2.5, width: "15%" },
+        { blur: 4, width: "8%" },
+      ].map(({ blur, width }) => (
+        <div
+          key={blur}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0"
+          style={{
+            width,
+            backdropFilter: `blur(${blur}px)`,
+            WebkitBackdropFilter: `blur(${blur}px)`,
+            maskImage: "linear-gradient(to right, #000, transparent)",
+            WebkitMaskImage: "linear-gradient(to right, #000, transparent)",
+          }}
+        />
+      ))}
 
       {/* Captions and reference numerals, pinned to 3D points by the scene. */}
       <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
@@ -478,39 +536,40 @@ export function BlueprintStage() {
         <p className={LABEL}>
           {/* On a narrow stage the controls need the room: keep the role, drop the greeting. */}
           <span className="hidden @4xl:inline">
-            {greeting} — I&apos;m Tony<span className="mx-2 text-black/20">/</span>
+            {greeting} — I&apos;m Tony<span className="mx-2.5 text-black/20">/</span>
           </span>
           <span className="text-black/75">A Staff Product Designer</span>
         </p>
-        {/* One strong line and one quiet one. The statement used to be twelve
-            words with four overlapping italics packed into two lines at full
-            weight; now the claim is the headline and the proof sits under it. */}
+        {/* One strong line and one quiet one: the claim is the headline, and
+            the proof under it finishes the sentence — together they are the
+            statement phones open with ("10+ years shaping interfaces for
+            millions at TikTok, Airbnb, CloudKitchens & DiDi").
+
+            The details that make it sit right:
+            - The seam between overlapping letters is the page's own colour
+              and scales with the type (0.045em), so it stays a hairline at
+              every size instead of eating into small letters.
+            - The line is pulled left by the S's side bearing, so its edge
+              lines up with the two small lines by eye, not by the box. */}
         <h1
-          className="mt-5 text-[clamp(1.9rem,3.6vw,3.4rem)] font-black uppercase leading-[0.92] tracking-[-0.065em] text-[#151515]"
-          style={{ WebkitTextStroke: "3px #ffffff", paintOrder: "stroke" }}
+          className="-ml-[0.05em] mt-5 text-[clamp(1.9rem,3.6vw,3.4rem)] font-black uppercase leading-[0.92] tracking-[-0.065em] text-[#151515]"
+          style={{ WebkitTextStroke: "0.045em var(--studio-paper, #ffffff)", paintOrder: "stroke" }}
         >
           Shaping interfaces<I>for</I> millions
         </h1>
-        <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-medium tracking-[-0.01em] text-black/50">
-          <span className="text-black/80">10+ years</span>
-          <span aria-hidden="true" className="h-px w-6 bg-black/20" />
-          {["TikTok", "Airbnb", "CloudKitchens", "DiDi"].map((name, i) => (
-            <span key={name} className="flex items-center gap-x-3">
-              {i > 0 ? <span aria-hidden="true" className="size-[3px] rounded-full bg-black/25" /> : null}
-              {name}
-            </span>
-          ))}
+        {/* A sentence, not a row of tokens: no rules, no dots. The ampersand
+            is the headline's italic again, one size down. */}
+        <p className="mt-5 text-[13px] font-medium leading-none tracking-[-0.01em] text-black/50">
+          <span className="text-black/80">10+ years</span> at TikTok, Airbnb, CloudKitchens{" "}
+          <span className="text-[1.25em] font-medium italic leading-none text-black/60" style={SERIF}>
+            &amp;
+          </span>{" "}
+          DiDi
         </p>
       </div>
 
       {/* Top right: where you are in the set, and the way through it. */}
       <div className="absolute right-10 top-6 z-30 flex items-center gap-1 xl:right-14">
-        {Object.keys(built).length > 0 ? (
-          <button type="button" onClick={replay} className={GHOST}>
-            <RotateCcw className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
-            Replay
-          </button>
-        ) : null}
         <span className="mx-2 text-[11px] font-semibold tabular-nums tracking-[0.1em] text-black/45">
           <span className="text-black/80">{String(focusIndex + 1).padStart(2, "0")}</span> / {String(FIGURES.length).padStart(2, "0")}
         </span>
@@ -525,7 +584,7 @@ export function BlueprintStage() {
       {/* Keep project access anchored below the description or build log. */}
       <div
         inert={loader && !revealed}
-        className="pointer-events-none absolute bottom-[108px] left-[3.25rem] z-20 w-[min(340px,36%)] xl:left-[4.25rem]"
+        className="pointer-events-none absolute bottom-[64px] left-[3.25rem] z-20 w-[min(340px,36%)] xl:left-[4.25rem]"
       >
         {focused ? (
           <>
@@ -580,29 +639,42 @@ export function BlueprintStage() {
         ) : null}
       </div>
 
-      {/* Bottom: the index of projects, the stage's own table of contents. */}
-      <nav aria-label="Projects" className="absolute bottom-0 left-[3.25rem] right-10 z-30 grid h-20 grid-cols-11 border-t border-black/10 bg-white xl:left-[4.25rem] xl:right-14">
+      {/* Bottom: the index of projects, as one thin line in eleven parts. It
+          lies on the studio's floor — no band of its own — says where you are,
+          and names a project when pointed at. The count is top right. */}
+      <nav aria-label="Projects" className="absolute bottom-0 left-[3.25rem] right-10 z-30 flex h-11 items-stretch gap-1 xl:left-[4.25rem] xl:right-14">
         {FIGURES.map((f, i) => {
-          const isBuilt = built[f.id] !== undefined;
-          const isBuilding = building === f.id;
           const isFocus = focus === f.id;
           return (
             <button
               key={f.id}
               type="button"
               disabled={!ready}
-              onClick={() => select(f.id)}
+              onClick={(e) => {
+                select(f.id);
+                // A pointer click should not leave this part focused: its
+                // name would stay up while the arrow keys move the stage on.
+                if (e.detail > 0) e.currentTarget.blur();
+              }}
               aria-pressed={isFocus}
               aria-label={f.title}
-              title={f.title}
-              className={`group relative flex min-w-0 items-center justify-center transition-colors focus-visible:outline-2 focus-visible:-outline-offset-4 disabled:opacity-40 ${
-                isFocus ? "text-[#151515]" : "text-black/55 hover:bg-black/[0.025] hover:text-black"
-              }`}
+              className="group relative flex min-w-0 flex-1 items-center focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[#151515] disabled:opacity-40"
             >
-              <span aria-hidden="true" className={`absolute inset-x-0 -top-px h-0.5 origin-center bg-[#151515] transition-transform duration-300 ${isFocus ? "scale-x-100" : "scale-x-0 group-hover:scale-x-25"}`} />
-              <span className="text-[11px] font-semibold tabular-nums tracking-[0.1em]">{String(i + 1).padStart(2, "0")}</span>
-              <span aria-hidden="true" className="absolute top-[calc(50%+12px)] flex h-3 items-center">
-                {isBuilding ? <span className="availability-dot" /> : isBuilt ? <Check className="size-3 opacity-60" strokeWidth={2.3} /> : null}
+              <span
+                aria-hidden="true"
+                className={`block h-0.5 w-full rounded-full transition-colors duration-300 ${isFocus ? "bg-[#151515]" : "bg-black/12 group-hover:bg-black/45"}`}
+              />
+              <span
+                aria-hidden="true"
+                // The names at either end hang inwards: centred, they would
+                // reach past the stage and make the page scroll sideways.
+                className={`pointer-events-none absolute bottom-[calc(50%+10px)] translate-y-1 whitespace-nowrap rounded-full bg-[#151515] px-2.5 py-1 text-[11px] font-medium text-white opacity-0 transition duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 ${
+                  i < 2 ? "left-0" : i > FIGURES.length - 3 ? "right-0" : "left-1/2 -translate-x-1/2"
+                }`}
+              >
+                <span className="mr-1.5 tabular-nums text-white/55">{String(i + 1).padStart(2, "0")}</span>
+                {f.title}
+                {f.href ? null : <span className="ml-1.5 text-white/55">Soon</span>}
               </span>
             </button>
           );

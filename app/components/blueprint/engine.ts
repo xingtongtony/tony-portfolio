@@ -27,10 +27,28 @@ export type Build = {
   pausedAt: number;
 };
 
+/**
+ * A figure running backwards to its drawing after the visitor has left it.
+ * Its schedule is played in reverse from `from` seconds, `rate` times as
+ * fast as it was built, by the clock (so a slow frame cannot stretch it).
+ */
+export type Rewind = {
+  figId: string;
+  items: BuildItem[];
+  from: number;
+  start: number;
+  rate: number;
+};
+
+/** Where a rewind is in its schedule right now, in seconds from its start. */
+export const rewindTime = (rewind: Rewind, at: number) => Math.max(0, rewind.from - (at - rewind.start) * rewind.rate);
+
 export type Engine = {
   /** Keyed `${figureId}/${partId}`; filled in by the scene once it has measured. */
   parts: Record<string, PartRuntime>;
   build: Build | null;
+  /** Figures the visitor has left, on their way back to drawings. */
+  rewinds: Rewind[];
   /** The agents' DOM cursors, positioned by the scene every frame. */
   agentEls: (HTMLElement | null)[];
   /** DOM labels pinned to 3D points: `cap/<figure>` and `n/<figure>/<numeral>`. */
@@ -43,7 +61,7 @@ export type Engine = {
 };
 
 /** There is one stage on the page, so one engine. */
-export const engine: Engine = { parts: {}, build: null, agentEls: [], labelEls: {}, dirty: true };
+export const engine: Engine = { parts: {}, build: null, rewinds: [], agentEls: [], labelEls: {}, dirty: true };
 
 export const now = () => performance.now() / 1000;
 

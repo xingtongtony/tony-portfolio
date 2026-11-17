@@ -125,7 +125,9 @@ export default function Home() {
     // No padding under the stage from lg: with it the page would be a few
     // pixels taller than the screen, and scroll.
     <PortfolioShell
-      sidebarTheme="light"
+      sidebarTheme="stage"
+      // From lg the stage paints the page its studio's paper colour.
+      mainClassName="bg-[var(--studio-paper,#ffffff)] text-[#171717]"
       contentClassName="min-w-0 px-6 pb-5 pt-2 sm:px-10 xl:px-14 lg:pb-0 lg:pt-3 2xl:px-16"
     >
       {/* From lg the page is this and nothing else: the blueprint stage —

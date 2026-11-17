@@ -255,7 +255,7 @@ Every **two-column side-by-side layout** in a case study uses a **48px column ga
 
 | Component | Spec highlights |
 |---|---|
-| **Sidebar** (`portfolio-shell.tsx`) | 2 themes: `home` (#111) / `tiktok-tv` (#0E0E0E). Logo, role eyebrow, status chip, nav, copyright. |
+| **Sidebar** (`portfolio-shell.tsx`) | Themes: `home` (#111) / `tiktok-tv` (#0E0E0E) / `light` (#f6f6f6, light case studies and About) / `stage` (translucent white, the homepage, over the blueprint stage's `--studio-paper`). Logo, role eyebrow, status chip, nav, copyright. |
 | **Work card** | aspect `1600/1880`, image `object-cover object-top`, hover glow (`--card-glow`), period badge (glass, top-left), eye cursor if Case Study. |
 | **Experience card** | logo 48px `rounded-[0.85rem]`, company H3 + date eyebrow, role, filled skill chips, `hover:-translate-y-0.5`. |
 | **Chip / pill** | `rounded-full`; filled neutral `bg-black/[0.04] px-3 py-1.5 text-[11px]` (light) — filled reads as a system, not a checklist. |

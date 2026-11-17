@@ -7,7 +7,7 @@ import { RootBackground } from "./root-background";
 import { MobileHeader, type ShellTheme } from "./mobile-header";
 import { ABOUT_HREF, EMAIL_HREF, EXTERNAL_LINKS } from "../lib/site-links";
 
-type SidebarTheme = "home" | "tiktok-tv" | "light";
+type SidebarTheme = "home" | "tiktok-tv" | "light" | "stage";
 
 type PortfolioShellProps = {
   children: ReactNode;
@@ -51,6 +51,26 @@ const sidebarThemes: Record<SidebarTheme, ShellTheme> = {
   // Light sidebar for white/light case studies (e.g. CloudKitchens).
   light: {
     panel: "border-black/[0.08] bg-[#f6f6f6] text-[#171717]",
+    logo: "brightness-0",
+    muted: "text-black/45",
+    nav: "text-black/45",
+    navHover: "hover:text-black",
+    status:
+      "bg-black/[0.05] text-black/66 hover:bg-black/[0.1] hover:text-black",
+    copyright: "text-black/35",
+    bar: "border-black/[0.06] bg-white/80",
+    sheet: "bg-[#f6f6f6] text-[#171717]",
+    tone: "light",
+  },
+  // The homepage. From lg the page is the blueprint stage's tinted paper
+  // (`--studio-paper`) and the stage's canvas runs under this panel, so it
+  // is a sheet of frosted glass: a little white, a lighter edge, the tint
+  // showing through, and a neighbouring figure passing beneath it as a soft
+  // blur. (Tony, 2026-11-17: the grey card sat against the colour; no card
+  // at all dissolved the navigation into the page. This is between the two.)
+  // `z-10` keeps it above the canvas, which comes later in the page.
+  stage: {
+    panel: "z-10 border-white/55 bg-white/45 text-[#171717] backdrop-blur-xl",
     logo: "brightness-0",
     muted: "text-black/45",
     nav: "text-black/45",
