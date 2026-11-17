@@ -1,13 +1,10 @@
-// Data for the blueprint stage: four "patent figures", each a small clay
+// Data for the blueprint stage's patent figures, each a small clay
 // diorama made of soft solids and split into PARTS. A part is the unit an
 // agent builds — it starts as line art and fills with its colour bottom-up.
 //
-// Art direction (see rules/BLUEPRINT_STAGE.md): matte clay, generous radii,
-// nothing sharp, and ONE palette shared by all four figures. Colour is chosen
-// for harmony, not realism — a TV may be plum, a counter lilac.
-//
-// Every figure is a case study that exists on the site. Do not add a figure
-// for work that has no page yet.
+// Art direction (see rules/BLUEPRINT_STAGE.md): matte clay, tight bevels,
+// and one palette per figure. Published work has a case-study route; finished
+// work awaiting a write-up uses the monochrome palette.
 //
 // Coordinates are in each figure's own space: ground at y = 0, front faces +z,
 // footprint roughly 2.9 wide by 1.9 deep.
@@ -98,7 +95,7 @@ export type PartDef = {
   color: string;
   finish?: Finish;
   /** Optional local frame, so shapes can be authored on a tilted surface. */
-  frame?: { pos: Vec3; rot: Vec3 };
+  frame?: { pos: Vec3; rot: Vec3; scale?: number };
   shapes: ShapeDef[];
 };
 
@@ -112,6 +109,8 @@ export type FigureDef = {
   desc: string;
   href?: string;
   status?: string;
+  /** Camera adjustments for an exhibit whose main surface needs a different view. */
+  presentation?: { elevation?: number; scale?: number };
   /** The figure's own colours; the scene tints the floor around it with `ground`. */
   palette: Palette;
   parts: PartDef[];
@@ -371,6 +370,7 @@ function use(p: Palette) {
 
 const TV_SCREEN = "/portfolio/blueprints/tv-screen.jpg";
 const LUTRA_SCREEN = "/portfolio/blueprints/lutra-screen.jpg";
+const WISHLIST_STAYS = ["/portfolio/blueprints/wishlist-pool.jpg", "/portfolio/blueprints/wishlist-interior.jpg"];
 
 const REMOTE_FRAME = {
   pos: [0.9, 0.62, 0.0] as Vec3,
@@ -388,10 +388,7 @@ const QR_FRAME = {
   pos: [0.95, 0.12, 0.58] as Vec3,
   rot: [-0.18, 0.3, 0] as Vec3,
 };
-const CARD_FRAME = {
-  pos: [-0.7, 0.15, 0.42] as Vec3,
-  rot: [0, 0.12, 0] as Vec3,
-};
+const TV_ANGLE = { pos: [0, 0, -0.02] as Vec3, rot: [0, 0.18, 0] as Vec3 };
 
 /** The base every figure stands on: a lower step, the base, and its lighter inlay. */
 function plinth(c: Palette): ShapeDef[] {
@@ -402,22 +399,47 @@ function plinth(c: Palette): ShapeDef[] {
   ];
 }
 
-/**
- * One small interface — a bar, a hero and two cards — sized to a screen
- * `w` × `h` centred at height `cy`, standing on a face at `z`. The same blocks
- * on every device is the point of a cross-platform system.
- */
-function screenBlocks(c: Palette, w: number, h: number, cy: number, z: number): ShapeDef[] {
-  const t = 0.014;
+/** A framed square relief of the case study's three Code Eyes and dot pattern. */
+function tikCodeRelief(c: Palette, [x, y, z]: Vec3, pitch: number): ShapeDef[] {
+  const eyeSpan = 2.2;
+  const frameSpan = 10.2 * pitch;
+  const insetSpan = 9.84 * pitch;
+  const faceZ = z + 0.012;
+  // The three Code Eyes sit just inside the square's outer rim.
+  const corner = 4.65 - eyeSpan / 2;
+  const eyes = [[-corner, corner], [corner, corner], [-corner, -corner]];
+  const dots = [
+    [-1, 3], [1, 3],
+    [0, 2], [1, 2],
+    [-1, 1], [2, 1], [3, 1],
+    [-3, 0], [-1, 0], [0, 0], [2, 0],
+    [-2, -1], [0, -1], [3, -1],
+    [1, -2], [3, -2],
+    [-1, -3], [1, -3], [2, -3],
+  ];
   return [
-    { k: "slab", size: [w * 0.84, h * 0.1], t, r: h * 0.03, pos: [0, cy + h * 0.36, z + t / 2], color: c.plum },
-    { k: "slab", size: [w * 0.84, h * 0.36], t: t * 2, r: h * 0.04, pos: [0, cy + h * 0.08, z + t], color: c.coral },
-    { k: "slab", size: [w * 0.4, h * 0.26], t, r: h * 0.035, pos: [-w * 0.22, cy - h * 0.28, z + t / 2], color: c.yellow },
-    { k: "slab", size: [w * 0.4, h * 0.26], t, r: h * 0.035, pos: [w * 0.22, cy - h * 0.28, z + t / 2], color: c.lilac },
+    { k: "slab", size: [frameSpan, frameSpan], t: 0.01, r: 0.46 * pitch,
+      pos: [x, y, z + 0.002], color: c.lilac },
+    { k: "slab", size: [insetSpan, insetSpan], t: 0.008, r: 0.28 * pitch,
+      pos: [x, y, faceZ - 0.004], color: c.cream },
+    ...eyes.flatMap(([column, row], index): ShapeDef[] => {
+      const cx = x + column * pitch;
+      const cy = y + row * pitch;
+      return [
+        { k: "slab", size: [eyeSpan * pitch, eyeSpan * pitch], t: 0.18 * pitch, r: 0.41 * pitch,
+          pos: [cx, cy, faceZ + 0.04 * pitch], color: index === 1 ? c.coral : c.lilac },
+        { k: "cyl", r: 0.59 * pitch, h: 0.22 * pitch, rot: FACE,
+          pos: [cx, cy, faceZ + 0.21 * pitch], color: c.inky },
+      ];
+    }),
+    ...dots.map(([column, row], index): ShapeDef => ({
+      k: "cyl", r: 0.285 * pitch, h: 0.24 * pitch, rot: FACE,
+      pos: [x + column * pitch, y + row * pitch, faceZ + 0.08 * pitch],
+      color: index === 4 || index === 15 ? c.coral : c.inky,
+    })),
   ];
 }
 
-/** A four-pointed sparkle, `s` from centre to tip. */
 function sparkle(s: number): [number, number][] {
   const q = s * 0.26;
   return [
@@ -441,7 +463,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "tv",
       fig: "FIG. 1",
       title: "TikTok TV Revamp",
-      desc: "Redesign the whole experience of TikTok TV and Design system.",
+      desc: "A more immersive TV feed, with layered backgrounds and clearer remote focus.",
       href: "/work/tiktok-tv-visual",
       parts: [
         {
@@ -516,21 +538,21 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             },
             {
               k: "box",
-              size: [2.5, 0.4, 0.74],
+              size: [2.34, 0.4, 0.74],
               pos: [0, 0.42, 0],
               bevel: 0.045,
             },
             // Two drawers: raised fronts and their pulls.
             {
               k: "slab",
-              size: [1.08, 0.26],
+              size: [1.0, 0.25],
               t: 0.03,
               r: 0.07,
               pos: [-0.6, 0.42, 0.376],
             },
             {
               k: "slab",
-              size: [1.08, 0.26],
+              size: [1.0, 0.25],
               t: 0.03,
               r: 0.07,
               pos: [0.6, 0.42, 0.376],
@@ -593,6 +615,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           label: "TV body",
           agent: 0,
           color: PLUM,
+          frame: TV_ANGLE,
           shapes: [
             {
               k: "slab",
@@ -605,11 +628,11 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "cyl", r: 0.08, h: 0.16, pos: [0, 0.74, -0.08] },
             {
               k: "slab",
-              size: [2.2, 1.316],
-              t: 0.18,
-              r: 0.16,
-              pos: [0, 1.458, -0.08],
-              bevel: 0.025,
+              size: [2.23, 1.3025],
+              t: 0.126,
+              r: 0.109,
+              pos: [0, 1.465, -0.058],
+              bevel: 0.014,
             },
           ],
         },
@@ -619,30 +642,22 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           agent: 3,
           color: "#050505",
           finish: "screen",
+          frame: TV_ANGLE,
           shapes: [
-            // A dark lip around the panel, then the picture.
+            // The picture meets the physical bezel directly.
             {
               k: "slab",
-              size: [2.06, 1.176],
-              t: 0.003,
-              r: 0.09,
-              pos: [0, 1.458, 0.0115],
-              color: INKY,
-              finish: "soft",
-            },
-            {
-              k: "slab",
-              size: [2.02, 1.136],
+              size: [2.12, 1.1925],
               t: 0.006,
-              r: 0.07,
-              pos: [0, 1.458, 0.0135],
+              r: 0.054,
+              pos: [0, 1.465, 0.0065],
               map: TV_SCREEN,
             },
             {
               k: "cyl",
               r: 0.012,
               h: 0.006,
-              pos: [0.95, 0.836, 0.012],
+              pos: [0.95, 0.832, 0.008],
               rot: FACE,
               color: CORAL,
               finish: "led",
@@ -757,6 +772,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           label: "Play, pause, loop",
           agent: 0,
           color: CORAL,
+          frame: { pos: [0.07, 0.023, 0.21], rot: [0, 0, 0], scale: 0.72 },
           shapes: [
             // Play, pause and loop — the TV's verbs as toy blocks.
             {
@@ -858,7 +874,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "lutra",
       fig: "FIG. 2",
       title: "CloudKitchens Lutra App",
-      desc: "All-in-One restaurant operations management tool in China",
+      desc: "An operating dashboard for restaurants, from live orders to recommended coupons.",
       href: "/work/cloudkitchens",
       parts: [
         {
@@ -922,7 +938,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
         {
           id: "app",
-          label: "App screens",
+          label: "Order Booster",
           agent: 3,
           color: "#050505",
           finish: "screen",
@@ -931,18 +947,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             {
               k: "slab",
               size: [0.68, 1.402],
-              t: 0.003,
-              r: 0.115,
-              pos: [0, 0.741, 0.0615],
-              color: INKY,
-              finish: "soft",
-            },
-            {
-              k: "slab",
-              size: [0.66, 1.382],
               t: 0.006,
-              r: 0.1,
-              pos: [0, 0.741, 0.0635],
+              r: 0.11,
+              pos: [0, 0.741, 0.0615],
               map: LUTRA_SCREEN,
             },
           ],
@@ -1034,8 +1041,8 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             {
               k: "slab",
               size: [0.5, 0.7],
-              t: 0.02,
-              r: 0.04,
+              t: 0.007,
+              r: 0.018,
               pos: [0, 0.33, 0],
               map: "proc:receipt",
             },
@@ -1072,6 +1079,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           label: "Bowl",
           agent: 0,
           color: CORAL,
+          frame: { pos: [-0.02, 0.037, 0.16], rot: [0, 0, 0], scale: 0.72 },
           shapes: [
             { k: "cyl", r: 0.34, h: 0.18, pos: [0.1, 0.21, 0.5], bevel: 0.038 },
             {
@@ -1184,7 +1192,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "restructure",
       fig: "FIG. 3",
       title: "TikTok Web Restructure",
-      desc: "Restructuring TikTok's WebApp to unlock its substantial potential.",
+      desc: "A video-first browser mode that makes every post discoverable and shareable.",
       href: "/work/tiktok-restructure",
       parts: [
         { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
@@ -1194,151 +1202,144 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           agent: 4,
           color: c.cream,
           shapes: [
-            { k: "slab", size: [1.1, 0.34], t: 0.06, r: 0.1, pos: [-0.15, 0.137, -0.45], rot: flat(), color: c.plum },
-            { k: "box", size: [0.14, 0.2, 0.08], pos: [-0.15, 0.26, -0.47], color: c.plum },
-            { k: "slab", size: [2.3, 1.44], t: 0.1, r: 0.09, pos: [-0.15, 1.06, -0.45] },
-            // Title bar: three dots and the address field.
-            { k: "slab", size: [2.2, 0.17], t: 0.02, r: 0.05, pos: [-0.15, 1.645, -0.39], color: c.plum },
-            { k: "cyl", r: 0.026, h: 0.012, pos: [-1.13, 1.645, -0.377], rot: FACE, color: c.coral },
-            { k: "cyl", r: 0.026, h: 0.012, pos: [-1.04, 1.645, -0.377], rot: FACE, color: c.lilac },
-            { k: "cyl", r: 0.026, h: 0.012, pos: [-0.95, 1.645, -0.377], rot: FACE, color: c.green },
-            { k: "slab", size: [0.9, 0.07], t: 0.012, r: 0.035, pos: [-0.1, 1.645, -0.376] },
+            { k: "slab", size: [1.12, 0.42], t: 0.08, r: 0.09, pos: [0, 0.145, -0.49], rot: flat(), color: c.plum },
+            { k: "box", size: [0.18, 0.28, 0.12], pos: [0, 0.3, -0.46], color: c.plum },
+            { k: "slab", size: [2.54, 1.49], t: 0.112, r: 0.1, pos: [0, 1.17, -0.44] },
+            { k: "slab", size: [2.38, 1.34], t: 0.014, r: 0.06, pos: [0, 1.17, -0.382], color: c.inky },
+            { k: "slab", size: [2.32, 0.16], t: 0.016, r: 0.044, pos: [0, 1.738, -0.368], color: c.sand },
+            ...row(3, [0.072, 0, 0], { k: "cyl", r: 0.021, h: 0.009, pos: [-1.068, 1.738, -0.354], rot: FACE, color: c.plum }),
+            { k: "slab", size: [0.92, 0.083], t: 0.009, r: 0.04, pos: [-0.06, 1.735, -0.355], finish: "print", map: `label:tiktok.com/…/video/…|${c.cream}|${c.inky}` },
           ],
         },
         {
-          id: "layout",
-          label: "New structure",
+          id: "video",
+          label: "Portrait video player",
           agent: 3,
-          color: c.sand,
+          color: c.plum,
           shapes: [
-            // Sidebar with its menu.
-            { k: "slab", size: [0.5, 1.12], t: 0.04, r: 0.05, pos: [-0.98, 0.95, -0.38], color: c.lilac },
-            ...row(4, [0, -0.14, 0], { k: "slab", size: [0.32, 0.055], t: 0.012, r: 0.027, pos: [-0.98, 1.36, -0.354], color: c.cream }),
-            // Hero.
-            { k: "slab", size: [1.62, 0.5], t: 0.05, r: 0.06, pos: [0.14, 1.26, -0.375], color: c.coral },
-            { k: "cyl", r: 0.11, h: 0.02, pos: [0.72, 1.28, -0.342], rot: FACE, color: c.cream },
-            { k: "slab", size: [0.6, 0.06], t: 0.012, r: 0.03, pos: [-0.25, 1.33, -0.344], color: c.cream },
-            { k: "slab", size: [0.4, 0.05], t: 0.012, r: 0.025, pos: [-0.35, 1.21, -0.344], color: c.cream },
-            // Three cards.
-            ...row(3, [0.56, 0, 0], { k: "slab", size: [0.5, 0.52], t: 0.04, r: 0.05, pos: [-0.42, 0.68, -0.38] }),
-            ...row(3, [0.56, 0, 0], { k: "slab", size: [0.3, 0.045], t: 0.012, r: 0.022, pos: [-0.5, 0.5, -0.354], color: c.inky }),
-            ...row(3, [0.56, 0, 0], { k: "slab", size: [0.38, 0.2], t: 0.012, r: 0.04, pos: [-0.42, 0.75, -0.354], color: c.mist }),
+            { k: "slab", size: [1.36, 1.09], t: 0.038, r: 0.044, pos: [-0.475, 1.102, -0.362] },
+            { k: "slab", size: [0.53, 0.94], t: 0.02, r: 0.046, pos: [-0.48, 1.12, -0.334], color: c.coral },
+            { k: "cyl", r: 0.112, h: 0.015, pos: [-0.48, 1.13, -0.315], rot: FACE, color: c.cream, finish: "soft" },
+            { k: "poly", pts: [[-0.034, -0.052], [0.055, 0], [-0.034, 0.052]], t: 0.009, r: 0.011, pos: [-0.48, 1.13, -0.303], color: c.inky },
+            { k: "slab", size: [0.38, 0.017], t: 0.007, r: 0.008, pos: [-0.48, 0.69, -0.318], color: c.cream },
           ],
         },
         {
-          id: "sitemap",
-          label: "Sitemap",
+          id: "discussion",
+          label: "Comments and related posts",
           agent: 2,
-          color: c.lilac,
+          color: c.cream,
           shapes: [
-            { k: "slab", size: [0.34, 0.22], t: 0.09, r: 0.05, pos: [0.7, 0.152, 0.3], rot: flat(), color: c.plum },
-            { k: "slab", size: [0.34, 0.22], t: 0.09, r: 0.05, pos: [0.35, 0.152, 0.68], rot: flat() },
-            { k: "slab", size: [0.34, 0.22], t: 0.09, r: 0.05, pos: [1.05, 0.152, 0.68], rot: flat() },
-            // The branches between them.
-            { k: "slab", size: [0.03, 0.1], t: 0.02, r: 0.01, pos: [0.7, 0.117, 0.455], rot: flat(), color: c.inky },
-            { k: "slab", size: [0.73, 0.03], t: 0.02, r: 0.01, pos: [0.7, 0.117, 0.5], rot: flat(), color: c.inky },
-            { k: "slab", size: [0.03, 0.08], t: 0.02, r: 0.01, pos: [0.35, 0.117, 0.54], rot: flat(), color: c.inky },
-            { k: "slab", size: [0.03, 0.08], t: 0.02, r: 0.01, pos: [1.05, 0.117, 0.54], rot: flat(), color: c.inky },
+            { k: "slab", size: [0.84, 1.09], t: 0.03, r: 0.045, pos: [0.72, 1.102, -0.365] },
+            { k: "slab", size: [0.58, 0.09], t: 0.008, r: 0.024, pos: [0.69, 1.53, -0.345], finish: "print", map: `label:Comments|${c.cream}|${c.inky}|6.4` },
+            ...row(3, [0, -0.155, 0], { k: "cyl", r: 0.045, h: 0.012, pos: [0.42, 1.38, -0.343], rot: FACE, color: c.lilac }),
+            ...row(3, [0, -0.155, 0], { k: "slab", size: [0.46, 0.027], t: 0.013, r: 0.013, pos: [0.742, 1.402, -0.342], color: c.plum }),
+            ...row(3, [0, -0.155, 0], { k: "slab", size: [0.34, 0.021], t: 0.009, r: 0.01, pos: [0.68, 1.353, -0.342], color: c.sand }),
+            ...row(3, [0.23, 0, 0], { k: "slab", size: [0.15, 0.218], t: 0.017, r: 0.028, pos: [0.49, 0.765, -0.34], color: c.yellow }),
           ],
         },
         {
-          id: "blocks",
-          label: "Old navigation",
+          id: "share",
+          label: "Shareable post link",
           agent: 0,
-          color: c.sand,
+          color: c.cream,
           shapes: [
-            // What was taken out, set aside.
-            { k: "slab", size: [0.8, 0.2], t: 0.08, r: 0.06, pos: [-0.75, 0.147, 0.55], rot: flat(0.35) },
-            { k: "slab", size: [0.3, 0.3], t: 0.08, r: 0.06, pos: [-0.25, 0.147, 0.72], rot: flat(-0.3), color: c.cream },
-            { k: "ball", r: 0.075, pos: [0.02, 0.18, 0.48], color: c.coral },
+            { k: "slab", size: [1.21, 0.39], t: 0.055, r: 0.08, pos: [-0.64, 0.133, 0.59], rot: flat(0.08), color: c.sand },
+            { k: "slab", size: [1.03, 0.23], t: 0.011, r: 0.055, pos: [-0.64, 0.165, 0.59], rot: flat(0.08), finish: "print", map: `label:Copy video link|${c.cream}|${c.inky}|4.5` },
+            { k: "slab", size: [0.52, 0.035], t: 0.024, r: 0.017, pos: [0.27, 0.127, 0.55], rot: flat(0.08), color: c.plum },
+            { k: "slab", size: [0.33, 0.45], t: 0.073, r: 0.068, pos: [0.69, 0.143, 0.51], rot: flat(-0.18), color: c.plum },
+            { k: "slab", size: [0.23, 0.31], t: 0.01, r: 0.05, pos: [0.69, 0.183, 0.51], rot: flat(-0.18), color: c.coral },
           ],
         },
       ],
       callouts: [
-        { n: "302", at: [0.95, 1.78, -0.45], to: [1.75, 2.2, -0.3] },
-        { n: "304", at: [1.25, 0.2, 0.68], to: [1.95, 0.5, 1.0] },
-        { n: "306", at: [-1.1, 0.2, 0.6], to: [-1.9, 0.4, 0.95] },
+        { n: "302", at: [-1.27, 1.82, -0.42], to: [-1.85, 2.14, -0.35] },
+        { n: "304", at: [1.15, 1.26, -0.35], to: [1.9, 1.61, -0.15] },
+        { n: "306", at: [0.81, 0.19, 0.65], to: [1.68, 0.28, 0.99] },
       ],
     }),
   ],
   [
     THEMES.rose,
-    (c) => ({
-      id: "multi",
-      fig: "FIG. 4",
-      title: "TikTok Multi-Platform",
-      desc: "Adapting TikTok's product framework across ends, and defining the cross-end experience.",
-      href: "/work/tiktok-multi-platform",
-      parts: [
-        { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
-        {
-          id: "laptop",
-          label: "Laptop",
-          agent: 4,
-          color: c.cream,
-          shapes: [
-            { k: "slab", size: [1.5, 1.0], t: 0.07, r: 0.08, pos: [-0.4, 0.142, -0.2], rot: flat() },
-            { k: "slab", size: [1.3, 0.46], t: 0.012, r: 0.04, pos: [-0.4, 0.18, -0.38], rot: flat(), color: c.lilac },
-            { k: "slab", size: [0.44, 0.26], t: 0.012, r: 0.04, pos: [-0.4, 0.18, 0.08], rot: flat(), color: c.mist },
-          ],
-        },
-        {
-          id: "desktop",
-          label: "Desktop layout",
-          agent: 3,
-          color: c.plum,
-          frame: { pos: [-0.4, 0.177, -0.68], rot: [-0.22, 0, 0] },
-          shapes: [
-            { k: "slab", size: [1.5, 1.0], t: 0.06, r: 0.08, pos: [0, 0.5, 0] },
-            { k: "slab", size: [1.36, 0.86], t: 0.012, r: 0.04, pos: [0, 0.5, 0.034], color: c.cream },
-            ...screenBlocks(c, 1.36, 0.86, 0.5, 0.04),
-          ],
-        },
-        {
-          id: "tablet",
-          label: "Tablet layout",
-          agent: 2,
-          color: c.cream,
-          frame: { pos: [0.85, 0.107, 0.1], rot: [-0.28, -0.3, 0] },
-          shapes: [
-            { k: "box", size: [0.3, 0.5, 0.2], pos: [0, 0.25, -0.2], color: c.sand },
-            { k: "slab", size: [0.8, 1.04], t: 0.06, r: 0.09, pos: [0, 0.52, 0] },
-            { k: "slab", size: [0.68, 0.92], t: 0.012, r: 0.03, pos: [0, 0.52, 0.034], color: c.mist },
-            ...screenBlocks(c, 0.68, 0.92, 0.52, 0.04),
-          ],
-        },
-        {
-          id: "phone",
-          label: "Phone layout",
-          agent: 0,
-          color: c.plum,
-          frame: { pos: [0.1, 0.107, 0.62], rot: [-0.3, 0.15, 0] },
-          shapes: [
-            { k: "box", size: [0.2, 0.36, 0.18], pos: [0, 0.18, -0.17], color: c.sand },
-            { k: "slab", size: [0.38, 0.76], t: 0.06, r: 0.08, pos: [0, 0.38, 0] },
-            { k: "slab", size: [0.3, 0.68], t: 0.012, r: 0.04, pos: [0, 0.38, 0.034], color: c.cream },
-            ...screenBlocks(c, 0.3, 0.68, 0.38, 0.04),
-          ],
-        },
-        {
-          id: "tokens",
-          label: "Shared components",
-          agent: 1,
-          color: c.coral,
-          shapes: [
-            // The pieces every layout above is made of.
-            { k: "slab", size: [0.42, 0.1], t: 0.1, r: 0.04, pos: [-0.9, 0.157, 0.42], rot: flat(), color: c.plum },
-            { k: "slab", size: [0.42, 0.3], t: 0.1, r: 0.05, pos: [-0.9, 0.157, 0.66], rot: flat() },
-            { k: "slab", size: [0.2, 0.2], t: 0.1, r: 0.05, pos: [-0.5, 0.157, 0.74], rot: flat(), color: c.yellow },
-          ],
-        },
-      ],
-      callouts: [
-        { n: "402", at: [-1.0, 1.1, -0.88], to: [-1.8, 1.6, -0.7] },
-        { n: "404", at: [1.2, 0.9, 0.0], to: [1.9, 1.2, 0.3] },
-        { n: "406", at: [-1.1, 0.22, 0.66], to: [-1.9, 0.4, 1.0] },
-      ],
-    }),
+    (c) => {
+      const tablet = { pos: [0.06, 0.107, -0.39] as Vec3, rot: [-0.13, 0.17, 0] as Vec3 };
+      const phone = { pos: [-0.96, 0.109, 0.48] as Vec3, rot: [-0.16, 0.27, 0] as Vec3 };
+      return {
+        id: "multi",
+        fig: "FIG. 4",
+        title: "TikTok Multi-Platform",
+        desc: "An iPad experience that keeps videos, navigation and conversation in view.",
+        href: "/work/tiktok-multi-platform",
+        parts: [
+          { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
+          {
+            id: "tablet",
+            label: "Landscape iPad",
+            agent: 4,
+            color: c.plum,
+            frame: tablet,
+            shapes: [
+              { k: "slab", size: [2.12, 1.49], t: 0.09, r: 0.13, pos: [0, 0.752, 0] },
+              { k: "slab", size: [2.0, 1.37], t: 0.016, r: 0.07, pos: [0, 0.752, 0.048], color: c.inky, finish: "soft" },
+              { k: "slab", size: [0.64, 0.44], t: 0.11, r: 0.08, pos: [0.38, 0.05, -0.272], rot: flat(), color: c.sand },
+              { k: "box", size: [0.57, 0.42, 0.17], pos: [0.38, 0.244, -0.218], rot: [-0.38, 0, 0], color: c.sand },
+              ...row(2, [1.44, 0, 0], { k: "slab", size: [0.34, 0.255], t: 0.049, r: 0.058, pos: [-0.72, 0.019, 0.071], rot: flat(), color: c.sand }),
+            ],
+          },
+          {
+            id: "tablet-nav",
+            label: "Side navigation",
+            agent: 3,
+            color: c.mist,
+            frame: tablet,
+            shapes: [
+              { k: "slab", size: [0.206, 1.22], t: 0.029, r: 0.035, pos: [-0.839, 0.752, 0.068] },
+              ...row(4, [0, -0.187, 0], { k: "cyl", r: 0.035, h: 0.01, rot: FACE, pos: [-0.84, 1.163, 0.087], color: c.plum }),
+              { k: "slab", size: [0.123, 0.021], t: 0.01, r: 0.01, pos: [-0.839, 0.21, 0.085], color: c.plum },
+            ],
+          },
+          {
+            id: "tablet-content",
+            label: "Video and comments side by side",
+            agent: 2,
+            color: c.coral,
+            frame: tablet,
+            shapes: [
+              { k: "slab", size: [0.746, 1.22], t: 0.036, r: 0.048, pos: [-0.323, 0.752, 0.072] },
+              { k: "cyl", r: 0.113, h: 0.015, pos: [-0.323, 0.8, 0.096], rot: FACE, color: c.cream },
+              { k: "poly", pts: [[-0.033, -0.052], [0.057, 0], [-0.033, 0.052]], t: 0.01, r: 0.01, pos: [-0.323, 0.8, 0.106], color: c.plum },
+              { k: "slab", size: [0.49, 0.031], t: 0.012, r: 0.015, pos: [-0.323, 0.24, 0.091], color: c.cream },
+              { k: "slab", size: [0.82, 1.22], t: 0.03, r: 0.048, pos: [0.529, 0.752, 0.069], color: c.cream },
+              { k: "slab", size: [0.48, 0.04], t: 0.009, r: 0.02, pos: [0.501, 1.239, 0.087], color: c.plum },
+              ...row(3, [0, -0.215, 0], { k: "cyl", r: 0.043, h: 0.011, rot: FACE, pos: [0.251, 1.075, 0.09], color: c.lilac }),
+              ...row(3, [0, -0.215, 0], { k: "slab", size: [0.429, 0.027], t: 0.011, r: 0.013, pos: [0.559, 1.104, 0.09], color: c.plum }),
+              ...row(3, [0, -0.215, 0], { k: "slab", size: [0.303, 0.021], t: 0.009, r: 0.01, pos: [0.497, 1.048, 0.089], color: c.sand }),
+              { k: "slab", size: [0.637, 0.097], t: 0.013, r: 0.048, pos: [0.532, 0.309, 0.09], color: c.lilac },
+            ],
+          },
+          {
+            id: "phone",
+            label: "Single-column phone feed",
+            agent: 0,
+            color: c.plum,
+            frame: phone,
+            shapes: [
+              { k: "slab", size: [0.475, 0.956], t: 0.076, r: 0.085, pos: [0, 0.484, 0] },
+              { k: "slab", size: [0.396, 0.877], t: 0.012, r: 0.046, pos: [0, 0.484, 0.041], color: c.inky, finish: "soft" },
+              { k: "slab", size: [0.344, 0.686], t: 0.015, r: 0.043, pos: [0, 0.551, 0.052], color: c.coral },
+              { k: "poly", pts: [[-0.027, -0.034], [0.04, 0], [-0.027, 0.034]], t: 0.009, r: 0.009, pos: [0, 0.564, 0.066], color: c.cream },
+              ...row(3, [0.115, 0, 0], { k: "cyl", r: 0.02, h: 0.009, rot: FACE, pos: [-0.115, 0.141, 0.055], color: c.mist }),
+              { k: "box", size: [0.18, 0.25, 0.17], pos: [0, 0.117, -0.174], rot: [-0.23, 0, 0], color: c.sand },
+            ],
+          },
+        ],
+        callouts: [
+          { n: "402", at: [-0.97, 1.42, -0.21], to: [-1.64, 1.81, -0.24] },
+          { n: "404", at: [1.14, 1.04, -0.43], to: [1.91, 1.32, -0.25] },
+          { n: "406", at: [-1.17, 0.56, 0.51], to: [-1.84, 0.56, 0.73] },
+        ],
+      };
+    },
   ],
   [
     THEMES.blue,
@@ -1346,7 +1347,8 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "ds",
       fig: "FIG. 5",
       title: "TikTok Design System",
-      desc: "A central design system supporting with all TikTok design teams.",
+      desc: "Reusable component variants, with adaptive layouts and shared motion rules.",
+      presentation: { elevation: 0.70, scale: 1.11 },
       href: "/work/tiktok-design-system",
       parts: [
         {
@@ -1397,29 +1399,19 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
         {
           id: "button",
-          label: "Button",
+          label: "Button variant family",
           agent: 4,
           color: CORAL,
           shapes: [
-            {
-              k: "slab",
-              size: [0.95, 0.36],
-              t: 0.16,
-              r: 0.18,
-              pos: [-0.8, 0.2, 0.5],
-              rot: flat(),
-              bevel: 0.023,
-            },
-            {
-              k: "slab",
-              size: [0.4, 0.08],
-              t: 0.012,
-              r: 0.04,
-              pos: [-0.74, 0.286, 0.5],
-              rot: flat(),
-              color: CREAM,
-            },
-            { k: "ball", r: 0.045, pos: [-1.06, 0.29, 0.5], color: CREAM },
+            { k: "slab", size: [1.21, 1.21], t: 0.056, r: 0.075, pos: [-0.754, 0.151, 0.168], rot: flat(), color: CREAM },
+            ...[
+              { label: "Default", z: -0.198, t: 0.107, surface: CORAL, ink: INKY },
+              { label: "Pressed", z: 0.16, t: 0.075, surface: PLUM, ink: WHITE },
+              { label: "Disabled", z: 0.517, t: 0.056, surface: LILAC, ink: INKY },
+            ].flatMap(({ label, z, t, surface, ink }): ShapeDef[] => [
+              { k: "slab", size: [0.93, 0.25], t, r: 0.125, pos: [-0.754, 0.177 + t / 2, z], rot: flat(), color: surface, finish: "soft", bevel: 0.014 },
+              { k: "slab", size: [0.55, 0.1], t: 0.006, r: 0.026, pos: [-0.754, 0.179 + t, z], rot: flat(), finish: "print", map: `label:${label}|${surface}|${ink}|5.5` },
+            ]),
           ],
         },
         {
@@ -1530,92 +1522,6 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         {
-          id: "slider",
-          label: "Slider",
-          agent: 3,
-          color: CREAM,
-          shapes: [
-            {
-              k: "slab",
-              size: [1.25, 0.1],
-              t: 0.07,
-              r: 0.05,
-              pos: [-0.65, 0.155, -0.02],
-              rot: flat(),
-            },
-            // The fill wraps the track: wider, taller and past its end, so no two faces share a plane.
-            {
-              k: "slab",
-              size: [0.62, 0.124],
-              t: 0.086,
-              r: 0.062,
-              pos: [-0.975, 0.163, -0.02],
-              rot: flat(),
-              color: PLUM,
-            },
-            {
-              k: "cyl",
-              r: 0.12,
-              h: 0.12,
-              pos: [-0.65, 0.2, -0.02],
-              color: YELLOW,
-              bevel: 0.023,
-            },
-            // The value tooltip floating over the thumb.
-            {
-              k: "slab",
-              size: [0.26, 0.14],
-              t: 0.07,
-              r: 0.05,
-              pos: [-0.65, 0.46, -0.02],
-              color: PLUM,
-              bevel: 0.022,
-            },
-            {
-              k: "slab",
-              size: [0.12, 0.028],
-              t: 0.006,
-              r: 0.014,
-              pos: [-0.65, 0.46, 0.018],
-              color: WHITE,
-            },
-          ],
-        },
-        {
-          id: "input",
-          label: "Text field",
-          agent: 1,
-          color: CREAM,
-          shapes: [
-            {
-              k: "slab",
-              size: [1.1, 0.26],
-              t: 0.09,
-              r: 0.08,
-              pos: [-0.72, 0.165, -0.4],
-              rot: flat(),
-            },
-            {
-              k: "slab",
-              size: [0.018, 0.13],
-              t: 0.008,
-              r: 0.009,
-              pos: [-1.1, 0.214, -0.4],
-              rot: flat(),
-              color: INKY,
-            },
-            {
-              k: "slab",
-              size: [0.4, 0.05],
-              t: 0.008,
-              r: 0.025,
-              pos: [-0.85, 0.214, -0.4],
-              rot: flat(),
-              color: LILAC,
-            },
-          ],
-        },
-        {
           id: "card",
           label: "Card",
           agent: 0,
@@ -1710,7 +1616,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
       ],
       callouts: [
-        { n: "502", at: [-1.16, 0.28, 0.62], to: [-1.95, 0.7, 0.95] },
+        { n: "502", at: [-1.21, 0.25, 0.16], to: [-1.91, 0.38, 0.5] },
         { n: "504", at: [1.27, 0.22, -0.5], to: [2.0, 0.75, -0.6] },
         { n: "506", at: [-0.2, 0.24, -0.84], to: [-0.1, 0.95, -1.2] },
       ],
@@ -1722,80 +1628,80 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "tikcode",
       fig: "FIG. 6",
       title: "TikCode Redesign",
-      desc: "A QR code for users to connect with friends and reach Hashtags, Sounds and Effects, in TikTok's own style.",
+      desc: "A new shareable code for TikTok profiles, sounds, hashtags and effects.",
       href: "/work/tiktok-tikcode",
       parts: [
         { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
         {
-          id: "code",
-          label: "TikCode",
+          id: "holder",
+          label: "TikCode display stand",
           agent: 4,
-          color: c.cream,
+          color: c.plum,
+          frame: { pos: [-0.53, 0.107, -0.19], rot: [0, 0.14, 0] },
           shapes: [
-            { k: "slab", size: [0.7, 0.34], t: 0.08, r: 0.1, pos: [-0.45, 0.147, -0.35], rot: flat(), color: c.plum },
-            { k: "box", size: [0.12, 0.16, 0.08], pos: [-0.45, 0.25, -0.37], color: c.plum },
-            // The medallion: a disc, a rim that stands proud, the printed code, the badge.
-            { k: "slab", size: [1.3, 1.3], t: 0.1, r: 0.65, pos: [-0.45, 0.97, -0.35] },
-            { k: "torus", R: 0.63, tube: 0.035, pos: [-0.45, 0.97, -0.3], color: c.plum },
-            { k: "slab", size: [1.1, 1.1], t: 0.012, r: 0.55, pos: [-0.45, 0.97, -0.293], color: c.white, finish: "print", map: `proc:tikcode|${c.inky}` },
-            { k: "cyl", r: 0.17, h: 0.03, pos: [-0.45, 0.97, -0.275], rot: FACE, color: c.coral },
-            { k: "cyl", r: 0.07, h: 0.012, pos: [-0.45, 0.97, -0.255], rot: FACE, color: c.white },
+            { k: "slab", size: [1.12, 0.47], t: 0.09, r: 0.11, pos: [0, 0.045, 0], rot: flat() },
+            { k: "box", size: [0.43, 0.24, 0.14], pos: [0, 0.148, 0] },
+            { k: "slab", size: [1.21, 1.36], t: 0.065, r: 0.11, pos: [0, 0.885, 0.045], color: c.coral },
+          ],
+        },
+        {
+          id: "code",
+          label: "Raised Code Eyes and dots",
+          agent: 2,
+          color: c.cream,
+          frame: { pos: [-0.53, 0.107, -0.19], rot: [0, 0.14, 0] },
+          shapes: [
+            { k: "slab", size: [1.085, 1.22], t: 0.025, r: 0.085, pos: [0, 0.885, 0.082] },
+            ...tikCodeRelief(c, [0, 0.972, 0.0945], 0.097),
+            { k: "slab", size: [0.51, 0.112], t: 0.006, r: 0.03, pos: [0, 0.398, 0.096], finish: "print", map: `label:TikCode|${c.cream}|${c.inky}|4.55` },
           ],
         },
         {
           id: "scanner",
-          label: "Scanner",
+          label: "Phone scan viewfinder",
           agent: 3,
           color: c.cream,
-          frame: { pos: [0.8, 0.107, 0.3], rot: [-0.3, -0.45, 0] },
+          frame: { pos: [0.81, 0.107, 0.38], rot: [-0.19, 0.20, 0] },
           shapes: [
-            { k: "box", size: [0.3, 0.6, 0.22], pos: [0, 0.3, -0.2], color: c.sand },
-            { k: "slab", size: [0.6, 1.2], t: 0.08, r: 0.1, pos: [0, 0.6, 0] },
-            { k: "slab", size: [0.5, 1.1], t: 0.012, r: 0.05, pos: [0, 0.6, 0.044], color: c.inky, finish: "soft" },
-            // The viewfinder: four corners around the code it has found.
-            ...[-1, 1].flatMap((sx) =>
-              [-1, 1].flatMap((sy): ShapeDef[] => [
-                { k: "slab", size: [0.08, 0.018], t: 0.01, r: 0.006, pos: [sx * 0.11, 0.68 + sy * 0.15, 0.055], color: c.yellow },
-                { k: "slab", size: [0.018, 0.08], t: 0.01, r: 0.006, pos: [sx * 0.15, 0.68 + sy * 0.11, 0.055], color: c.yellow },
-              ]),
-            ),
-            { k: "slab", size: [0.2, 0.2], t: 0.01, r: 0.1, pos: [0, 0.68, 0.055], color: c.white },
-            { k: "cyl", r: 0.05, h: 0.014, pos: [0, 0.2, 0.057], rot: FACE, color: c.coral },
-          ],
-        },
-        {
-          id: "profile",
-          label: "Profile card",
-          agent: 2,
-          color: c.cream,
-          shapes: [
-            { k: "slab", size: [0.8, 0.5], t: 0.06, r: 0.08, pos: [-0.65, 0.137, 0.6], rot: flat() },
-            { k: "cyl", r: 0.1, h: 0.03, pos: [-0.9, 0.182, 0.56], color: c.coral },
-            { k: "slab", size: [0.34, 0.05], t: 0.012, r: 0.025, pos: [-0.52, 0.173, 0.5], rot: flat(), color: c.inky },
-            { k: "slab", size: [0.24, 0.045], t: 0.012, r: 0.022, pos: [-0.57, 0.173, 0.6], rot: flat(), color: c.lilac },
-            { k: "slab", size: [0.22, 0.09], t: 0.03, r: 0.045, pos: [-0.4, 0.182, 0.75], rot: flat(), color: c.plum },
+            { k: "box", size: [0.26, 0.43, 0.22], pos: [0, 0.206, -0.19], rot: [-0.19, 0, 0], color: c.sand },
+            { k: "slab", size: [0.62, 1.17], t: 0.079, r: 0.094, pos: [0, 0.596, 0] },
+            { k: "slab", size: [0.516, 1.066], t: 0.012, r: 0.042, pos: [0, 0.596, 0.043],
+              finish: "screen", map: `proc:scan-view|${c.inky}` },
+            { k: "slab", size: [0.415, 0.47], t: 0.01, r: 0.048, pos: [0, 0.692, 0.052], color: c.plum },
+            ...tikCodeRelief(c, [0, 0.692, 0.057], 0.0235),
+            ...[-1, 1].flatMap((sx) => [-1, 1].map((sy): ShapeDef => ({
+              k: "poly",
+              pts: [[0, 0], [0.063, 0], [0.063, 0.01], [0.01, 0.01], [0.01, 0.063], [0, 0.063]]
+                .map(([x, y]) => [-sx * x, -sy * y]),
+              t: 0.005,
+              r: 0.003,
+              pos: [sx * 0.157, 0.692 + sy * 0.162, 0.059],
+              color: c.white,
+            }))),
+            { k: "slab", size: [0.15, 0.013], t: 0.005, r: 0.006, pos: [0, 0.139, 0.05], color: c.lilac },
           ],
         },
         {
           id: "links",
-          label: "Hashtags, sounds, effects",
+          label: "Hashtag, sound and effect destinations",
           agent: 0,
           color: c.yellow,
           shapes: [
-            // What a code can open, as three tokens.
-            { k: "cyl", r: 0.11, h: 0.08, pos: [0.1, 0.147, 0.72] },
-            { k: "cyl", r: 0.11, h: 0.08, pos: [0.36, 0.147, 0.82], color: c.lilac },
-            { k: "cyl", r: 0.11, h: 0.08, pos: [-0.05, 0.147, 0.46], color: c.coral },
-            { k: "ball", r: 0.032, pos: [0.1, 0.195, 0.72], color: c.white },
-            { k: "ball", r: 0.032, pos: [0.36, 0.195, 0.82], color: c.white },
-            { k: "ball", r: 0.032, pos: [-0.05, 0.195, 0.46], color: c.white },
+            ...["#", "♪", "✦"].flatMap((label, i): ShapeDef[] => {
+              const x = -0.985 + i * 0.37;
+              const background = [c.lilac, c.yellow, c.coral][i];
+              return [
+                { k: "slab", size: [0.30, 0.29], t: 0.057, r: 0.064, pos: [x, 0.134, 0.64], rot: flat(), color: background },
+                { k: "slab", size: [0.167, 0.114], t: 0.006, r: 0.026, pos: [x, 0.165, 0.64], rot: flat(), finish: "print", map: `label:${label}|${background}|${c.inky}|1.46` },
+              ];
+            }),
           ],
         },
       ],
       callouts: [
-        { n: "602", at: [-0.45, 1.62, -0.35], to: [-1.2, 2.1, -0.3] },
-        { n: "604", at: [1.0, 1.15, 0.0], to: [1.8, 1.5, 0.2] },
-        { n: "606", at: [-1.05, 0.2, 0.75], to: [-1.85, 0.35, 1.05] },
+        { n: "602", at: [-0.94, 1.48, -0.04], to: [-1.66, 1.83, 0.03] },
+        { n: "604", at: [1.07, 1.0, 0.38], to: [1.82, 1.22, 0.54] },
+        { n: "606", at: [-1.1, 0.18, 0.7], to: [-1.82, 0.27, 1.06] },
       ],
     }),
   ],
@@ -1805,7 +1711,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "wishlist",
       fig: "FIG. 7",
       title: "Airbnb Wishlist",
-      desc: "Keep track of the places you discover on Airbnb — tap the heart on any listing.",
+      desc: "Compare saved stays, share a shortlist and decide together where to book.",
       href: "/work/airbnb-wishlist",
       parts: [
         {
@@ -1869,9 +1775,10 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
         {
           id: "listing",
-          label: "Listing",
+          label: "Destination cottage",
           agent: 4,
           color: CREAM,
+          frame: { pos: [0.43, 0.041, -0.36], rot: [0, 0.05, 0], scale: 0.66 },
           shapes: [
             {
               k: "box",
@@ -2018,211 +1925,134 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
         {
           id: "garden",
-          label: "Garden",
+          label: "Destination garden",
           agent: 0,
           color: GREEN,
           shapes: [
-            {
-              k: "cyl",
-              r: 0.045,
-              h: 0.3,
-              pos: [-1.12, 0.25, -0.62],
-              color: SAND,
-            },
-            { k: "cyl", r: 0.2, h: 0.5, pos: [-1.12, 0.62, -0.62], bevel: 0.2 },
-            // A second tree peeks out from behind the house.
-            { k: "cyl", r: 0.04, h: 0.3, pos: [1.2, 0.25, -0.75], color: SAND },
-            { k: "ball", r: 0.19, pos: [1.2, 0.52, -0.75] },
-            // Two bushes by the wall.
-            { k: "ball", r: 0.11, pos: [-0.04, 0.17, 0.0] },
-            { k: "ball", r: 0.08, pos: [-0.02, 0.15, 0.2] },
-            // Flowers along the path.
-            { k: "ball", r: 0.036, pos: [0.14, 0.135, 0.42], color: YELLOW },
-            { k: "ball", r: 0.03, pos: [0.1, 0.13, 0.6], color: CORAL },
-            { k: "ball", r: 0.036, pos: [0.62, 0.135, 0.5], color: CORAL },
-            { k: "ball", r: 0.03, pos: [0.66, 0.13, 0.68], color: YELLOW },
-            // A little rainbow by the door.
-            {
-              k: "arch",
-              span: 0.5,
-              rise: 0.25,
-              tube: 0.04,
-              pos: [1.0, 0.09, 0.56],
-              color: CORAL,
-            },
-            {
-              k: "arch",
-              span: 0.32,
-              rise: 0.16,
-              tube: 0.04,
-              pos: [1.0, 0.09, 0.56],
-              color: YELLOW,
-            },
+            { k: "cyl", r: 0.034, h: 0.3, pos: [1.19, 0.257, -0.73], color: SAND },
+            { k: "ball", r: 0.155, pos: [1.19, 0.47, -0.73] },
+            { k: "ball", r: 0.073, pos: [0.45, 0.166, -0.38], color: LILAC },
+            { k: "ball", r: 0.055, pos: [0.54, 0.145, -0.29] },
           ],
         },
+        ...WISHLIST_STAYS.map((photo, index): PartDef => {
+          const selected = index === 1;
+          const trim = selected ? PLUM : LILAC;
+          return {
+            id: `stay-${index + 1}`,
+            label: selected ? "Voted stay" : "Saved stay",
+            agent: index + 2,
+            color: CREAM,
+            frame: {
+              pos: selected ? [0.32, 0.107, 0.49] : [-0.67, 0.107, 0.34],
+              rot: selected ? [-0.3, 0.14, 0] : [-0.24, 0.26, 0],
+            },
+            shapes: [
+              { k: "box", size: [0.42, 0.23, 0.27], pos: [0, 0.1, -0.18], color: SAND },
+              { k: "slab", size: [0.9, 1.03], t: 0.072, r: 0.108, pos: [0, 0.525, 0], color: trim },
+              { k: "slab", size: [0.825, 0.95], t: 0.012, r: 0.07, pos: [0, 0.525, 0.041] },
+              { k: "slab", size: [0.734, 0.508], t: 0.007, r: 0.042, pos: [0, 0.692, 0.049], finish: "print", map: photo },
+              { k: "slab", size: [0.392, 0.044], t: 0.01, r: 0.022, pos: [-0.139, 0.355, 0.05], color: INKY },
+              { k: "slab", size: [0.281, 0.026], t: 0.01, r: 0.013, pos: [-0.193, 0.284, 0.05], color: LILAC },
+              { k: "slab", size: [0.27, 0.129], t: 0.016, r: 0.054, pos: [0.186, 0.17, 0.056], finish: "print",
+                map: `label:${selected ? "Voted" : "Saved"}|${selected ? PLUM : MIST}|${selected ? WHITE : INKY}|2.1` },
+            ],
+          };
+        }),
         {
-          id: "saved",
-          label: "Saved list",
-          agent: 3,
-          color: LILAC,
+          id: "shared",
+          label: "Shared shortlist",
+          agent: 4,
+          color: PLUM,
           shapes: [
-            {
-              k: "slab",
-              size: [0.62, 0.78],
-              t: 0.05,
-              r: 0.09,
-              pos: [-0.82, 0.125, 0.46],
-              rot: flat(-0.28),
-            },
-          ],
-        },
-        {
-          id: "card",
-          label: "Listing card",
-          agent: 2,
-          color: CREAM,
-          frame: CARD_FRAME,
-          shapes: [
-            {
-              k: "slab",
-              size: [0.62, 0.78],
-              t: 0.05,
-              r: 0.09,
-              pos: [0, 0.025, 0],
-              rot: flat(),
-            },
-            {
-              k: "slab",
-              size: [0.5, 0.36],
-              t: 0.024,
-              r: 0.06,
-              pos: [0, 0.058, -0.15],
-              rot: flat(),
-              color: SAND,
-            },
-            {
-              k: "slab",
-              size: [0.3, 0.05],
-              t: 0.01,
-              r: 0.025,
-              pos: [-0.1, 0.054, 0.14],
-              rot: flat(),
-              color: INKY,
-            },
-            {
-              k: "slab",
-              size: [0.2, 0.045],
-              t: 0.01,
-              r: 0.022,
-              pos: [-0.15, 0.054, 0.24],
-              rot: flat(),
-              color: LILAC,
-            },
-            {
-              k: "poly",
-              pts: heart(0.12),
-              t: 0.016,
-              pos: [0.19, 0.056, 0.19],
-              rot: flat(),
-              color: CORAL,
-            },
-          ],
-        },
-        {
-          id: "heart",
-          label: "Save heart",
-          agent: 1,
-          color: CORAL,
-          // Upright and facing the viewer: tilting it made it look lopsided.
-          shapes: [
-            {
-              k: "poly",
-              pts: heart(0.56),
-              t: 0.17,
-              bevel: 0.04,
-              pos: [-0.12, 0.82, 0.58],
-              rot: [0, 0.3, 0],
-            },
-          ],
-        },
-        {
-          id: "cloud",
-          label: "Cloud",
-          agent: 0,
-          color: WHITE,
-          shapes: [
-            { k: "ball", r: 0.16, pos: [-0.7, 1.3, -0.55] },
-            { k: "ball", r: 0.21, pos: [-0.5, 1.38, -0.55] },
-            { k: "ball", r: 0.15, pos: [-0.3, 1.29, -0.55] },
-            { k: "ball", r: 0.13, pos: [-0.56, 1.25, -0.47] },
+            { k: "slab", size: [0.98, 0.19], t: 0.041, r: 0.077, pos: [-0.43, 0.126, 0.84], rot: flat() },
+            { k: "slab", size: [0.63, 0.116], t: 0.006, r: 0.025, pos: [-0.43, 0.149, 0.84], rot: flat(), finish: "print", map: `label:Shared shortlist|${PLUM}|${WHITE}|5.4` },
+            { k: "ball", r: 0.07, pos: [0.32, 0.174, 0.83], color: CORAL },
+            { k: "ball", r: 0.055, pos: [0.43, 0.16, 0.85], color: LILAC },
           ],
         },
       ],
       callouts: [
-        { n: "702", at: [-0.36, 1.02, 0.58], to: [-1.2, 1.55, 0.3] },
-        { n: "704", at: [1.06, 0.5, -0.1], to: [1.9, 0.85, 0.3] },
-        { n: "706", at: [-1.0, 0.2, 0.75], to: [-1.75, 0.3, 1.15] },
+        { n: "702", at: [-1.05, 0.98, 0.24], to: [-1.7, 1.46, 0.26] },
+        { n: "704", at: [1.02, 0.86, -0.54], to: [1.77, 1.3, -0.36] },
+        { n: "706", at: [0.7, 0.45, 0.59], to: [1.66, 0.5, 0.94] },
       ],
     }),
   ],
   [
     THEMES.mono,
-    (c) => ({
-      id: "effects",
-      fig: "FIG. 8",
-      title: "TikTok Effect House",
-      desc: "An AR effect creation tool for TikTok creators.",
-      status: SOON,
-      parts: [
-        { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
-        {
-          id: "phone",
-          label: "Camera",
-          agent: 4,
-          color: c.plum,
-          frame: { pos: [-0.5, 0.107, 0.1], rot: [-0.28, 0.25, 0] },
-          shapes: [
-            { k: "box", size: [0.3, 0.6, 0.22], pos: [0, 0.3, -0.2], color: c.sand },
-            { k: "slab", size: [0.7, 1.4], t: 0.08, r: 0.11, pos: [0, 0.7, 0] },
-            { k: "slab", size: [0.58, 1.28], t: 0.012, r: 0.05, pos: [0, 0.7, 0.044], color: c.cream },
-            // A face in the viewfinder, wearing the effect.
-            { k: "slab", size: [0.44, 0.26], t: 0.02, r: 0.12, pos: [0, 0.47, 0.058], color: c.lilac },
-            { k: "cyl", r: 0.2, h: 0.02, pos: [0, 0.82, 0.06], rot: FACE, color: c.lilac },
-            { k: "cyl", r: 0.075, h: 0.016, pos: [-0.085, 0.85, 0.078], rot: FACE, color: c.inky },
-            { k: "cyl", r: 0.075, h: 0.016, pos: [0.085, 0.85, 0.078], rot: FACE, color: c.inky },
-            { k: "cyl", r: 0.05, h: 0.014, pos: [0, 0.2, 0.057], rot: FACE, color: c.coral },
-          ],
-        },
-        {
-          id: "sparkles",
-          label: "Effects",
-          agent: 2,
-          color: c.coral,
-          shapes: [
-            { k: "poly", pts: sparkle(0.17), t: 0.06, bevel: 0.015, pos: [0.3, 1.3, 0.1], rot: [0, 0.3, 0] },
-            { k: "poly", pts: sparkle(0.1), t: 0.05, bevel: 0.012, pos: [0.72, 0.95, 0.3], rot: [0, 0.3, 0], color: c.yellow },
-            { k: "poly", pts: sparkle(0.12), t: 0.05, bevel: 0.012, pos: [-1.1, 1.35, -0.1], rot: [0, 0.3, 0], color: c.yellow },
-          ],
-        },
-        {
-          id: "assets",
-          label: "3D assets",
-          agent: 0,
-          color: c.lilac,
-          shapes: [
-            { k: "box", size: [0.36, 0.36, 0.36], pos: [0.7, 0.287, 0.45] },
-            { k: "ball", r: 0.17, pos: [1.05, 0.277, 0.02], color: c.coral },
-            { k: "torus", R: 0.15, tube: 0.05, pos: [0.22, 0.157, 0.7], rot: flat(), color: c.plum },
-            { k: "cyl", r: 0.12, h: 0.3, pos: [1.05, 0.257, -0.5], color: c.sand },
-          ],
-        },
-      ],
-      callouts: [
-        { n: "802", at: [-0.75, 1.42, -0.25], to: [-1.6, 1.9, -0.3] },
-        { n: "804", at: [0.9, 0.4, 0.5], to: [1.8, 0.7, 0.8] },
-        { n: "806", at: [0.45, 1.35, 0.1], to: [1.3, 1.8, 0.1] },
-      ],
-    }),
+    (c) => {
+      const camera = { pos: [-0.43, 0.107, -0.22] as Vec3, rot: [-0.19, 0.22, 0] as Vec3 };
+      return {
+        id: "effects",
+        fig: "FIG. 8",
+        title: "TikTok Effect House",
+        desc: "An AR effect creation tool for TikTok creators.",
+        status: SOON,
+        parts: [
+          { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
+          {
+            id: "phone",
+            label: "AR preview",
+            agent: 4,
+            color: c.coral,
+            frame: camera,
+            shapes: [
+              { k: "box", size: [0.35, 0.48, 0.29], pos: [0, 0.24, -0.22], rot: [-0.18, 0, 0], color: c.sand },
+              { k: "slab", size: [0.83, 1.55], t: 0.084, r: 0.12, pos: [0, 0.79, 0] },
+              { k: "slab", size: [0.732, 1.45], t: 0.012, r: 0.071, pos: [0, 0.79, 0.044], color: c.inky, finish: "soft" },
+              { k: "slab", size: [0.635, 1.06], t: 0.013, r: 0.058, pos: [0, 0.87, 0.053], color: c.cream },
+              { k: "cyl", r: 0.057, h: 0.015, pos: [0, 0.214, 0.056], rot: FACE, color: c.white, finish: "soft" },
+            ],
+          },
+          {
+            id: "effect-preview",
+            label: "Face effect in the viewfinder",
+            agent: 2,
+            color: c.coral,
+            frame: camera,
+            shapes: [
+              { k: "slab", size: [0.429, 0.199], t: 0.02, r: 0.085, pos: [0, 0.631, 0.066], color: c.lilac },
+              { k: "slab", size: [0.386, 0.402], t: 0.024, r: 0.183, pos: [0, 0.92, 0.073] },
+              { k: "poly", pts: [[-0.142, -0.053], [0, 0.13], [0.142, -0.053]], t: 0.023, r: 0.012, pos: [-0.139, 1.111, 0.075], color: c.plum },
+              { k: "poly", pts: [[-0.142, -0.053], [0, 0.13], [0.142, -0.053]], t: 0.023, r: 0.012, pos: [0.139, 1.111, 0.075], color: c.plum },
+              ...row(2, [0.149, 0, 0], { k: "cyl", r: 0.029, h: 0.012, pos: [-0.0745, 0.942, 0.09], rot: FACE, color: c.inky }),
+              { k: "cyl", r: 0.026, h: 0.013, pos: [0, 0.871, 0.092], rot: FACE, color: c.white },
+            ],
+          },
+          {
+            id: "materials",
+            label: "Effect assets",
+            agent: 3,
+            color: c.sand,
+            shapes: [
+              { k: "slab", size: [1.04, 0.91], t: 0.06, r: 0.113, pos: [0.76, 0.137, 0.38], rot: flat() },
+              { k: "slab", size: [0.42, 0.62], t: 0.036, r: 0.092, pos: [0.525, 0.181, 0.32], rot: flat(), color: c.plum },
+              { k: "slab", size: [0.406, 0.62], t: 0.043, r: 0.099, pos: [0.98, 0.183, 0.32], rot: flat(), color: c.cream },
+              { k: "poly", pts: heart(0.271), t: 0.04, r: 0.02, pos: [0.98, 0.22, 0.28], rot: flat(), color: c.coral },
+              { k: "poly", pts: [[-0.132, -0.049], [0, 0.145], [0.132, -0.049]], t: 0.034, r: 0.02, pos: [0.524, 0.215, 0.228], rot: flat(), color: c.cream },
+              { k: "slab", size: [0.26, 0.079], t: 0.007, r: 0.016, pos: [0.525, 0.2, 0.511], rot: flat(), finish: "print", map: `label:Mask|${c.plum}|${c.white}|3.3` },
+              { k: "slab", size: [0.278, 0.079], t: 0.007, r: 0.016, pos: [0.98, 0.206, 0.511], rot: flat(), finish: "print", map: `label:Sticker|${c.cream}|${c.inky}|3.5` },
+            ],
+          },
+          {
+            id: "sparkles",
+            label: "Effect markers",
+            agent: 0,
+            color: c.coral,
+            shapes: [
+              { k: "poly", pts: sparkle(0.145), t: 0.045, bevel: 0.012, pos: [0.346, 1.282, -0.06], rot: [0, 0.3, 0] },
+              { k: "poly", pts: sparkle(0.077), t: 0.039, bevel: 0.01, pos: [-0.947, 1.354, -0.12], rot: [0, 0.28, 0], color: c.yellow },
+            ],
+          },
+        ],
+        callouts: [
+          { n: "802", at: [-0.76, 1.62, -0.24], to: [-1.55, 1.88, -0.18] },
+          { n: "804", at: [1.08, 0.27, 0.61], to: [1.81, 0.49, 0.99] },
+          { n: "806", at: [0.43, 1.31, -0.06], to: [1.22, 1.56, 0.07] },
+        ],
+      };
+    },
   ],
   [
     THEMES.mono,
@@ -2230,96 +2060,68 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "hostpromo",
       fig: "FIG. 9",
       title: "Airbnb Host Promotion",
-      desc: "More traffic and attention for our China hosts.",
+      desc: "Campaign tools to attract and allocate traffic to listings from hosts in China.",
       status: SOON,
       parts: [
         { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
         {
           id: "listing",
-          label: "Listing",
+          label: "Promoted listing",
           agent: 4,
           color: c.cream,
           shapes: [
-            { k: "box", size: [0.8, 0.5, 0.6], pos: [-0.6, 0.357, -0.3] },
-            {
-              k: "poly",
-              pts: [
-                [-0.4, 0],
-                [0.4, 0],
-                [0, 0.32],
-              ],
-              t: 0.6,
-              bevel: 0.012,
-              pos: [-0.6, 0.6, -0.3],
-            },
-            { k: "box", size: [0.64, 0.06, 0.78], pos: [-0.3469, 0.7559, -0.3], rot: [0, 0, -0.6747], color: c.plum, bevel: 0.014 },
-            { k: "box", size: [0.64, 0.06, 0.78], pos: [-0.8531, 0.7559, -0.3], rot: [0, 0, 0.6747], color: c.plum, bevel: 0.014 },
-            { k: "slab", size: [0.2, 0.3], t: 0.04, r: 0.1, pos: [-0.74, 0.23, 0.01], color: c.coral },
-            { k: "torus", R: 0.08, tube: 0.016, pos: [-0.42, 0.38, 0.008], color: c.white },
-            { k: "cyl", r: 0.072, h: 0.012, pos: [-0.42, 0.38, 0.004], rot: FACE, color: c.blue, bevel: 0.002 },
+            { k: "box", size: [0.8, 0.5, 0.62], pos: [-0.4, 0.357, -0.36] },
+            { k: "poly", pts: [[-0.4, 0], [0.4, 0], [0, 0.32]], t: 0.62, bevel: 0.012, pos: [-0.4, 0.6, -0.36] },
+            { k: "box", size: [0.55, 0.048, 0.774], pos: [-0.184, 0.782, -0.36], rot: [0, 0, -0.6747], color: c.coral, bevel: 0.012 },
+            { k: "box", size: [0.55, 0.048, 0.774], pos: [-0.616, 0.782, -0.36], rot: [0, 0, 0.6747], color: c.coral, bevel: 0.012 },
+            { k: "slab", size: [0.185, 0.30], t: 0.028, r: 0.09, pos: [-0.539, 0.247, -0.034], color: c.plum },
+            { k: "torus", R: 0.079, tube: 0.018, pos: [-0.237, 0.404, -0.036], color: c.white },
+            { k: "cyl", r: 0.07, h: 0.012, rot: FACE, pos: [-0.237, 0.404, -0.032], color: c.lilac },
+          ],
+        },
+        {
+          id: "campaign",
+          label: "Host campaign card",
+          agent: 2,
+          color: c.plum,
+          frame: { pos: [-0.63, 0.107, 0.58], rot: [-0.42, 0.16, 0] },
+          shapes: [
+            { k: "box", size: [0.6, 0.19, 0.25], pos: [0, 0.092, -0.115], color: c.lilac },
+            { k: "slab", size: [1.05, 0.62], t: 0.075, r: 0.093, pos: [0, 0.311, 0] },
+            { k: "slab", size: [0.94, 0.51], t: 0.015, r: 0.058, pos: [0, 0.311, 0.041], color: c.cream },
+            { k: "slab", size: [0.67, 0.105], t: 0.007, r: 0.022, pos: [0, 0.437, 0.052], finish: "print", map: `label:Host campaign|${c.cream}|${c.inky}|6.4` },
+            { k: "slab", size: [0.58, 0.052], t: 0.013, r: 0.025, pos: [-0.067, 0.299, 0.054], color: c.coral },
+            { k: "slab", size: [0.40, 0.045], t: 0.011, r: 0.021, pos: [-0.156, 0.196, 0.054], color: c.lilac },
+          ],
+        },
+        {
+          id: "exposure",
+          label: "Listing exposure",
+          agent: 3,
+          color: c.lilac,
+          shapes: [
+            { k: "slab", size: [1.05, 0.53], t: 0.046, r: 0.078, pos: [0.78, 0.13, -0.29], rot: flat() },
+            { k: "box", size: [0.19, 0.32, 0.25], pos: [0.466, 0.311, -0.29], color: c.cream },
+            { k: "box", size: [0.19, 0.55, 0.25], pos: [0.773, 0.426, -0.29], color: c.yellow },
+            { k: "box", size: [0.19, 0.81, 0.25], pos: [1.075, 0.556, -0.29], color: c.coral },
+            { k: "slab", size: [0.65, 0.128], t: 0.016, r: 0.025, pos: [0.782, 0.114, 0.1], rot: flat(), finish: "print", map: `label:Listing exposure|${c.mist}|${c.inky}|5.1` },
           ],
         },
         {
           id: "traffic",
-          label: "Traffic",
-          agent: 3,
-          color: c.lilac,
-          shapes: [
-            { k: "box", size: [0.24, 0.4, 0.24], pos: [0.25, 0.307, -0.35] },
-            { k: "box", size: [0.24, 0.7, 0.24], pos: [0.6, 0.457, -0.35], color: c.coral },
-            { k: "box", size: [0.24, 1.0, 0.24], pos: [0.95, 0.607, -0.35], color: c.plum },
-            // Up.
-            {
-              k: "poly",
-              pts: [
-                [-0.13, 0],
-                [0, 0.19],
-                [0.13, 0],
-                [0.05, 0],
-                [0.05, -0.2],
-                [-0.05, -0.2],
-                [-0.05, 0],
-              ],
-              r: 0.012,
-              t: 0.07,
-              bevel: 0.014,
-              pos: [0.95, 1.43, -0.35],
-              color: c.coral,
-            },
-          ],
-        },
-        {
-          id: "promo",
-          label: "Promotion",
-          agent: 2,
-          color: c.yellow,
-          frame: { pos: [0.35, 0.107, 0.5], rot: [-0.35, 0.3, 0] },
-          shapes: [
-            // A price tag, with the ring its string goes through.
-            { k: "slab", size: [0.6, 0.36], t: 0.06, r: 0.08, pos: [0, 0.2, 0] },
-            { k: "torus", R: 0.045, tube: 0.014, pos: [-0.2, 0.27, 0.036], color: c.plum },
-            { k: "cyl", r: 0.036, h: 0.014, pos: [0.02, 0.26, 0.037], rot: FACE, color: c.plum },
-            { k: "cyl", r: 0.036, h: 0.014, pos: [0.16, 0.14, 0.037], rot: FACE, color: c.plum },
-            { k: "slab", size: [0.24, 0.022], t: 0.012, r: 0.01, pos: [0.09, 0.2, 0.036], rot: [0, 0, 0.75], color: c.plum },
-          ],
-        },
-        {
-          id: "coins",
-          label: "Earnings",
+          label: "Traffic directed to a listing",
           agent: 0,
-          color: c.sand,
+          color: c.coral,
           shapes: [
-            { k: "cyl", r: 0.12, h: 0.04, pos: [-0.3, 0.127, 0.72] },
-            { k: "cyl", r: 0.12, h: 0.04, pos: [-0.29, 0.167, 0.71], color: c.lilac },
-            { k: "cyl", r: 0.12, h: 0.04, pos: [-0.31, 0.207, 0.725] },
-            { k: "cyl", r: 0.12, h: 0.04, pos: [-0.62, 0.127, 0.62], color: c.lilac },
+            { k: "slab", size: [0.91, 0.28], t: 0.047, r: 0.095, pos: [0.63, 0.13, 0.63], rot: flat(-0.34), color: c.sand },
+            ...row(3, [0.208, 0, -0.074], { k: "poly", pts: [[-0.069, -0.064], [0.03, 0], [-0.069, 0.064], [-0.027, 0]], t: 0.024, r: 0.009, pos: [0.455, 0.162, 0.7], rot: flat(0.34) }),
           ],
         },
       ],
       callouts: [
-        { n: "902", at: [1.08, 1.1, -0.35], to: [1.85, 1.5, -0.2] },
-        { n: "904", at: [-1.0, 0.5, -0.1], to: [-1.8, 0.9, 0.2] },
-        { n: "906", at: [0.62, 0.4, 0.55], to: [1.5, 0.45, 1.0] },
+        { n: "902", at: [1.08, 0.92, -0.31], to: [1.81, 1.25, -0.13] },
+        { n: "904", at: [-0.79, 0.66, -0.28], to: [-1.6, 1.06, -0.12] },
+        { n: "906", at: [-0.3, 0.52, 0.46], to: [0.18, 0.36, 1.17] },
       ],
     }),
   ],
@@ -2329,63 +2131,61 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "dls",
       fig: "FIG. 10",
       title: "Airbnb DLS19 for China",
-      desc: "A localised, consistent component library for the China design team.",
+      desc: "A localized component library for the China design team.",
       status: SOON,
       parts: [
         { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
         {
           id: "shelf",
-          label: "Library",
+          label: "Library mounting board",
           agent: 4,
-          color: c.plum,
+          color: c.cream,
           shapes: [
-            { k: "box", size: [1.8, 0.07, 0.3], pos: [0, 0.142, -0.4] },
-            { k: "slab", size: [2.0, 1.3], t: 0.08, r: 0.08, pos: [0, 0.82, -0.47], color: c.cream },
-            { k: "box", size: [1.9, 0.05, 0.3], pos: [0, 0.55, -0.28] },
-            { k: "box", size: [1.9, 0.05, 0.3], pos: [0, 0.98, -0.28] },
+            { k: "slab", size: [2.39, 1.43], t: 0.104, r: 0.092, pos: [0, 0.87, -0.49] },
+            { k: "slab", size: [2.32, 0.39], t: 0.076, r: 0.115, pos: [0, 0.142, -0.35], rot: flat(), color: c.coral },
+            { k: "slab", size: [2.24, 0.295], t: 0.051, r: 0.075, pos: [0, 0.577, -0.32], rot: flat(), color: c.coral },
+            { k: "slab", size: [0.048, 0.872], t: 0.012, r: 0.023, pos: [0, 0.969, -0.433], color: c.lilac },
           ],
         },
-        {
-          id: "components",
-          label: "Components",
-          agent: 3,
-          color: c.sand,
-          shapes: [
-            // Bottom: button, toggle, checkbox.
-            { k: "slab", size: [0.6, 0.22], t: 0.14, r: 0.11, pos: [-0.6, 0.287, -0.27], color: c.coral },
-            { k: "slab", size: [0.44, 0.22], t: 0.14, r: 0.11, pos: [0.1, 0.287, -0.27], color: c.lilac },
-            { k: "cyl", r: 0.08, h: 0.03, pos: [0.2, 0.287, -0.186], rot: FACE, color: c.white },
-            { k: "box", size: [0.22, 0.22, 0.14], pos: [0.65, 0.287, -0.27], color: c.plum },
-            // Middle: card, avatar, field.
-            { k: "slab", size: [0.5, 0.34], t: 0.1, r: 0.05, pos: [-0.6, 0.745, -0.27] },
-            { k: "slab", size: [0.4, 0.14], t: 0.012, r: 0.03, pos: [-0.6, 0.8, -0.214], color: c.lilac },
-            { k: "slab", size: [0.3, 0.04], t: 0.012, r: 0.02, pos: [-0.65, 0.66, -0.214], color: c.inky },
-            { k: "cyl", r: 0.14, h: 0.1, pos: [0.05, 0.715, -0.27], rot: FACE, color: c.coral },
-            { k: "slab", size: [0.6, 0.18], t: 0.1, r: 0.05, pos: [0.6, 0.665, -0.27], color: c.white },
-            { k: "slab", size: [0.014, 0.1], t: 0.008, r: 0.006, pos: [0.38, 0.665, -0.216], color: c.inky },
-            // Top: colour tokens and a type block.
-            { k: "ball", r: 0.1, pos: [-0.75, 1.105, -0.27], color: c.plum },
-            { k: "ball", r: 0.1, pos: [-0.45, 1.105, -0.27], color: c.coral },
-            { k: "ball", r: 0.1, pos: [-0.15, 1.105, -0.27], color: c.lilac },
-            { k: "ball", r: 0.1, pos: [0.15, 1.105, -0.27], color: c.yellow },
-            { k: "box", size: [0.3, 0.3, 0.14], pos: [0.6, 1.155, -0.27] },
-          ],
-        },
+        ...[false, true].map((localized, i): PartDef => {
+          const x = i === 0 ? -0.576 : 0.576;
+          const header = localized ? "China" : "Core";
+          const background = localized ? c.yellow : c.lilac;
+          return {
+            id: `library-${header.toLowerCase()}`,
+            label: `${header} component set`,
+            agent: i + 2,
+            color: background,
+            shapes: [
+              { k: "slab", size: [0.81, 0.17], t: 0.026, r: 0.045, pos: [x, 1.39, -0.423], finish: "print", map: `label:${header}|${background}|${c.inky}|4.8` },
+              { k: "slab", size: [0.935, 0.565], t: 0.083, r: 0.066, pos: [x, 0.885, -0.41] },
+              { k: "slab", size: [0.721, 0.13], t: 0.03, r: 0.038, pos: [x, 1.034, -0.356], color: c.cream },
+              { k: "slab", size: [localized ? 0.49 : 0.60, 0.029], t: 0.014, r: 0.014, pos: [x, 0.909, -0.361], color: c.coral },
+              { k: "slab", size: [0.63, 0.145], t: 0.048, r: 0.064, pos: [x, 0.747, -0.348], color: localized ? c.coral : c.plum },
+              { k: "slab", size: [0.33, 0.03], t: 0.009, r: 0.014, pos: [x, 0.747, -0.32], color: c.cream },
+              { k: "slab", size: [0.72, 0.19], t: 0.059, r: 0.082, pos: [x, 0.272, -0.335], color: c.coral },
+              { k: "slab", size: [localized ? 0.45 : 0.33, 0.034], t: 0.013, r: 0.016, pos: [x, 0.273, -0.297], color: c.cream },
+            ],
+          };
+        }),
         {
           id: "tools",
-          label: "Spec ruler",
-          agent: 2,
+          label: "Shared layout spec",
+          agent: 0,
           color: c.yellow,
           shapes: [
-            { k: "slab", size: [0.9, 0.12], t: 0.03, r: 0.02, pos: [0.4, 0.122, 0.5], rot: flat(0.2) },
-            { k: "slab", size: [0.9, 0.1125], t: 0.006, r: 0.03, pos: [-0.6, 0.11, 0.7], rot: flat(), map: `label:DLS19 · CHINA|${c.lilac}|${c.inky}`, finish: "print" },
+            { k: "slab", size: [1.27, 0.38], t: 0.045, r: 0.052, pos: [-0.52, 0.13, 0.56], rot: flat(), color: c.coral },
+            { k: "slab", size: [1.016, 0.16], t: 0.007, r: 0.027, pos: [-0.52, 0.155, 0.49], rot: flat(), finish: "print", map: `label:DLS19 · CHINA|${c.coral}|${c.white}` },
+            ...row(6, [0.17, 0, 0], { k: "slab", size: [0.018, 0.072], t: 0.006, r: 0.007, pos: [-0.945, 0.155, 0.672], rot: flat(), color: c.cream }),
+            { k: "slab", size: [0.64, 0.182], t: 0.039, r: 0.06, pos: [0.698, 0.126, 0.55], rot: flat(), color: c.lilac },
+            { k: "slab", size: [0.37, 0.041], t: 0.011, r: 0.019, pos: [0.698, 0.148, 0.55], rot: flat(), color: c.plum },
           ],
         },
       ],
       callouts: [
-        { n: "1002", at: [0.9, 1.47, -0.47], to: [1.7, 1.9, -0.4] },
-        { n: "1004", at: [0.85, 0.16, 0.6], to: [1.7, 0.4, 1.0] },
-        { n: "1006", at: [-0.95, 0.3, -0.2], to: [-1.8, 0.6, 0.1] },
+        { n: "1002", at: [1.0, 1.41, -0.38], to: [1.8, 1.72, -0.28] },
+        { n: "1004", at: [0.87, 0.18, 0.68], to: [1.65, 0.47, 1.03] },
+        { n: "1006", at: [-1.02, 0.9, -0.34], to: [-1.77, 1.18, -0.21] },
       ],
     }),
   ],
@@ -2395,67 +2195,72 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       id: "supply",
       fig: "FIG. 11",
       title: "Airbnb Supply Tool",
-      desc: "A tool for the China supply team to track listing info and performance.",
+      desc: "A workspace for the China supply team to track listings and their performance.",
       status: SOON,
       parts: [
         { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
         {
           id: "monitor",
-          label: "Dashboard",
+          label: "Listing workspace",
           agent: 4,
-          color: c.plum,
+          color: c.coral,
           shapes: [
-            { k: "slab", size: [0.9, 0.34], t: 0.06, r: 0.1, pos: [-0.2, 0.137, -0.45], rot: flat() },
-            { k: "box", size: [0.14, 0.26, 0.08], pos: [-0.2, 0.29, -0.47] },
-            { k: "slab", size: [2.0, 1.2], t: 0.1, r: 0.08, pos: [-0.2, 1.0, -0.45] },
-            { k: "slab", size: [1.84, 1.04], t: 0.012, r: 0.04, pos: [-0.2, 1.0, -0.394], color: c.cream },
+            { k: "slab", size: [1.03, 0.405], t: 0.068, r: 0.095, pos: [0, 0.14, -0.36], rot: flat() },
+            { k: "box", size: [0.16, 0.306, 0.115], pos: [0, 0.315, -0.45] },
+            { k: "slab", size: [2.34, 1.37], t: 0.108, r: 0.105, pos: [0, 1.135, -0.46] },
+            { k: "slab", size: [2.196, 1.226], t: 0.014, r: 0.054, pos: [0, 1.135, -0.402], color: c.cream },
           ],
         },
         {
           id: "data",
-          label: "Listings table",
+          label: "Selected listing",
           agent: 3,
           color: c.lilac,
           shapes: [
-            ...row(4, [0, -0.17, 0], { k: "slab", size: [0.9, 0.09], t: 0.012, r: 0.03, pos: [-0.62, 1.36, -0.382] }),
-            ...row(4, [0, -0.17, 0], { k: "cyl", r: 0.03, h: 0.012, pos: [-0.02, 1.36, -0.382], rot: FACE, color: c.coral }),
-            // Performance: a ring and four bars.
-            { k: "torus", R: 0.2, tube: 0.06, pos: [0.42, 1.2, -0.36], color: c.coral },
-            { k: "slab", size: [0.07, 0.12], t: 0.012, r: 0.02, pos: [0.2, 0.68, -0.382], color: c.plum },
-            { k: "slab", size: [0.07, 0.2], t: 0.012, r: 0.02, pos: [0.31, 0.72, -0.382], color: c.plum },
-            { k: "slab", size: [0.07, 0.16], t: 0.012, r: 0.02, pos: [0.42, 0.7, -0.382], color: c.plum },
-            { k: "slab", size: [0.07, 0.26], t: 0.012, r: 0.02, pos: [0.53, 0.75, -0.382], color: c.plum },
+            { k: "slab", size: [0.76, 0.113], t: 0.006, r: 0.028, pos: [-0.575, 1.609, -0.393], finish: "print", map: `label:Listings|${c.cream}|${c.inky}` },
+            ...row(3, [0, -0.236, 0], { k: "slab", size: [0.938, 0.146], t: 0.014, r: 0.038, pos: [-0.555, 1.384, -0.39] }),
+            ...row(2, [0, -0.472, 0], { k: "slab", size: [0.18, 0.072], t: 0.009, r: 0.022, pos: [-0.884, 1.384, -0.38], color: c.coral }),
+            { k: "slab", size: [0.932, 0.14], t: 0.024, r: 0.037, pos: [-0.555, 1.149, -0.38], color: c.plum },
+            { k: "slab", size: [0.728, 0.093], t: 0.008, r: 0.024, pos: [-0.56, 1.148, -0.365], finish: "print", map: `label:Listing 02|${c.plum}|${c.white}` },
+          ],
+        },
+        {
+          id: "performance",
+          label: "Selected listing performance",
+          agent: 0,
+          color: c.sand,
+          shapes: [
+            { k: "slab", size: [0.99, 0.996], t: 0.04, r: 0.058, pos: [0.528, 1.13, -0.383] },
+            { k: "slab", size: [0.709, 0.112], t: 0.008, r: 0.026, pos: [0.524, 1.508, -0.359], finish: "print", map: `label:Performance · 02|${c.sand}|${c.inky}|6.3` },
+            { k: "slab", size: [0.704, 0.026], t: 0.006, r: 0.011, pos: [0.521, 0.847, -0.359], color: c.coral },
+            ...[0.16, 0.27, 0.229, 0.368].map((height, i): ShapeDef => ({
+              k: "slab",
+              size: [0.1, height],
+              t: 0.017,
+              r: 0.021,
+              pos: [0.277 + i * 0.167, 0.883 + height / 2, -0.352],
+              color: i === 3 ? c.plum : c.coral,
+            })),
           ],
         },
         {
           id: "cards",
-          label: "Listings",
+          label: "Matching listing record",
           agent: 2,
           color: c.cream,
           shapes: [
-            { k: "slab", size: [0.5, 0.36], t: 0.05, r: 0.05, pos: [-0.85, 0.132, 0.5], rot: flat(0.2) },
-            { k: "slab", size: [0.36, 0.14], t: 0.012, r: 0.03, pos: [-0.86, 0.163, 0.45], rot: flat(0.2), color: c.lilac },
-            { k: "slab", size: [0.5, 0.36], t: 0.05, r: 0.05, pos: [-0.3, 0.132, 0.72], rot: flat(-0.15), color: c.sand },
-            { k: "slab", size: [0.36, 0.14], t: 0.012, r: 0.03, pos: [-0.3, 0.163, 0.67], rot: flat(-0.15), color: c.plum },
-          ],
-        },
-        {
-          id: "pin",
-          label: "Map pin",
-          agent: 0,
-          color: c.coral,
-          shapes: [
-            { k: "cyl", r: 0.22, h: 0.03, pos: [0.85, 0.122, 0.45], color: c.lilac },
-            { k: "cyl", r: 0.03, h: 0.4, pos: [0.85, 0.32, 0.45], color: c.plum },
-            { k: "ball", r: 0.15, pos: [0.85, 0.62, 0.45] },
-            { k: "ball", r: 0.05, pos: [0.9, 0.67, 0.57], color: c.white },
+            { k: "slab", size: [1.06, 0.56], t: 0.075, r: 0.077, pos: [0.512, 0.144, 0.56], rot: flat(-0.09), color: c.plum },
+            { k: "slab", size: [0.87, 0.158], t: 0.006, r: 0.029, pos: [0.512, 0.185, 0.45], rot: flat(-0.09), finish: "print", map: `label:Listing 02|${c.plum}|${c.white}` },
+            { k: "slab", size: [0.35, 0.043], t: 0.012, r: 0.021, pos: [0.422, 0.187, 0.669], rot: flat(-0.09), color: c.lilac },
+            { k: "slab", size: [0.58, 0.38], t: 0.05, r: 0.056, pos: [-0.775, 0.132, 0.421], rot: flat(0.13), color: c.sand },
+            { k: "slab", size: [0.38, 0.08], t: 0.012, r: 0.029, pos: [-0.774, 0.16, 0.386], rot: flat(0.13), color: c.coral },
           ],
         },
       ],
       callouts: [
-        { n: "1102", at: [0.75, 1.6, -0.45], to: [1.6, 2.0, -0.3] },
-        { n: "1104", at: [1.0, 0.6, 0.45], to: [1.85, 0.8, 0.8] },
-        { n: "1106", at: [-1.1, 0.18, 0.6], to: [-1.9, 0.35, 0.95] },
+        { n: "1102", at: [0.99, 1.49, -0.36], to: [1.78, 1.79, -0.23] },
+        { n: "1104", at: [0.94, 0.21, 0.67], to: [1.72, 0.43, 0.96] },
+        { n: "1106", at: [-1.06, 1.15, -0.36], to: [-1.83, 1.39, -0.21] },
       ],
     }),
   ],

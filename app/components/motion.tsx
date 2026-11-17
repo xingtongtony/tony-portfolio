@@ -1,18 +1,35 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   createContext,
   useContext,
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const StaggerCtx = createContext({ cols: 3 });
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+const subscribeReducedMotion = (onChange: () => void) => {
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+};
+
+function useReducedMotion() {
+  // Keep the initial styles consistent with the server, then settle the
+  // reveal immediately when the visitor prefers reduced motion.
+  return useSyncExternalStore(
+    subscribeReducedMotion,
+    () => window.matchMedia(REDUCED_MOTION).matches,
+    () => false,
+  );
+}
 
 /**
  * Scroll-reveal wrapper: each instance triggers individually when it scrolls
@@ -38,9 +55,10 @@ export function Reveal({
     <Comp
       className={className}
       initial={reduce ? false : { opacity: 0, y }}
+      animate={reduce ? { opacity: 1, y: 0 } : undefined}
       whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "0px 0px -80px 0px" }}
-      transition={reduce ? undefined : { duration: 0.75, ease: EASE, delay }}
+      transition={reduce ? { duration: 0 } : { duration: 0.75, ease: EASE, delay }}
     >
       {children}
     </Comp>
@@ -106,9 +124,10 @@ export function StaggerItem({
     <motion.div
       className={className}
       initial={reduce ? false : { opacity: 0, y: 48 }}
+      animate={reduce ? { opacity: 1, y: 0 } : undefined}
       whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "0px 0px -60px 0px" }}
-      transition={reduce ? undefined : { duration: 0.7, ease: EASE, delay }}
+      transition={reduce ? { duration: 0 } : { duration: 0.7, ease: EASE, delay }}
     >
       {children}
     </motion.div>
