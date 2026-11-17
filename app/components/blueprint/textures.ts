@@ -111,7 +111,21 @@ function qr(): HTMLCanvasElement {
   return c;
 }
 
-/** A TikCode-like pattern: rings of dots around a blank centre, with three markers. */
+/** The handset display carries plain type beneath the modelled viewfinder. */
+function scanView(background: string): HTMLCanvasElement {
+  const [c, g] = canvas(414, 856);
+  g.fillStyle = background;
+  g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = "#ffffff";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.font = `600 47px ${SANS}`;
+  g.fillText("Scan", c.width / 2, c.height * 0.107);
+  g.font = `500 31px ${SANS}`;
+  g.fillText("Align code in frame", c.width / 2, c.height * 0.724);
+  return c;
+}
+
 function label(text: string, background: string, ink: string, aspect: number): HTMLCanvasElement {
   const [c, g] = canvas(Math.round(112 * aspect), 112);
   g.fillStyle = background;
@@ -124,7 +138,7 @@ function label(text: string, background: string, ink: string, aspect: number): H
   return c;
 }
 
-const DRAWINGS: Record<string, (ink: string) => HTMLCanvasElement> = { receipt, qr };
+const DRAWINGS: Record<string, (color: string) => HTMLCanvasElement> = { receipt, qr, "scan-view": scanView };
 
 export function getTexture(key: string): THREE.Texture {
   let tex = cache.get(key);
@@ -137,9 +151,9 @@ export function getTexture(key: string): THREE.Texture {
     const [text, background = PALETTE.cream, ink = INK, aspect = "8"] = key.slice(6).split("|");
     tex = new THREE.CanvasTexture(label(text, background, ink, Number(aspect)));
   } else {
-    // "proc:<name>" or "proc:<name>|<ink colour>".
-    const [name, ink = INK] = key.slice(5).split("|");
-    tex = new THREE.CanvasTexture(DRAWINGS[name](ink));
+    // "proc:<name>" or "proc:<name>|<colour>".
+    const [name, color = INK] = key.slice(5).split("|");
+    tex = new THREE.CanvasTexture(DRAWINGS[name](color));
   }
   // Colour maps are sRGB; a little anisotropy keeps them crisp at the
   // glancing angle the camera looks from.

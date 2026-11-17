@@ -36,6 +36,8 @@ Two more that are his decisions, not style:
 - Screens show the **real UI** (a crop in `public/portfolio/blueprints/`) when
   the project is one product. When the subject is structure or layout
   (a restructure, a cross-platform system), clay blocks stand in for the UI.
+  Crop inside any frame already present in the source image. For motifs
+  that turn to noise at model scale, sculpt the key forms in relief.
 
 ## Procedure
 

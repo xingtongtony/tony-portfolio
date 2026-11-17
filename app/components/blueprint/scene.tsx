@@ -18,6 +18,7 @@ const AZ = 0.56;
 const EL = 0.5;
 const DIR = new THREE.Vector3(Math.sin(AZ) * Math.cos(EL), Math.sin(EL), Math.cos(AZ) * Math.cos(EL));
 const RIGHT = new THREE.Vector3(Math.cos(AZ), 0, -Math.sin(AZ));
+const BACK = new THREE.Vector3(-Math.sin(AZ), 0, -Math.cos(AZ));
 const direction = new THREE.Vector3();
 const cameraUp = new THREE.Vector3();
 
@@ -517,9 +518,11 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
         const item = build.items.find((it) => it.agent === i && !it.ended);
         if (item && buildTime >= item.tGo) {
           const rt = eng.parts[`${item.figId}/${item.partId}`];
-          v.copy(rt.anchor)
-            .addScaledVector(RIGHT, shifts.current[FIGURES.findIndex((f) => f.id === item.figId)] ?? 0)
-            .project(cam);
+          const figureIndex = FIGURES.findIndex((f) => f.id === item.figId);
+          const outer = outerRefs.current[figureIndex];
+          v.copy(rt.anchor);
+          if (outer) v.add(outer.position).sub(positions[figureIndex]);
+          v.project(cam);
           // Spread agents that share a spot so their name tags don't stack.
           tx = ((v.x + 1) / 2) * w + (i - 2) * 26;
           ty = ((1 - v.y) / 2) * h + (i % 2) * 24 - 6;
@@ -569,13 +572,18 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       // much beyond that is gone.
       const shift = shifts.current[i];
       const outer = outerRefs.current[i];
-      if (outer && outer.userData.shift !== shift) {
-        outer.userData.shift = shift;
-        outer.position.copy(positions[i]).addScaledVector(RIGHT, shift);
+      const distance = i + shift / GAP - sc.pos;
+      // Recess the left preview along the floor so its base and caption sit
+      // above the project details. The focused figure stays on the main axis.
+      const recess = smooth(clamp01(-distance)) * (1 - opening);
+      const depth = recess * Math.min(92, h * 0.12) / (cam.zoom * Math.sin(elevation));
+      v.copy(positions[i]).addScaledVector(RIGHT, shift).addScaledVector(BACK, depth);
+      if (outer && outer.position.distanceToSquared(v) > 1e-7) {
+        outer.position.copy(v);
         fig.origin.value.copy(outer.position);
         dirty = true;
       }
-      const away = Math.abs(i + shift / GAP - sc.pos);
+      const away = Math.abs(distance);
       const settled = away <= 1 ? GHOST * smooth(away) : GHOST + (1 - GHOST) * smooth(Math.min(1, (away - 1) / 0.6));
       // During the opening every figure in view is an equal, light drawing.
       const fadeTo = mix(settled, away <= 3.4 ? 0.3 : 1, opening);
@@ -602,7 +610,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       }
       const callouts = calloutRefs.current[i];
       if (callouts) callouts.visible = fade < 0.5;
-      place(eng.labelEls[`cap/${fig.def.id}`], v.copy(positions[i]).addScaledVector(RIGHT, shift).add(CAPTION_OFFSET), 1 - fade);
+      place(eng.labelEls[`cap/${fig.def.id}`], v.add(CAPTION_OFFSET), 1 - fade);
       const sway = swayRefs.current[i];
       if (!sway) return;
       for (const c of fig.def.callouts) {

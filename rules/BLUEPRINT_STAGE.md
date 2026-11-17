@@ -43,7 +43,8 @@ that looks rough.
 | Matte clay | Default finish is `clay`. `soft` for small pressable things, `print` for paper, `screen` / `led` for things that glow. No metal, no gloss. |
 | Detail earns the close-up | A figure needs three scales: the big masses, the mid parts (drawer fronts, lids, rims), and the small things (pulls, grille dots, knobs, glazing bars). If a part is one plain block, it is not finished. |
 | Make the design decision visible | Start from the case study's distinctive interaction or insight. The main object should communicate it at homepage size. For a forthcoming case study, base the model on the public project description and cover. |
-| Real case-study textures | Screen and print crops are in `public/portfolio/blueprints/`. FIG. 1 uses the TV dynamic-background demo (`tv-01.mp4`), FIG. 2 uses the coupon settings in `ck-15.jpg`, FIG. 6 uses the Code Eye diagram in `tk-06.jpg`, and FIG. 7 uses two listing photos from `ab-07.jpg`. Structure and layout cases use clay components. |
+| Screen textures | FIG. 1 uses the TV dynamic-background demo (`tv-01.mp4`) and FIG. 2 uses the Order Booster demo (`ck-16.mp4`). Crop to the active UI at the aspect ratio of the model's display. Cut off the source device frame, status bar or letterboxing, and let the picture meet the single physical bezel. |
+| Detail in relief | For a motif that loses its detail at model scale, use geometry sized for the homepage. FIG. 6 keeps three distinctive Code Eyes and fewer raised dots, and repeats the same motif inside the phone's viewfinder. FIG. 7 uses a pool terrace and an arched room in relief on the two stays. |
 | Soft shadows | Shadows are strongest at the point of contact and widen with distance. A faint cool tint on the studio floor keeps the monochrome figures neutral. |
 
 ## 3. How it is built
@@ -89,8 +90,9 @@ words with four overlapping italics in two lines fought the figure) top left, po
 arrows top right, project details bottom left, the agents' dock bottom right,
 and an evenly spaced rail of project numbers along the bottom. The figure
 caption shows its reference number, and the details carry the full project
-name. Give the details a white backing that fades into the canvas so the
-neighbouring line art stays clear of the text. Anchor the case-study link
+name. Recess the left preview along the floor as it leaves centre so its
+base and caption clear the details. Keep the focused figure unobstructed
+at every viewport and during carousel movement. Anchor the case-study link
 (or "Coming soon" status) below the description and build log. It stays in
 place as the log grows and is available as soon as the page loader clears.
 Pause and Resume sit beside it during the build. Docked agents are quieter

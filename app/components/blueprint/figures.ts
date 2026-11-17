@@ -370,8 +370,6 @@ function use(p: Palette) {
 
 const TV_SCREEN = "/portfolio/blueprints/tv-screen.jpg";
 const LUTRA_SCREEN = "/portfolio/blueprints/lutra-screen.jpg";
-const TIKCODE_PRINT = "/portfolio/blueprints/tikcode-code-eye.jpg";
-const WISHLIST_STAYS = ["/portfolio/blueprints/wishlist-stay-1.jpg", "/portfolio/blueprints/wishlist-stay-2.jpg"];
 
 const REMOTE_FRAME = {
   pos: [0.9, 0.62, 0.0] as Vec3,
@@ -397,6 +395,33 @@ function plinth(c: Palette): ShapeDef[] {
     { k: "slab", size: [2.9, 1.9], t: 0.1, r: 0.36, pos: [0, 0.05, 0], rot: flat() },
     { k: "slab", size: [2.6, 1.6], t: 0.012, r: 0.26, pos: [0, 0.101, 0], rot: flat(), color: c.mist },
     { k: "slab", size: [3.2, 2.2], t: 0.04, r: 0.46, pos: [0, 0.02, 0], rot: flat(), color: c.lilac },
+  ];
+}
+
+/** A sparse relief of the case study's three Code Eyes and dot pattern. */
+function tikCodeRelief(c: Palette, [x, y, z]: Vec3, pitch: number): ShapeDef[] {
+  const eyes = [[-3, 3], [3, 3], [-3, -3]];
+  const dots = [
+    [-1, 4], [1, 4], [0, 3], [-1, 2], [1, 2], [0, 1], [3, 1],
+    [-4, 0], [-2, 0], [2, 0], [4, 0], [-3, -1], [0, -1], [2, -1],
+    [4, -2], [0, -3], [2, -3], [1, -4], [4, -4],
+  ];
+  return [
+    ...eyes.flatMap(([column, row], index): ShapeDef[] => {
+      const cx = x + column * pitch;
+      const cy = y + row * pitch;
+      return [
+        { k: "slab", size: [2.2 * pitch, 2.2 * pitch], t: 0.18 * pitch, r: 0.41 * pitch,
+          pos: [cx, cy, z + 0.04 * pitch], color: index === 1 ? c.coral : c.lilac },
+        { k: "cyl", r: 0.59 * pitch, h: 0.22 * pitch, rot: FACE,
+          pos: [cx, cy, z + 0.21 * pitch], color: c.inky },
+      ];
+    }),
+    ...dots.map(([column, row], index): ShapeDef => ({
+      k: "cyl", r: 0.285 * pitch, h: 0.24 * pitch, rot: FACE,
+      pos: [x + column * pitch, y + row * pitch, z + 0.08 * pitch],
+      color: index === 4 || index === 15 ? c.coral : c.inky,
+    })),
   ];
 }
 
@@ -604,22 +629,13 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           finish: "screen",
           frame: TV_ANGLE,
           shapes: [
-            // A dark lip around the panel, then the picture.
-            {
-              k: "slab",
-              size: [2.16, 1.2325],
-              t: 0.003,
-              r: 0.074,
-              pos: [0, 1.465, 0.0066],
-              color: INKY,
-              finish: "soft",
-            },
+            // The picture meets the physical bezel directly.
             {
               k: "slab",
               size: [2.12, 1.1925],
               t: 0.006,
               r: 0.054,
-              pos: [0, 1.465, 0.009],
+              pos: [0, 1.465, 0.0065],
               map: TV_SCREEN,
             },
             {
@@ -916,18 +932,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             {
               k: "slab",
               size: [0.68, 1.402],
-              t: 0.003,
-              r: 0.115,
-              pos: [0, 0.741, 0.0615],
-              color: INKY,
-              finish: "soft",
-            },
-            {
-              k: "slab",
-              size: [0.66, 1.382],
               t: 0.006,
-              r: 0.1,
-              pos: [0, 0.741, 0.0635],
+              r: 0.11,
+              pos: [0, 0.741, 0.0615],
               map: LUTRA_SCREEN,
             },
           ],
@@ -1612,7 +1619,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
         {
           id: "holder",
-          label: "Printed card holder",
+          label: "TikCode display stand",
           agent: 4,
           color: c.plum,
           frame: { pos: [-0.53, 0.107, -0.19], rot: [0, 0.14, 0] },
@@ -1624,30 +1631,40 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
         {
           id: "code",
-          label: "TikCode with Code Eye pattern",
+          label: "Raised Code Eyes and dots",
           agent: 2,
           color: c.cream,
           frame: { pos: [-0.53, 0.107, -0.19], rot: [0, 0.14, 0] },
           shapes: [
-            { k: "slab", size: [1.085, 1.22], t: 0.012, r: 0.085, pos: [0, 0.885, 0.08], finish: "print" },
-            { k: "slab", size: [0.9, 0.9], t: 0.006, r: 0.034, pos: [0, 0.958, 0.088], finish: "print", map: TIKCODE_PRINT },
-            { k: "slab", size: [0.69, 0.085], t: 0.006, r: 0.02, pos: [0, 0.408, 0.088], finish: "print", map: `label:TikCode|${c.cream}|${c.inky}` },
+            { k: "slab", size: [1.085, 1.22], t: 0.025, r: 0.085, pos: [0, 0.885, 0.082] },
+            ...tikCodeRelief(c, [0, 0.972, 0.0945], 0.097),
+            { k: "slab", size: [0.51, 0.112], t: 0.006, r: 0.03, pos: [0, 0.398, 0.096], finish: "print", map: `label:TikCode|${c.cream}|${c.inky}|4.55` },
           ],
         },
         {
           id: "scanner",
-          label: "Phone with matched code",
+          label: "Phone scan viewfinder",
           agent: 3,
           color: c.cream,
           frame: { pos: [0.81, 0.107, 0.38], rot: [-0.19, 0.20, 0] },
           shapes: [
             { k: "box", size: [0.26, 0.43, 0.22], pos: [0, 0.206, -0.19], rot: [-0.19, 0, 0], color: c.sand },
             { k: "slab", size: [0.62, 1.17], t: 0.079, r: 0.094, pos: [0, 0.596, 0] },
-            { k: "slab", size: [0.516, 1.066], t: 0.012, r: 0.042, pos: [0, 0.596, 0.043], color: c.inky, finish: "soft" },
-            { k: "slab", size: [0.32, 0.32], t: 0.006, r: 0.015, pos: [0, 0.765, 0.05], finish: "screen", map: TIKCODE_PRINT },
-            { k: "slab", size: [0.36, 0.116], t: 0.015, r: 0.043, pos: [0, 0.494, 0.054], color: c.lilac },
-            { k: "poly", pts: CHECK, t: 0.006, r: 0.007, pos: [0, 0.495, 0.063], color: c.inky },
-            { k: "cyl", r: 0.045, h: 0.012, pos: [0, 0.218, 0.055], rot: FACE, color: c.coral },
+            { k: "slab", size: [0.516, 1.066], t: 0.012, r: 0.042, pos: [0, 0.596, 0.043],
+              finish: "screen", map: `proc:scan-view|${c.inky}` },
+            { k: "slab", size: [0.415, 0.47], t: 0.01, r: 0.048, pos: [0, 0.692, 0.052], color: c.plum },
+            { k: "slab", size: [0.238, 0.238], t: 0.009, r: 0.031, pos: [0, 0.692, 0.06], color: c.cream },
+            ...tikCodeRelief(c, [0, 0.692, 0.0645], 0.0235),
+            ...[-1, 1].flatMap((sx) => [-1, 1].map((sy): ShapeDef => ({
+              k: "poly",
+              pts: [[0, 0], [0.063, 0], [0.063, 0.01], [0.01, 0.01], [0.01, 0.063], [0, 0.063]]
+                .map(([x, y]) => [-sx * x, -sy * y]),
+              t: 0.005,
+              r: 0.003,
+              pos: [sx * 0.157, 0.692 + sy * 0.162, 0.059],
+              color: c.white,
+            }))),
+            { k: "slab", size: [0.15, 0.013], t: 0.005, r: 0.006, pos: [0, 0.139, 0.05], color: c.lilac },
           ],
         },
         {
@@ -1904,8 +1921,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "ball", r: 0.055, pos: [0.54, 0.145, -0.29] },
           ],
         },
-        ...WISHLIST_STAYS.map((photo, index): PartDef => {
-          const selected = index === 1;
+        ...[false, true].map((selected, index): PartDef => {
           const trim = selected ? PLUM : LILAC;
           return {
             id: `stay-${index + 1}`,
@@ -1920,7 +1936,32 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
               { k: "box", size: [0.42, 0.23, 0.27], pos: [0, 0.1, -0.18], color: SAND },
               { k: "slab", size: [0.9, 1.03], t: 0.072, r: 0.108, pos: [0, 0.525, 0], color: trim },
               { k: "slab", size: [0.825, 0.95], t: 0.012, r: 0.07, pos: [0, 0.525, 0.041] },
-              { k: "slab", size: [0.734, 0.508], t: 0.009, r: 0.047, pos: [0, 0.692, 0.05], finish: "print", map: photo },
+              { k: "slab", size: [0.734, 0.508], t: 0.023, r: 0.055, pos: [0, 0.692, 0.054], color: selected ? SAND : BLUE },
+              ...(selected ? [
+                // A room in relief: a warm recess, arch surround and soft seat.
+                { k: "slab", size: [0.316, 0.285], t: 0.028, r: 0.142, pos: [-0.055, 0.747, 0.076], color: LILAC },
+                { k: "arch", span: 0.345, rise: 0.157, tube: 0.026, pos: [-0.055, 0.768, 0.092], color: CREAM },
+                { k: "cyl", r: 0.023, h: 0.159, pos: [-0.226, 0.692, 0.092], color: CREAM },
+                { k: "cyl", r: 0.023, h: 0.141, pos: [0.116, 0.70, 0.092], color: CREAM },
+                { k: "slab", size: [0.454, 0.09], t: 0.047, r: 0.035, pos: [0.07, 0.516, 0.097], color: LILAC },
+                { k: "slab", size: [0.299, 0.1], t: 0.05, r: 0.033, pos: [0.1, 0.573, 0.107], color: PLUM, finish: "soft" },
+                { k: "slab", size: [0.321, 0.052], t: 0.041, r: 0.023, pos: [0.1, 0.543, 0.133], color: CREAM, finish: "soft" },
+                { k: "slab", size: [0.059, 0.1], t: 0.052, r: 0.023, pos: [-0.085, 0.566, 0.123], color: PLUM },
+                { k: "slab", size: [0.06, 0.101], t: 0.053, r: 0.023, pos: [0.281, 0.568, 0.12], color: PLUM },
+              ] : [
+                // A pool terrace in relief: a deck, recessed water and trees.
+                { k: "cyl", r: 0.063, h: 0.018, rot: FACE, pos: [0.229, 0.827, 0.076], color: YELLOW },
+                { k: "slab", size: [0.679, 0.245], t: 0.033, r: 0.052, pos: [0, 0.582, 0.078], color: SAND },
+                { k: "slab", size: [0.336, 0.176], t: 0.047, r: 0.052, pos: [-0.048, 0.574, 0.097], color: CREAM },
+                { k: "slab", size: [0.281, 0.124], t: 0.03, r: 0.035, pos: [-0.047, 0.575, 0.113], color: BLUE, finish: "soft" },
+                { k: "slab", size: [0.137, 0.016], t: 0.008, r: 0.008, pos: [-0.073, 0.6, 0.131], color: WHITE },
+                { k: "slab", size: [0.083, 0.013], t: 0.006, r: 0.006, pos: [0.007, 0.552, 0.13], color: WHITE },
+                { k: "cyl", r: 0.023, h: 0.147, pos: [-0.231, 0.696, 0.093], color: SAND },
+                { k: "ball", r: 0.072, pos: [-0.238, 0.786, 0.093], color: GREEN },
+                { k: "ball", r: 0.045, pos: [-0.166, 0.752, 0.097], color: PLUM },
+                { k: "slab", size: [0.075, 0.123], t: 0.024, r: 0.026, pos: [0.238, 0.579, 0.103], rot: [0, 0, -0.34], color: CREAM },
+                { k: "slab", size: [0.062, 0.103], t: 0.018, r: 0.02, pos: [0.292, 0.608, 0.103], rot: [0, 0, -0.34], color: CREAM },
+              ]) satisfies ShapeDef[],
               { k: "slab", size: [0.392, 0.044], t: 0.01, r: 0.022, pos: [-0.139, 0.355, 0.05], color: INKY },
               { k: "slab", size: [0.281, 0.026], t: 0.01, r: 0.013, pos: [-0.193, 0.284, 0.05], color: LILAC },
               { k: "slab", size: [0.27, 0.129], t: 0.016, r: 0.054, pos: [0.186, 0.17, 0.056], finish: "print",

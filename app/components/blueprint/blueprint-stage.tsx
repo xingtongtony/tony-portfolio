@@ -522,7 +522,7 @@ export function BlueprintStage() {
       {/* Keep project access anchored below the description or build log. */}
       <div
         inert={loader && !revealed}
-        className="pointer-events-none absolute bottom-[108px] left-[3.25rem] isolate z-20 w-[min(340px,36%)] before:absolute before:-inset-x-4 before:-inset-y-3 before:-z-10 before:bg-white before:blur-lg xl:left-[4.25rem]"
+        className="pointer-events-none absolute bottom-[108px] left-[3.25rem] z-20 w-[min(340px,36%)] xl:left-[4.25rem]"
       >
         {focused ? (
           <>
