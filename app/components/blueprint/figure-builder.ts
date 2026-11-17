@@ -24,6 +24,7 @@ import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { AGENTS, INK, type FigureDef, type Finish, type ShapeDef } from "./figures";
+import { displayRgb, STUDIO_ATMOSPHERE, type StudioAtmosphere } from "./studio-atmosphere";
 import { getTexture } from "./textures";
 
 /** What the build engine reads and writes for one part. */
@@ -44,16 +45,6 @@ export type PartRuntime = {
 
 /** Hull thickness in world units; the scene sets it to (px / camera zoom). */
 export const HULL_U = { value: 0.015 };
-
-const PAPER_U = { value: new THREE.Vector3(1, 1, 1) };
-const INK_COLOR = new THREE.Color(INK);
-const PAPER_COLOR = new THREE.Color("#ffffff");
-
-/** Hex → display-space rgb, for colours mixed in after colour-space conversion. */
-function displayRgb(hex: string): THREE.Vector3 {
-  const n = parseInt(hex.slice(1), 16);
-  return new THREE.Vector3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
-}
 
 // ── Materials ──────────────────────────────────────────────────────────────
 
@@ -116,6 +107,7 @@ function fillMaterial(
   rt: PartRuntime,
   fade: { value: number },
   origin: { value: THREE.Vector3 },
+  atmosphere: StudioAtmosphere,
 ) {
   const params: THREE.MeshPhysicalMaterialParameters = {
     ...FINISHES[finish],
@@ -148,7 +140,7 @@ function fillMaterial(
     shader.uniforms.uH = rt.h;
     shader.uniforms.uBandOn = rt.bandOn;
     shader.uniforms.uBand = rt.band;
-    shader.uniforms.uPaper = PAPER_U;
+    Object.assign(shader.uniforms, atmosphere);
     shader.uniforms.uFade = fade;
     shader.uniforms.uGrain = { value: GRAIN[finish] };
     shader.uniforms.uOrigin = origin;
@@ -161,8 +153,8 @@ function fillMaterial(
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
-        "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nvarying vec3 vFig;\nuniform float uH;\nuniform float uBandOn;\nuniform float uFade;\nuniform float uGrain;\nuniform vec3 uBand;\nuniform vec3 uPaper;\n" +
-          GRAIN_NOISE,
+        "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nvarying vec3 vFig;\nuniform float uH;\nuniform float uBandOn;\nuniform float uFade;\nuniform float uGrain;\nuniform vec3 uBand;\n" +
+          GRAIN_NOISE + STUDIO_ATMOSPHERE,
       )
       .replace("#include <normal_fragment_maps>", "#include <normal_fragment_maps>\n" + GRAIN_NORMAL)
       // Hand-made surfaces are never one flat colour: broad, faint unevenness.
@@ -179,10 +171,12 @@ function fillMaterial(
           "float reach = dot(vFig - vec3(0.0, 0.9, 0.0), vec3(-0.304, 0.852, 0.426));",
           "gl_FragColor.rgb *= mix(0.84, 1.09, smoothstep(-1.5, 1.5, reach));",
           "float built = 1.0 - smoothstep(uH - 0.003, uH + 0.003, vWorldY);",
-          "gl_FragColor.rgb = mix(uPaper, gl_FragColor.rgb, built);",
           "float band = uBandOn * (1.0 - smoothstep(0.012, 0.03, abs(vWorldY - uH)));",
-          "gl_FragColor.rgb = mix(gl_FragColor.rgb, uBand, band);",
-          "gl_FragColor.rgb = mix(gl_FragColor.rgb, uPaper, uFade);",
+          "if (built < 1.0 || band > 0.0 || uFade > 0.0) {",
+          "  vec3 paper = studioPaper();",
+          "  vec3 surface = mix(paper, gl_FragColor.rgb, built);",
+          "  gl_FragColor.rgb = mix(mix(surface, uBand, band), paper, uFade);",
+          "}",
           "#include <dithering_fragment>",
         ].join("\n"),
       );
@@ -205,10 +199,19 @@ function depthMaterial(rt: PartRuntime) {
   return m;
 }
 
+function fadeInk(shader: THREE.WebGLProgramParametersWithUniforms, fade: { value: number }, atmosphere: StudioAtmosphere) {
+  Object.assign(shader.uniforms, atmosphere);
+  shader.uniforms.uFade = fade;
+  shader.fragmentShader = shader.fragmentShader
+    .replace("#include <common>", "#include <common>\nuniform float uFade;\n" + STUDIO_ATMOSPHERE)
+    .replace("#include <colorspace_fragment>", "#include <colorspace_fragment>\nif (uFade > 0.0) gl_FragColor.rgb = mix(gl_FragColor.rgb, studioPaper(), 1.0 - pow(1.0 - uFade, 1.65));");
+}
+
 /** Ink lines: drawn only above the build front. */
-function lineMaterial(rt: PartRuntime) {
+function lineMaterial(rt: PartRuntime, fade: { value: number }, atmosphere: StudioAtmosphere) {
   const m = new LineMaterial({ color: INK, linewidth: 1.25, toneMapped: false });
   m.onBeforeCompile = (shader) => {
+    fadeInk(shader, fade, atmosphere);
     shader.uniforms.uH = rt.h;
     shader.vertexShader = shader.vertexShader
       .replace("#include <fog_pars_vertex>", "#include <fog_pars_vertex>\nvarying float vLineY;")
@@ -224,9 +227,10 @@ function lineMaterial(rt: PartRuntime) {
 }
 
 /** Silhouette hull for curved surfaces: also only above the build front. */
-function hullMaterial(rt: PartRuntime) {
+function hullMaterial(rt: PartRuntime, fade: { value: number }, atmosphere: StudioAtmosphere) {
   const m = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide, toneMapped: false });
   m.onBeforeCompile = (shader) => {
+    fadeInk(shader, fade, atmosphere);
     shader.uniforms.uHull = HULL_U;
     shader.uniforms.uH = rt.h;
     shader.vertexShader = shader.vertexShader
@@ -471,12 +475,11 @@ export type BuiltFigure = {
   setFade: (v: number) => void;
 };
 
-export function createFigure(def: FigureDef): BuiltFigure {
+export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): BuiltFigure {
   const group = new THREE.Group();
   const parts: Record<string, PartRuntime> = {};
   const fade = { value: 0 };
   const origin = { value: new THREE.Vector3() };
-  const inks: (LineMaterial | THREE.MeshBasicMaterial)[] = [];
   const casters: THREE.Mesh[] = [];
 
   for (const part of def.parts) {
@@ -498,9 +501,8 @@ export function createFigure(def: FigureDef): BuiltFigure {
     };
     const fills = new Map<string, THREE.Material>();
     const depth = depthMaterial(rt);
-    const line = lineMaterial(rt);
-    const hullInk = hullMaterial(rt);
-    inks.push(line, hullInk);
+    const line = lineMaterial(rt, fade, atmosphere);
+    const hullInk = hullMaterial(rt, fade, atmosphere);
 
     for (const s of part.shapes) {
       const { mesh: geo, edges, hull } = shapeGeometry(s);
@@ -509,7 +511,7 @@ export function createFigure(def: FigureDef): BuiltFigure {
       const fillKey = `${color}|${finish}|${s.map ?? ""}`;
       let fill = fills.get(fillKey);
       if (!fill) {
-        fill = fillMaterial(color, finish, s.map, rt, fade, origin);
+        fill = fillMaterial(color, finish, s.map, rt, fade, origin, atmosphere);
         fills.set(fillKey, fill);
       }
       const mesh = new THREE.Mesh(geo, fill);
@@ -530,7 +532,6 @@ export function createFigure(def: FigureDef): BuiltFigure {
 
   const setFade = (v: number) => {
     fade.value = v;
-    for (const ink of inks) ink.color.copy(INK_COLOR).lerp(PAPER_COLOR, v);
     // A figure faded into the paper must not leave its shadow behind.
     const cast = v < 0.5;
     if (casters[0].castShadow !== cast) for (const mesh of casters) mesh.castShadow = cast;
