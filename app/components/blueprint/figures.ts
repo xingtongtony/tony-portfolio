@@ -399,10 +399,13 @@ function plinth(c: Palette): ShapeDef[] {
   ];
 }
 
-/** A sparse relief of the case study's three Code Eyes and dot pattern. */
+/** A framed square relief of the case study's three Code Eyes and dot pattern. */
 function tikCodeRelief(c: Palette, [x, y, z]: Vec3, pitch: number): ShapeDef[] {
   const eyeSpan = 2.2;
-  // The Code Eyes define the corners of the square. The dots stay inside it.
+  const frameSpan = 10.2 * pitch;
+  const insetSpan = 9.84 * pitch;
+  const faceZ = z + 0.012;
+  // The three Code Eyes sit just inside the square's outer rim.
   const corner = 4.65 - eyeSpan / 2;
   const eyes = [[-corner, corner], [corner, corner], [-corner, -corner]];
   const dots = [
@@ -415,19 +418,23 @@ function tikCodeRelief(c: Palette, [x, y, z]: Vec3, pitch: number): ShapeDef[] {
     [-1, -3], [1, -3], [2, -3],
   ];
   return [
+    { k: "slab", size: [frameSpan, frameSpan], t: 0.01, r: 0.46 * pitch,
+      pos: [x, y, z + 0.002], color: c.lilac },
+    { k: "slab", size: [insetSpan, insetSpan], t: 0.008, r: 0.28 * pitch,
+      pos: [x, y, faceZ - 0.004], color: c.cream },
     ...eyes.flatMap(([column, row], index): ShapeDef[] => {
       const cx = x + column * pitch;
       const cy = y + row * pitch;
       return [
         { k: "slab", size: [eyeSpan * pitch, eyeSpan * pitch], t: 0.18 * pitch, r: 0.41 * pitch,
-          pos: [cx, cy, z + 0.04 * pitch], color: index === 1 ? c.coral : c.lilac },
+          pos: [cx, cy, faceZ + 0.04 * pitch], color: index === 1 ? c.coral : c.lilac },
         { k: "cyl", r: 0.59 * pitch, h: 0.22 * pitch, rot: FACE,
-          pos: [cx, cy, z + 0.21 * pitch], color: c.inky },
+          pos: [cx, cy, faceZ + 0.21 * pitch], color: c.inky },
       ];
     }),
     ...dots.map(([column, row], index): ShapeDef => ({
       k: "cyl", r: 0.285 * pitch, h: 0.24 * pitch, rot: FACE,
-      pos: [x + column * pitch, y + row * pitch, z + 0.08 * pitch],
+      pos: [x + column * pitch, y + row * pitch, faceZ + 0.08 * pitch],
       color: index === 4 || index === 15 ? c.coral : c.inky,
     })),
   ];
@@ -1661,8 +1668,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "slab", size: [0.516, 1.066], t: 0.012, r: 0.042, pos: [0, 0.596, 0.043],
               finish: "screen", map: `proc:scan-view|${c.inky}` },
             { k: "slab", size: [0.415, 0.47], t: 0.01, r: 0.048, pos: [0, 0.692, 0.052], color: c.plum },
-            { k: "slab", size: [0.238, 0.238], t: 0.009, r: 0.031, pos: [0, 0.692, 0.06], color: c.cream },
-            ...tikCodeRelief(c, [0, 0.692, 0.0645], 0.0235),
+            ...tikCodeRelief(c, [0, 0.692, 0.057], 0.0235),
             ...[-1, 1].flatMap((sx) => [-1, 1].map((sy): ShapeDef => ({
               k: "poly",
               pts: [[0, 0], [0.063, 0], [0.063, 0.01], [0.01, 0.01], [0.01, 0.063], [0, 0.063]]
