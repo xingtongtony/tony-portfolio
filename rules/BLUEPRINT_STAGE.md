@@ -38,7 +38,7 @@ that looks rough.
 | Harmony over realism | Colour comes from the figure's palette roles in `figures.ts` only. A TV may be plum, a counter lilac. Never add a one-off hex to a shape. |
 | A world each | Every figure has its own palette (`THEMES` in `figures.ts`), so the sheet is not one object repeated; unwritten work uses the grey `mono` one. The palettes share the same roles and the same recipe, which is what keeps them a set. |
 | Two accents | Inside a world, its own hue (ground, mist, mid, deep) owns most of the area, cream and sand are the neutrals, and only two accents are strong — small, and no others. Green is for plants and "on", blue for glass; both are muted. A figure that uses every colour at equal weight looks busy however nice each colour is. |
-| A room, not a tint | The background is a place the figure stands in (Tony, 2026-11-17: "as if the model were set on a platform, or on the ground"). `studioPaper()` works out where each pixel is in the room: a **floor** with a pool of light where the figure stands, falling back to the paper's tone further out; a **back wall** `STUDIO_DEPTH` behind the figure — far enough that the whole figure is seen against floor, with the wall rising above it — deepest just above its foot and back to paper towards the header; and a soft **cove** where the two meet, not a line. A lit floor under the figure's soft shadow is what says it stands on something. The header and the foot of the page stay plain paper. Do not add a horizon line, a grid or a second plinth to get this: it is light and shade on one seamless sheet. |
+| Light is the room | The background is one seamless floor with **no wall and no line anywhere**: bright where the figure on stage stands and dimmer with distance in every direction (`studioPaper()`). The distance is measured along the floor — a step away from the viewer is shorter on screen than a step sideways — so the pool of light lies on a plane, and that plane is the space the figure stands in (Tony, 2026-11-17: "as if the model were set on a platform, or on the ground"). Away from the light the page is one flat tone (`STUDIO_PAPER` of the wall colour), which is also the header's colour and so the headline's seam. Tried and dropped, do not bring back: a back wall behind the figure (it had to fade out again before the header and read as "a smear across the middle"), a wall running to the top (a horizon cut the page in two), and a drafting grid on the floor (a layer of lines competing with the neighbours' drawings). Tony chose light alone, 2026-11-18. |
 | Shared studio | The figures share a seamless studio sweep. The wall, floor, and reflected light interpolate between the palettes of adjacent exhibits as the carousel moves. Draft fills and faded ink sample the same background at their screen position. |
 | One sheet of paper | The page is the studio's paper, not white with a coloured patch on it (Tony, 2026-11-17: a tinted stage over a white index band read as cut in two). The backdrop fades into a flat paper colour — `STUDIO_PAPER` of the wall colour, the rest white — at the header, the copy column and the foot, and the scene hands that colour to CSS as `--studio-paper` on `<main>` every time it changes. The sidebar's column, the headline's seam between overlapping words and anything else outside or over the canvas use it, so nothing on the homepage has a background of its own: no white bands, no boxed strips. The canvas is wider than the stage: it runs on to the left edge of the window, under the navigation panel (`-left-[268px] xl:-left-[312px]` on its wrapper; the scene measures the overhang as `stageInset` and lays everything out in the stage's own pixels, and `uStudioFrame` tells the backdrop where the stage starts). So a neighbour leaving to the left passes beneath the panel instead of being cut off at its edge, and it goes out of focus on the way: three sheets of backdrop blur over the stage's left, each stronger and narrower than the last and fading out to the right, make a blur that grows towards the panel (Tony, 2026-11-17: "more blur on the left, less on the right"). The sidebar is a sheet of frosted glass on it (`sidebarTheme="stage"`: a little white, a lighter edge, a backdrop blur, the tint and the passing figure showing through) — the grey card sat against the colour, and no card at all dissolved the navigation into the page (Tony tried both, 2026-11-17). The header band is pure paper (the backdrop's top fade ends below it), which is what lets the headline's seam, a flat colour, disappear. Below `lg` and before the scene runs the variable is unset and the page is white. |
 | Built like the thing | A roof is boards with thickness that overhang the walls, not a prism with stripes; a window is a frame standing proud with the glass set back, not a disc on the wall. If a part would look stuck on in real life, model how it is actually made. |
@@ -61,7 +61,7 @@ that looks rough.
 | `soft-shadows.ts` | Replaces three.js's basic shadow lookup with area-light shadows (PCSS). |
 | `scene.tsx` | Canvas, the carousel's position and camera, the lights, accumulation, and the frame loop that drives builds, agents and labels. |
 | `engine.ts` | State shared by the scene and the DOM layer. Must stay free of three.js imports, or three lands in every page's first load. |
-| `blueprint-stage.tsx` | The DOM layer: page loader, headline, position and arrows, project details and case-study link, agent stickers, the index line, keyboard. |
+| `blueprint-stage.tsx` | The DOM layer: page loader, headline, position and arrows, project details and case-study link, agent stickers, keyboard. It publishes the figure on stage through `engine.focus` / `engine.select` for the navigation panel. |
 | `loader-art.ts` | The page loader's two SVG layers. Generated by `scripts/blueprint-loader-art.py`; never edited by hand. |
 | `textures.ts` | Printed surfaces drawn on a canvas (ticket, QR card, TikCode, labels). |
 | `scripts/blueprint-coplanar.mjs` | Finds faces two shapes share exactly (they flicker). Runs in `npm run check`. |
@@ -93,11 +93,9 @@ The layout around it (`blueprint-stage.tsx`): one strong headline line with one
 quiet line of proof under it (not the full statement at display size — twelve
 words with four overlapping italics in two lines fought the figure) top left, position and
 arrows top right, project details bottom left, the agents' dock bottom right,
-and the index along the bottom: one thin line in eleven parts, the current
-part dark, lying on the studio's floor with no band of its own. Pointing at a
-part names its project; the count is already top right, so it carries no
-numbers and no ticks (an 80px band of numbers was wasted room and, being
-white, cut the page in two). The figure
+and no index of its own: the navigation panel is the stage's index (see
+"The panel is the index" below). An 80px band of numbers along the bottom,
+then a thin line in eleven parts, were both tried there and dropped. The figure
 caption shows its reference number, and the details carry the full project
 name. Recess the left preview along the floor as it leaves centre so its
 base and caption clear the details. Keep the focused figure unobstructed
@@ -117,7 +115,7 @@ previews soften with distance. Apply the softness to the displayed frame after
 shadow accumulation so it stays consistent as shadows refine and captions stay
 sharp. Position along the row is continuous, so fade, size, focus and camera
 follow the distance to the middle. It moves by dragging or throwing the stage, a sideways swipe on
-a trackpad, the arrows, the arrow keys, the index line, or clicking a
+a trackpad, the arrows, the arrow keys, the navigation panel, or clicking a
 neighbour; a small drag falls back, a real one or a flick lands on the next.
 
 From `lg` up the stage is the whole homepage: exactly one screen, with nothing
@@ -134,6 +132,15 @@ going past either end just carries on. The page opens far enough out to show
 the row as light drawings, holds a moment, then closes in on the first figure
 (`INTRO_HOLD`, `INTRO_MOVE`) while it starts to build. The lights travel
 with the camera.
+
+**The panel is the index** (Tony chose this of three navigations,
+2026-11-18). The stage used to sit beside a second list of the same projects.
+Now the navigation panel (`sidebar-projects.tsx`, list in
+`app/lib/projects.ts` — same ids and order as `FIGURES`, and the stage warns
+in development if they drift) *is* the index: all eleven, numbered, the one
+on stage marked; resting the pointer on a row brings its figure on; clicking
+opens the case study (a "Soon" row only shows its figure). The panel must not
+import `figures.ts`: it is on every page, and the geometry is not.
 
 **Arriving builds, leaving rewinds** (Tony, 2026-11-17, in place of a Replay
 button). Whenever a figure comes on stage the agents build it from its
@@ -228,7 +235,7 @@ animate, so:
    nothing: the loader's animations do not start and the page looks blank.
 2. On a fresh load the page loader plays first, then the camera closes in on
    the first figure and it builds itself. Wait until the arrows are enabled.
-3. Go through every figure (← →, or the index line) and look at each enlarged, about
+3. Go through every figure (← →, or the navigation panel) and look at each enlarged, about
    ten seconds after it is built, when the frames have accumulated. Scale the
    `<canvas>` element only (`#stage canvas`, CSS transform). Scaling `#stage`
    makes the renderer re-measure and blanks the view. Compare it to the case

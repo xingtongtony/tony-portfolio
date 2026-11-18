@@ -53,7 +53,7 @@ The goal is to fully migrate Tony Xing's portfolio away from Framer.
 
 The desired homepage structure is inspired by Alex Nguyen's portfolio:
 
-- Left side: fixed/sticky intro area with name, role, short bio, navigation, and contact actions.
+- Left side: fixed/sticky intro area with name, role, short bio, navigation, and contact actions. Since 2026-11-18 its project list is **the index** on every page (numbered; the current project marked; on the homepage it drives the blueprint stage, on a case study it lists that case study's sections) — see `rules/DESIGN_SYSTEM.md`.
 - Right side: independently scrollable content flow with company strip, selected work, side/coming-soon projects, experience, about, and contact.
 - The structure should feel close to the reference: editorial, compact, content-heavy, and portfolio-first.
 - Do not replace this with a generic centered landing page unless explicitly requested.

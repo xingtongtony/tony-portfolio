@@ -58,10 +58,27 @@ export type Engine = {
    * jumped state, a texture arrived). The scene only redraws when it has to.
    */
   dirty: boolean;
+  /**
+   * The figure on stage, and a way to change it, for the navigation panel:
+   * on the homepage the panel is the stage's index (see sidebar-projects).
+   */
+  focus: string | null;
+  select: ((figId: string) => void) | null;
+  focusListeners: Set<() => void>;
 };
 
 /** There is one stage on the page, so one engine. */
-export const engine: Engine = { parts: {}, build: null, rewinds: [], agentEls: [], labelEls: {}, dirty: true };
+export const engine: Engine = {
+  parts: {},
+  build: null,
+  rewinds: [],
+  agentEls: [],
+  labelEls: {},
+  dirty: true,
+  focus: null,
+  select: null,
+  focusListeners: new Set(),
+};
 
 export const now = () => performance.now() / 1000;
 

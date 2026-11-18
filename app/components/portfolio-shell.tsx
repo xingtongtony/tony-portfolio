@@ -103,32 +103,42 @@ export function PortfolioShell({
       {rootBg ? <RootBackground color={rootBg} /> : null}
       <MobileHeader theme={theme} />
       <aside
-        className={`m-3 hidden overflow-hidden rounded-[1.75rem] border px-6 py-8 transition-colors duration-500 lg:sticky lg:top-3 lg:flex lg:h-[calc(100vh-1.5rem)] lg:flex-col lg:justify-between xl:px-7 ${theme.panel}`}
+        className={`m-3 hidden overflow-hidden rounded-[1.75rem] border px-6 py-8 transition-colors duration-500 lg:sticky lg:top-3 lg:flex lg:h-[calc(100vh-1.5rem)] lg:flex-col xl:px-7 ${theme.panel}`}
       >
-        <div>
-          <nav className="flex items-center justify-between gap-4 text-sm font-medium">
-            <Link
-              href="/"
-              className={`block w-fit ${theme.logo}`}
-              aria-label="Tony Xing"
+        {/* Three parts. The logo and the status stay at the top and the links
+            at the bottom, always. Only the index between them moves: with a
+            case study's sections under its row it can be taller than a short
+            window, and then it scrolls on its own — no bar, its rows fading
+            out at the two edges rather than being cut off (Tony, 2026-11-18:
+            the whole top scrolling, logo and all, and ending in a hard cut,
+            was wrong to look at and to use). */}
+        <nav className="flex shrink-0 items-center justify-between gap-4 text-sm font-medium">
+          <Link
+            href="/"
+            className={`block w-fit ${theme.logo}`}
+            aria-label="Tony Xing"
+          >
+            <TonyLogo />
+          </Link>
+          <div className="flex items-center gap-4">
+            <a
+              href={EMAIL_HREF}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition hover:-translate-y-0.5 ${theme.status}`}
             >
-              <TonyLogo />
-            </Link>
-            <div className="flex items-center gap-4">
-              <a
-                href={EMAIL_HREF}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition hover:-translate-y-0.5 ${theme.status}`}
-              >
-                <span className="availability-dot" aria-hidden="true" />
-                Available to connect
-              </a>
-            </div>
-          </nav>
+              <span className="availability-dot" aria-hidden="true" />
+              Available to connect
+            </a>
+          </div>
+        </nav>
 
+        <div
+          data-panel-index
+          className="no-scrollbar -mx-2 min-h-0 flex-1 overflow-y-auto px-2 [scrollbar-width:none] [mask-image:linear-gradient(to_bottom,transparent,#000_22px,#000_calc(100%_-_30px),transparent)]"
+        >
           <SidebarProjects tone={theme.tone} />
         </div>
 
-        <div className="flex flex-col gap-8">
+        <div className="flex shrink-0 flex-col gap-6 pt-4">
           <div className="flex flex-col items-start gap-4">
             <Link
               href={ABOUT_HREF}
@@ -152,11 +162,7 @@ export function PortfolioShell({
               </a>
             ))}
           </div>
-          <p className={`text-[11px] leading-5 ${theme.copyright}`}>
-            © 2026
-            <br />
-            Tony Xing
-          </p>
+          <p className={`text-[11px] leading-5 ${theme.copyright}`}>© 2026 Tony Xing</p>
         </div>
       </aside>
 

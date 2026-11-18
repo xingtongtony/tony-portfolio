@@ -148,6 +148,15 @@ img {
   color: #ffffff;
 }
 
+/* A scroll container with no bar: the navigation panel's index, which fades
+   out at its edges instead (see portfolio-shell.tsx). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .section-label {
   font-size: 0.75rem;
   font-weight: 600;

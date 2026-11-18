@@ -9,6 +9,13 @@ import { engine, now, rewindTime, setPartBuilt, type BuildItem, type Rewind } fr
 import { AGENTS, FIGURES } from "./figures";
 import { LOADER_ART } from "./loader-art";
 import { getGreeting } from "../hero-intro";
+import { PROJECTS } from "../../lib/projects";
+
+// The navigation panel is this stage's index, from its own short list (it
+// must not pull the figures' geometry into every page): same ids, same order.
+if (process.env.NODE_ENV !== "production" && FIGURES.map((f) => f.id).join() !== PROJECTS.map((p) => p.id).join()) {
+  console.warn("Blueprint stage: FIGURES and PROJECTS (app/lib/projects.ts) list different projects.");
+}
 
 // three.js only runs in the browser, and it is heavy: load the scene as its
 // own client-only chunk.
@@ -192,6 +199,19 @@ export function BlueprintStage() {
     },
     [ready, reducedMotion, startBuild],
   );
+
+  // The navigation panel is the stage's index: it reads which figure is on,
+  // and asks for another, through the engine.
+  useEffect(() => {
+    engine.focus = focus;
+    engine.focusListeners.forEach((listener) => listener());
+  }, [focus]);
+  useEffect(() => {
+    engine.select = select;
+    return () => {
+      engine.select = null;
+    };
+  }, [select]);
 
   const togglePause = () => {
     const b = engine.build;
@@ -584,7 +604,7 @@ export function BlueprintStage() {
       {/* Keep project access anchored below the description or build log. */}
       <div
         inert={loader && !revealed}
-        className="pointer-events-none absolute bottom-[64px] left-[3.25rem] z-20 w-[min(340px,36%)] xl:left-[4.25rem]"
+        className="pointer-events-none absolute bottom-[48px] left-[3.25rem] z-20 w-[min(340px,36%)] xl:left-[4.25rem]"
       >
         {focused ? (
           <>
@@ -639,47 +659,8 @@ export function BlueprintStage() {
         ) : null}
       </div>
 
-      {/* Bottom: the index of projects, as one thin line in eleven parts. It
-          lies on the studio's floor — no band of its own — says where you are,
-          and names a project when pointed at. The count is top right. */}
-      <nav aria-label="Projects" className="absolute bottom-0 left-[3.25rem] right-10 z-30 flex h-11 items-stretch gap-1 xl:left-[4.25rem] xl:right-14">
-        {FIGURES.map((f, i) => {
-          const isFocus = focus === f.id;
-          return (
-            <button
-              key={f.id}
-              type="button"
-              disabled={!ready}
-              onClick={(e) => {
-                select(f.id);
-                // A pointer click should not leave this part focused: its
-                // name would stay up while the arrow keys move the stage on.
-                if (e.detail > 0) e.currentTarget.blur();
-              }}
-              aria-pressed={isFocus}
-              aria-label={f.title}
-              className="group relative flex min-w-0 flex-1 items-center focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[#151515] disabled:opacity-40"
-            >
-              <span
-                aria-hidden="true"
-                className={`block h-0.5 w-full rounded-full transition-colors duration-300 ${isFocus ? "bg-[#151515]" : "bg-black/12 group-hover:bg-black/45"}`}
-              />
-              <span
-                aria-hidden="true"
-                // The names at either end hang inwards: centred, they would
-                // reach past the stage and make the page scroll sideways.
-                className={`pointer-events-none absolute bottom-[calc(50%+10px)] translate-y-1 whitespace-nowrap rounded-full bg-[#151515] px-2.5 py-1 text-[11px] font-medium text-white opacity-0 transition duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 ${
-                  i < 2 ? "left-0" : i > FIGURES.length - 3 ? "right-0" : "left-1/2 -translate-x-1/2"
-                }`}
-              >
-                <span className="mr-1.5 tabular-nums text-white/55">{String(i + 1).padStart(2, "0")}</span>
-                {f.title}
-                {f.href ? null : <span className="ml-1.5 text-white/55">Soon</span>}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+      {/* There is no index along the bottom: the navigation panel is the
+          index (all eleven, numbered, the one on stage marked). */}
 
       {/* The five sticker agents. The scene moves them every frame. The
           pointer is a present-day multiplayer cursor: no tail, soft corners,

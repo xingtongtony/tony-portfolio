@@ -2,175 +2,330 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowUpRight } from "lucide-react";
+import { engine } from "./blueprint/engine";
+import { PROJECTS, type Project } from "../lib/projects";
 
 /**
- * Sidebar project entry points. Editorial list under the logo.
+ * The project list of the navigation: the panel beside every page from lg,
+ * and the full-screen menu on phones. Two designs, one list.
  *
- * Interaction language:
- * - row hover: title brightens + nudges right
- * - hand-drawn blue squiggle draws in under the title (scale-x from left +
- *   fade) — mirrors the hero underline, uses pre-generated utilities only
- * - sibling dim: hovering any row fades the others (ul `group/list`)
- * - ACTIVE row (the case study you're on): the hover treatment made permanent —
- *   white title + squiggle drawn + arrow shown — and exempt from the sibling
- *   dim so it stays marked while you hover other rows.
+ * `sidebar` — THE INDEX. The panel always says where you are:
+ * - On the homepage it is the blueprint stage's index. All eleven projects,
+ *   numbered; the one on stage is marked; resting the pointer on a row brings
+ *   its figure on stage; clicking opens the case study. (A project whose case
+ *   study is not written yet says "Soon", and clicking it only shows the
+ *   figure.) The stage has no index of its own.
+ * - On a case study it marks the case study being read, and under that row
+ *   lists the case study's own sections, the one on screen marked — the same
+ *   "where am I", one level down, since there is no stage to point at. Only
+ *   projects with a case study are listed there.
+ * - On any other page (About) it is the list of case studies, nothing marked.
+ *
+ * `sheet` — the phone menu: finger-sized rows at title scale, a hand-drawn
+ * squiggle under the row of the case study being read. Touch screens never
+ * hover, so idle rows start near full strength or they read as disabled.
  *
  * Active matching: a project with `match` is active when the pathname starts
- * with that prefix (so every TikTok TV sub-feature page keeps "TikTok TV
- * Revamp" lit); otherwise it's active on an exact href match.
- *
- * Only entries with a real route get a Link. The rest render as non-links
- * until their case study exists. Client component for `usePathname`.
+ * with that prefix (every TikTok TV sub-page keeps "TikTok TV Revamp" lit);
+ * otherwise on an exact href match. Client component for `usePathname`.
  */
 
-type Project = { title: string; href?: string; match?: string };
+type Tone = "dark" | "light";
+type Size = "sidebar" | "sheet";
 
-const projects: Project[] = [
-  // `match` prefix: all /work/tiktok-tv-* sub-features light up this one row.
-  { title: "TikTok TV Revamp", href: "/work/tiktok-tv-visual", match: "/work/tiktok-tv" },
-  { title: "CloudKitchens Lutra App", href: "/work/cloudkitchens" },
-  { title: "TikTok Web Restructure", href: "/work/tiktok-restructure" },
-  { title: "TikTok Multi-Platform", href: "/work/tiktok-multi-platform" },
-  { title: "TikTok Design System", href: "/work/tiktok-design-system" },
-  { title: "TikCode Redesign", href: "/work/tiktok-tikcode" },
-  { title: "Airbnb Wishlist", href: "/work/airbnb-wishlist" },
-];
-
-// Irregular hand-drawn squiggle (uneven control points).
-const SQUIGGLE = "M2 7C16 3 30 10 46 6 62 2 78 9 98 5";
-
-// Two sizes of the same list: the desktop sidebar, and the full-screen mobile
-// menu (MobileHeader), where rows are finger-sized and set at title scale.
-// Idle rows in the sidebar sit at 55% and brighten on hover; touch screens
-// never hover, so in the sheet they start near full strength or they read as
-// disabled.
-const SIZES = {
-  sidebar: {
-    list: "mt-10 hidden flex-col lg:flex",
-    row: "py-[7px]",
-    title: "text-[13px] tracking-[-0.01em]",
-    squiggle: "-bottom-[3px] h-[7px]",
-    arrow: "size-3.5",
-    idle: { light: "text-black/55", dark: "text-white/55" },
-  },
-  // max-w keeps the active row's arrow next to its title on a wide tablet
-  // instead of out at the screen edge.
-  sheet: {
-    list: "mt-4 flex max-w-sm flex-col sm:max-w-md",
-    row: "py-2.5 sm:py-3",
-    title: "text-[1.375rem] leading-[1.2] tracking-[-0.02em] sm:text-[1.75rem]",
-    squiggle: "-bottom-[5px] h-[9px]",
-    arrow: "size-5",
-    idle: { light: "text-black/80", dark: "text-white/80" },
-  },
-};
-
-type Size = keyof typeof SIZES;
-
-const ROW_BASE = "group flex items-center gap-3 transition-opacity duration-300";
-// Non-active rows dim when any sibling is hovered; the hovered one snaps back.
-const ROW_DIMMABLE = "group-hover/list:opacity-40 hover:!opacity-100";
-
-function RowInner({
-  title,
-  hasLink,
-  active,
-  tone,
-  size,
-}: {
-  title: string;
-  hasLink: boolean;
-  active: boolean;
-  tone: "dark" | "light";
-  size: Size;
-}) {
-  const s = SIZES[size];
-  const activeColor = tone === "light" ? "text-black" : "text-white";
-  const idleColor =
-    tone === "light"
-      ? `${s.idle.light} group-hover:translate-x-0.5 group-hover:text-black`
-      : `${s.idle.dark} group-hover:translate-x-0.5 group-hover:text-white`;
-  return (
-    <>
-      <span
-        className={`relative whitespace-nowrap font-medium transition-all duration-300 ${s.title} ${
-          active ? activeColor : idleColor
-        }`}
-      >
-        {title}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 100 12"
-          preserveAspectRatio="none"
-          className={`pointer-events-none absolute left-0 w-full origin-left overflow-visible transition-all duration-500 ease-out ${s.squiggle} ${
-            active
-              ? "scale-x-100 opacity-100"
-              : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100"
-          }`}
-        >
-          <path
-            d={SQUIGGLE}
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      </span>
-      {hasLink && (
-        <span
-          className={`ml-auto flex shrink-0 items-center leading-none transition-all duration-300 ${
-            active
-              ? "translate-x-0 text-[#3b82f6]"
-              : "translate-x-1 text-transparent group-hover:translate-x-0 group-hover:text-[#3b82f6]"
-          }`}
-        >
-          <ArrowUpRight className={s.arrow} />
-        </span>
-      )}
-    </>
-  );
-}
+const isActive = (p: Project, pathname: string) => (p.match ? pathname.startsWith(p.match) : !!p.href && pathname === p.href);
 
 export function SidebarProjects({
   tone = "dark",
   size = "sidebar",
   onNavigate,
 }: {
-  tone?: "dark" | "light";
+  tone?: Tone;
   size?: Size;
   /** Called when a row is tapped — the mobile menu closes itself with it. */
   onNavigate?: () => void;
 } = {}) {
+  return size === "sheet" ? <SheetList tone={tone} onNavigate={onNavigate} /> : <IndexList tone={tone} />;
+}
+
+// ── The index (panel, from lg) ──────────────────────────────────────────────
+
+const INK = {
+  light: {
+    label: "text-black/40",
+    on: "bg-white/70 text-[#151515]",
+    idle: "text-black/50 hover:text-black",
+    soon: "text-black/35 hover:text-black/60",
+    number: "text-black/35",
+    numberOn: "text-black/70",
+    tag: "text-black/35",
+    rule: "border-black/10",
+    mark: "border-black/40",
+    sectionOn: "text-[#151515]",
+    sectionIdle: "text-black/45 hover:text-black",
+  },
+  dark: {
+    label: "text-white/40",
+    on: "bg-white/[0.09] text-white",
+    idle: "text-white/50 hover:text-white",
+    soon: "text-white/30 hover:text-white/55",
+    number: "text-white/30",
+    numberOn: "text-white/65",
+    tag: "text-white/30",
+    rule: "border-white/12",
+    mark: "border-white/45",
+    sectionOn: "text-white",
+    sectionIdle: "text-white/45 hover:text-white",
+  },
+};
+
+const subscribeFocus = (listener: () => void) => {
+  engine.focusListeners.add(listener);
+  return () => {
+    engine.focusListeners.delete(listener);
+  };
+};
+
+function IndexList({ tone }: { tone: Tone }) {
   const pathname = usePathname();
+  const home = pathname === "/";
+  const ink = INK[tone];
+  // The figure on stage (homepage only; null until the stage is up).
+  const onStage = useSyncExternalStore(
+    subscribeFocus,
+    () => engine.focus,
+    () => null,
+  );
+  // Resting on a row, not brushing past it, brings its figure on.
+  const timer = useRef(0);
+  const rest = (id: string) => {
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => engine.select?.(id), 160);
+  };
+  const leave = () => window.clearTimeout(timer.current);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const isActive = (p: Project) =>
-    p.match ? pathname.startsWith(p.match) : !!p.href && pathname === p.href;
-
+  const rows = home ? PROJECTS : PROJECTS.filter((p) => p.href);
   return (
-    <ul className={`group/list ${SIZES[size].list}`}>
-      {projects.map((p) => {
-        const active = isActive(p);
-        const rowClass = `${ROW_BASE} ${SIZES[size].row} ${active ? "" : ROW_DIMMABLE}`;
-        return (
-          <li key={p.title}>
-            {p.href ? (
-              <Link
-                href={p.href}
-                className={rowClass}
-                aria-label={`Open ${p.title} case study`}
-                aria-current={active ? "page" : undefined}
-                onClick={onNavigate}
-              >
-                <RowInner title={p.title} hasLink active={active} tone={tone} size={size} />
-              </Link>
-            ) : (
-              <span className={`${rowClass} cursor-default`}>
-                <RowInner title={p.title} hasLink={false} active={active} tone={tone} size={size} />
+    <div className="hidden pb-7 pt-10 lg:block">
+      <p className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${ink.label}`}>Work</p>
+      {/* Pulled out by the rows' own padding, so the numbers line up with the
+          logo and the mark of the current row reaches a little past the text. */}
+      <ol className="-mx-2 mt-2 flex flex-col" onPointerLeave={home ? leave : undefined}>
+        {rows.map((p) => {
+          const on = home ? (onStage ?? PROJECTS[0].id) === p.id : isActive(p, pathname);
+          const row = `group flex w-full items-center gap-3 rounded-xl px-2 py-[7px] text-left text-[13px] tracking-[-0.01em] transition-colors duration-200 focus-visible:outline-2 focus-visible:-outline-offset-2 ${
+            on ? ink.on : p.href ? ink.idle : ink.soon
+          }`;
+          const inner = (
+            <>
+              <span className={`w-5 shrink-0 text-[10px] font-semibold tabular-nums tracking-[0.08em] ${on ? ink.numberOn : ink.number}`}>
+                {String(PROJECTS.indexOf(p) + 1).padStart(2, "0")}
               </span>
-            )}
+              <span className="min-w-0 flex-1 truncate">{p.title}</span>
+              {p.href ? (
+                <ArrowUpRight className={`size-3.5 shrink-0 transition-opacity duration-200 ${on ? "opacity-60" : "opacity-0 group-hover:opacity-60"}`} aria-hidden="true" />
+              ) : (
+                <span className={`shrink-0 text-[9px] font-semibold uppercase tracking-[0.12em] ${ink.tag}`}>Soon</span>
+              )}
+            </>
+          );
+          return (
+            <li key={p.id}>
+              {p.href ? (
+                <Link
+                  href={p.href}
+                  aria-label={`Open ${p.title} case study`}
+                  aria-current={on ? (home ? "true" : "page") : undefined}
+                  data-cursor={home ? "view" : undefined}
+                  onPointerEnter={home ? () => rest(p.id) : undefined}
+                  onFocus={home ? () => engine.select?.(p.id) : undefined}
+                  className={row}
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onPointerEnter={() => rest(p.id)}
+                  onFocus={() => engine.select?.(p.id)}
+                  onClick={() => engine.select?.(p.id)}
+                  className={row}
+                >
+                  {inner}
+                </button>
+              )}
+              {on && !home ? <Sections tone={tone} /> : null}
+              {on && !home ? <KeepInView /> : null}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+/** Inside the panel's scrolling index only: never moves the page. */
+function revealInPanel(el: HTMLElement | null, smooth: boolean) {
+  const panel = el?.closest<HTMLElement>("[data-panel-index]");
+  if (!el || !panel || panel.scrollHeight <= panel.clientHeight) return;
+  const box = panel.getBoundingClientRect();
+  const row = el.getBoundingClientRect();
+  // Clear of the fades at the two edges.
+  const over = row.top - (box.top + 34);
+  const under = row.bottom - (box.bottom - 44);
+  const by = over < 0 ? over : under > 0 ? under : 0;
+  if (by !== 0) panel.scrollBy({ top: by, behavior: smooth ? "smooth" : "auto" });
+}
+
+/** On a short window the row of the case study being read may start out of sight. */
+function KeepInView() {
+  const mark = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    revealInPanel(mark.current?.parentElement ?? null, false);
+  }, []);
+  return <span ref={mark} hidden />;
+}
+
+type SectionMark = { el: HTMLElement; title: string };
+
+/**
+ * The sections of the case study being read, under its row: which one is on
+ * screen, and a way to jump to another. Found the same way the "next
+ * section" pill finds them — every `section[data-case-section]` with an h2.
+ */
+function Sections({ tone }: { tone: Tone }) {
+  const ink = INK[tone];
+  const [sections, setSections] = useState<SectionMark[]>([]);
+  const [current, setCurrent] = useState(-1);
+  const rows = useRef<(HTMLButtonElement | null)[]>([]);
+  // As the page scrolls on, the section being read stays in sight in the panel.
+  useEffect(() => {
+    revealInPanel(rows.current[current] ?? null, true);
+  }, [current]);
+
+  useEffect(() => {
+    const found = Array.from(document.querySelectorAll<HTMLElement>("article section[data-case-section]"))
+      .map((el) => ({ el, title: el.querySelector("h2")?.textContent?.trim() ?? "" }))
+      .filter((s) => s.title.length > 0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSections(found);
+    if (found.length === 0) return;
+
+    // The section on screen is the last one whose top has passed a line a
+    // third of the way down; at the very bottom of the page it is the last.
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.innerHeight * 0.35;
+      let at = -1;
+      for (let i = 0; i < found.length; i++) {
+        if (found[i].el.getBoundingClientRect().top <= line) at = i;
+        else break;
+      }
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) at = found.length - 1;
+      setCurrent((before) => (before === at ? before : at));
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  if (sections.length < 2) return null;
+  return (
+    // The rule hangs from the middle of the row's number (its two digits run
+    // from 8px to 21.3px, so 14px puts the 1px line on their centre), and the
+    // section titles start where the project titles do (40px).
+    <ol className={`mb-1.5 ml-[14px] mt-1 flex flex-col border-l ${ink.rule}`} aria-label="Sections of this case study">
+      {sections.map((section, i) => (
+        <li key={section.title}>
+          <button
+            ref={(el) => {
+              rows.current[i] = el;
+            }}
+            type="button"
+            onClick={() => section.el.scrollIntoView({ behavior: "smooth", block: "start" })}
+            aria-current={i === current ? "true" : undefined}
+            className={`-ml-px block w-full truncate border-l py-1 pl-[26px] pr-2 text-left text-[12px] leading-[17px] tracking-[-0.01em] transition-colors duration-200 focus-visible:outline-2 focus-visible:-outline-offset-2 ${
+              // The section being read: its stretch of the rule a shade
+              // darker, not black — a mark, not a scrollbar.
+              i === current ? `${ink.mark} ${ink.sectionOn}` : `border-transparent ${ink.sectionIdle}`
+            }`}
+          >
+            {section.title}
+          </button>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+// ── The phone menu ──────────────────────────────────────────────────────────
+
+// Irregular hand-drawn squiggle (uneven control points).
+const SQUIGGLE = "M2 7C16 3 30 10 46 6 62 2 78 9 98 5";
+
+function SheetList({ tone, onNavigate }: { tone: Tone; onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const activeColor = tone === "light" ? "text-black" : "text-white";
+  const idleColor =
+    tone === "light"
+      ? "text-black/80 group-hover:translate-x-0.5 group-hover:text-black"
+      : "text-white/80 group-hover:translate-x-0.5 group-hover:text-white";
+  return (
+    // max-w keeps the active row's arrow next to its title on a wide tablet
+    // instead of out at the screen edge. Hovering a row (a tablet with a
+    // pointer) dims its siblings and draws the squiggle in.
+    <ul className="group/list mt-4 flex max-w-sm flex-col sm:max-w-md">
+      {PROJECTS.filter((p) => p.href).map((p) => {
+        const active = isActive(p, pathname);
+        return (
+          <li key={p.id}>
+            <Link
+              href={p.href!}
+              className={`group flex items-center gap-3 py-2.5 transition-opacity duration-300 sm:py-3 ${
+                active ? "" : "group-hover/list:opacity-40 hover:!opacity-100"
+              }`}
+              aria-label={`Open ${p.title} case study`}
+              aria-current={active ? "page" : undefined}
+              onClick={onNavigate}
+            >
+              <span
+                className={`relative whitespace-nowrap text-[1.375rem] font-medium leading-[1.2] tracking-[-0.02em] transition-all duration-300 sm:text-[1.75rem] ${
+                  active ? activeColor : idleColor
+                }`}
+              >
+                {p.title}
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 100 12"
+                  preserveAspectRatio="none"
+                  className={`pointer-events-none absolute -bottom-[5px] left-0 h-[9px] w-full origin-left overflow-visible transition-all duration-500 ease-out ${
+                    active ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100"
+                  }`}
+                >
+                  <path d={SQUIGGLE} fill="none" stroke="#3b82f6" strokeWidth={2} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                </svg>
+              </span>
+              <span
+                className={`ml-auto flex shrink-0 items-center leading-none transition-all duration-300 ${
+                  active ? "translate-x-0 text-[#3b82f6]" : "translate-x-1 text-transparent group-hover:translate-x-0 group-hover:text-[#3b82f6]"
+                }`}
+              >
+                <ArrowUpRight className="size-5" />
+              </span>
+            </Link>
           </li>
         );
       })}
