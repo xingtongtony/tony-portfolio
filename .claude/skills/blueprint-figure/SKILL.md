@@ -38,6 +38,17 @@ Two more that are his decisions, not style:
   (a restructure, a cross-platform system), clay blocks stand in for the UI.
   Crop inside any frame already present in the source image. For motifs
   that turn to noise at model scale, sculpt the key forms in relief.
+- **Approved render references must be verified in the real scene.** Compare
+  screenshots at the reference viewport, including camera, silhouette, colour,
+  bevels, shadows and materials. An image-generation concept is not proof that
+  the WebGL implementation matches. Finish and show one real scene before
+  extending its treatment to the other figures.
+- **Environment pieces follow the subject.** Use ordinary parts and the same
+  height-sweep build/rewind shader and sway parent; never scale their height to
+  imitate growth. `drawing: false` omits their ink and discards their unbuilt
+  surfaces and shadows. Leave real clearance between freestanding objects,
+  including during the carousel's turn. FIG. 1's approved double surrounds
+  use a smooth satin-resin finish and reference colours rather than matte grain.
 
 ## Procedure
 

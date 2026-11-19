@@ -171,6 +171,35 @@ const blendCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
 blendCamera.position.z = 1;
 const bufferSize = new THREE.Vector2();
 
+/** Broad photographic softboxes, generated locally for the TV reference look. */
+function referenceStudio(gl: THREE.WebGLRenderer) {
+  const room = new THREE.Scene();
+  room.background = new THREE.Color("#b6b3b0");
+  const geometry = new THREE.PlaneGeometry(1, 1);
+  const panels = [
+    { at: [-5, 7, 6], size: [7, 5], strength: 5.5, color: "#fff5e9" },
+    { at: [6, 4, 3], size: [4, 7], strength: 3.1, color: "#eef1ff" },
+    { at: [1, 8, -5], size: [5, 4], strength: 4, color: "#fffaf2" },
+    { at: [-1, 1, 8], size: [6, 4], strength: 1.2, color: "#ffffff" },
+  ];
+  for (const panel of panels) {
+    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(panel.color).multiplyScalar(panel.strength), side: THREE.DoubleSide });
+    const light = new THREE.Mesh(geometry, material);
+    light.position.fromArray(panel.at);
+    light.scale.set(panel.size[0], panel.size[1], 1);
+    light.lookAt(0, 0, 0);
+    room.add(light);
+  }
+  const generator = new THREE.PMREMGenerator(gl);
+  const target = generator.fromScene(room, 0.035);
+  geometry.dispose();
+  room.traverse((node) => {
+    if (node instanceof THREE.Mesh) (node.material as THREE.Material).dispose();
+  });
+  generator.dispose();
+  return target;
+}
+
 export type SceneProps = {
   focus: string | null;
   reducedMotion: boolean;
@@ -185,6 +214,8 @@ export type SceneProps = {
 export default function Scene(props: SceneProps) {
   const atmosphere = useMemo(() => createStudioAtmosphere(), []);
   const bounce = useRef<THREE.HemisphereLight>(null);
+  const floorShadowRef = useRef<THREE.ShadowMaterial>(null);
+  const mapsRef = useRef<{ standard: THREE.Texture; reference: THREE.Texture } | null>(null);
   return (
     <Canvas
       orthographic
@@ -197,8 +228,8 @@ export default function Scene(props: SceneProps) {
       // sticker colours true instead of washing them out like a filmic curve.
       gl={{ antialias: true, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1 }}
     >
-      <Studio atmosphere={atmosphere} bounce={bounce} />
-      <Stage {...props} atmosphere={atmosphere} bounce={bounce} />
+      <Studio atmosphere={atmosphere} bounce={bounce} mapsRef={mapsRef} floorShadowRef={floorShadowRef} />
+      <Stage {...props} atmosphere={atmosphere} bounce={bounce} mapsRef={mapsRef} floorShadowRef={floorShadowRef} />
     </Canvas>
   );
 }
@@ -221,9 +252,11 @@ export default function Scene(props: SceneProps) {
 type StudioProps = {
   atmosphere: StudioAtmosphere;
   bounce: RefObject<THREE.HemisphereLight | null>;
+  mapsRef: RefObject<{ standard: THREE.Texture; reference: THREE.Texture } | null>;
+  floorShadowRef: RefObject<THREE.ShadowMaterial | null>;
 };
 
-function Studio({ atmosphere, bounce }: StudioProps) {
+function Studio({ atmosphere, bounce, mapsRef, floorShadowRef }: StudioProps) {
   const gl = useThree((state) => state.gl);
   const environment = useMemo(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
@@ -233,7 +266,15 @@ function Studio({ atmosphere, bounce }: StudioProps) {
     pmrem.dispose();
     return texture;
   }, [gl]);
+  const reference = useMemo(() => referenceStudio(gl), [gl]);
   useEffect(() => () => environment.dispose(), [environment]);
+  useEffect(() => {
+    mapsRef.current = { standard: environment, reference: reference.texture };
+    return () => {
+      mapsRef.current = null;
+      reference.dispose();
+    };
+  }, [environment, mapsRef, reference]);
 
   return (
     <>
@@ -290,13 +331,13 @@ function Studio({ atmosphere, bounce }: StudioProps) {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
         {/* Long enough for the whole row. */}
         <planeGeometry args={[400, 400]} />
-        <shadowMaterial transparent color="#584f67" opacity={0.40} />
+        <shadowMaterial ref={floorShadowRef} transparent color="#584f67" opacity={0.40} />
       </mesh>
     </>
   );
 }
 
-function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt, atmosphere, bounce }: SceneProps & StudioProps) {
+function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt, atmosphere, bounce, mapsRef, floorShadowRef }: SceneProps & StudioProps) {
   const figs = useMemo<BuiltFigure[]>(() => FIGURES.map((figure) => createFigure(figure, atmosphere)), [atmosphere]);
   const positions = useMemo(() => FIGURES.map((_, i) => slotPosition(i)), []);
   const swayRefs = useRef<(THREE.Group | null)[]>([]);
@@ -500,9 +541,13 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       for (const [partId, rt] of Object.entries(fig.parts)) {
         engine.parts[`${fig.def.id}/${partId}`] = rt;
       }
-      box.setFromObject(fig.group);
+      box.makeEmpty();
+      for (const part of fig.def.parts) {
+        if (part.drawing !== false) box.union(new THREE.Box3().setFromObject(fig.parts[part.id].object));
+      }
       const center = box.getCenter(new THREE.Vector3());
       centers.current[i] = center;
+      box.setFromObject(fig.group);
       box.getSize(extent);
       const projectedHalfWidth = (extent.x * Math.abs(RIGHT.x) + extent.z * Math.abs(RIGHT.z)) / 2;
       const centerOffset = Math.abs(center.clone().sub(positions[i]).dot(RIGHT));
@@ -627,6 +672,17 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     const figureFoot = scratch.copy(positions[0]).addScaledVector(RIGHT, sc.pos * GAP).project(cam);
     const currentStudio = studioThemes[currentIndex];
     const nextStudio = studioThemes[nextIndex];
+    const referenceWeight = mix(currentIndex === 0 ? 1 : 0, nextIndex === 0 ? 1 : 0, blend);
+    if (floorShadowRef.current) floorShadowRef.current.opacity = mix(0.4, 0.62, referenceWeight);
+    if (mapsRef.current) {
+      state.scene.environment = referenceWeight > 0.5 ? mapsRef.current.reference : mapsRef.current.standard;
+      state.scene.environmentIntensity = mix(0.22, 0.34, referenceWeight);
+    }
+    if (shadowLights[0]) {
+      shadowLights[0].intensity = mix(1.35, 1.55, referenceWeight);
+      shadowLights[0].shadow.normalBias = mix(0.012, 0.006, referenceWeight);
+      shadowLights[0].shadow.radius = mix(0.22, 0.34, referenceWeight);
+    }
     atmosphere.uStudioSweep.value.set((figureFoot.x + 1) / 2, (figureFoot.y + 1) / 2, Math.max(0.12, cam.zoom * 1.04 / h));
     atmosphere.uStudioWall.value.lerpVectors(currentStudio.wall, nextStudio.wall, blend).lerp(studioWhite, opening * 0.65);
     // The page around the canvas is the same sheet of paper: hand its colour
@@ -832,14 +888,17 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       dirty = true;
     }
     if (dirty) seen.count = 0;
-    if (seen.count < SAMPLES) {
+    const sampleCount = referenceWeight > 0.5 ? 96 : SAMPLES;
+    if (seen.count < sampleCount) {
       const k = seen.count;
       const [key, sky] = shadowLights;
       if (key) key.shadow.radius = (key.shadow.radius % 1) + k;
       if (sky) {
         // Sample k of a cone around straight up. Sample 0 is straight up,
         // which is also what every moving frame uses.
-        const cos = 1 - (k / SAMPLES) * (1 - Math.cos(SKY_SPREAD));
+        const sample = referenceWeight > 0.5 && k > 0 ? (k * 0.61803398875) % 1 : k / sampleCount;
+        const spread = mix(SKY_SPREAD, 0.72, referenceWeight);
+        const cos = 1 - sample * (1 - Math.cos(spread));
         const sin = Math.sqrt(1 - cos * cos);
         const around = k * 2.3999632;
         sky.position.set(sin * Math.cos(around) * 20, cos * 20, sin * Math.sin(around) * 20).add(sky.target.position);
@@ -870,7 +929,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       preview.map.value = seen.texture;
       preview.cssPixel.value.set(1 / canvasW, 1 / h);
       preview.slotCenter.value = (v.x + 1) / 2;
-      preview.slotSpacing.value = GAP * cam.zoom / w;
+      preview.slotSpacing.value = GAP * cam.zoom / canvasW;
       preview.slotProgress.value = sc.pos - lo;
       preview.focusHalfWidth.value = focusHalfWidths.current[wrap(Math.round(sc.pos), count)] ?? 0;
       blendQuad.material = previewFocusMaterial;

@@ -62,6 +62,16 @@ const FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
   led: { roughness: 0.4, metalness: 0 },
 };
 
+// The TV reference uses smooth satin resin, with broad, restrained highlights.
+// Keep this separate from the other exhibits' matte clay recipes.
+const TV_FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
+  clay: { roughness: 0.44, metalness: 0, specularIntensity: 0.5, clearcoat: 0.2, clearcoatRoughness: 0.36 },
+  soft: { roughness: 0.34, metalness: 0, specularIntensity: 0.5, clearcoat: 0.24, clearcoatRoughness: 0.32 },
+  print: { roughness: 0.9, metalness: 0, specularIntensity: 0.2 },
+  screen: { roughness: 0.18, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.2 },
+  led: { roughness: 0.35, metalness: 0 },
+};
+
 /**
  * Clay is not perfectly smooth. A fine noise, fixed to the object, tilts the
  * shading normal a few degrees, so matte surfaces catch the light with a
@@ -108,10 +118,13 @@ function fillMaterial(
   fade: { value: number },
   origin: { value: THREE.Vector3 },
   atmosphere: StudioAtmosphere,
+  reference: boolean,
+  drawing: boolean,
+  reflectance: number,
 ) {
   const params: THREE.MeshPhysicalMaterialParameters = {
-    ...FINISHES[finish],
-    color,
+    ...(reference ? TV_FINISHES : FINISHES)[finish],
+    color: new THREE.Color(color).multiplyScalar(reflectance),
     // Push the fill back a hair so the ink lines always win the depth test.
     polygonOffset: true,
     polygonOffsetFactor: 1,
@@ -135,14 +148,22 @@ function fillMaterial(
     params.emissive = color;
     params.emissiveIntensity = 0.045;
   }
+  if (reference && !drawing && (finish === "clay" || finish === "soft")) {
+    // The freestanding surrounds receive an unobstructed softbox fill.
+    params.envMapIntensity = 2.8;
+    params.emissiveIntensity = 0.45;
+    params.clearcoat = 0.3;
+    params.clearcoatRoughness = 0.3;
+  }
   const m = new THREE.MeshPhysicalMaterial(params);
+  m.customProgramCacheKey = () => `figure-fill:${reference ? "tv" : "clay"}:${drawing ? "drawing" : "environment"}`;
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uH = rt.h;
     shader.uniforms.uBandOn = rt.bandOn;
     shader.uniforms.uBand = rt.band;
     Object.assign(shader.uniforms, atmosphere);
     shader.uniforms.uFade = fade;
-    shader.uniforms.uGrain = { value: GRAIN[finish] };
+    shader.uniforms.uGrain = { value: reference ? 0 : GRAIN[finish] };
     shader.uniforms.uOrigin = origin;
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nvarying vec3 vFig;\nuniform vec3 uOrigin;")
@@ -151,6 +172,7 @@ function fillMaterial(
         WORLD_Y_VERTEX + "\nvGrainPos = position;\nvFig = (modelMatrix * vec4(transformed, 1.0)).xyz - uOrigin;",
       );
     shader.fragmentShader = shader.fragmentShader
+      .replace("#include <clipping_planes_fragment>", "#include <clipping_planes_fragment>" + (drawing ? "" : "\nif (vWorldY > uH) discard;"))
       .replace(
         "#include <common>",
         "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nvarying vec3 vFig;\nuniform float uH;\nuniform float uBandOn;\nuniform float uFade;\nuniform float uGrain;\nuniform vec3 uBand;\n" +
@@ -168,8 +190,10 @@ function fillMaterial(
           // Light falls off across the figure, as it does under a real soft
           // box: brightest on what is nearest the key light, dimmer on what
           // is furthest from it and close to the ground.
-          "float reach = dot(vFig - vec3(0.0, 0.9, 0.0), vec3(-0.304, 0.852, 0.426));",
-          "gl_FragColor.rgb *= mix(0.84, 1.09, smoothstep(-1.5, 1.5, reach));",
+          ...(reference ? [] : [
+            "float reach = dot(vFig - vec3(0.0, 0.9, 0.0), vec3(-0.304, 0.852, 0.426));",
+            "gl_FragColor.rgb *= mix(0.84, 1.09, smoothstep(-1.5, 1.5, reach));",
+          ]),
           "float built = 1.0 - smoothstep(uH - 0.003, uH + 0.003, vWorldY);",
           "float band = uBandOn * (1.0 - smoothstep(0.012, 0.03, abs(vWorldY - uH)));",
           "if (built < 1.0 || band > 0.0 || uFade > 0.0) {",
@@ -296,16 +320,41 @@ function polygon(pts: [number, number][], r = 0): THREE.Shape {
 }
 
 /** Extrude centred on z, total thickness `t`, with a rounded bevel inside that thickness. */
-function extrude(shape: THREE.Shape, t: number, bevel: number, curveSegments: number): THREE.BufferGeometry {
+function extrude(shape: THREE.Shape, t: number, bevel: number, curveSegments: number, bevelSegments = 6): THREE.BufferGeometry {
   const g = new THREE.ExtrudeGeometry(shape, {
     depth: t - 2 * bevel,
     bevelEnabled: bevel > 0,
     bevelSize: bevel,
     bevelThickness: bevel,
-    bevelSegments: 6,
+    bevelSegments,
     curveSegments,
   });
   g.translate(0, 0, -(t - 2 * bevel) / 2);
+  return g;
+}
+
+/** Preserve planar caps and weld fine bevel normals without coarse position bins. */
+function referenceExtrusion(g: THREE.BufferGeometry, thickness: number): THREE.BufferGeometry {
+  const positions = g.getAttribute("position");
+  const normals = g.getAttribute("normal");
+  const sums = new Map<string, THREE.Vector3>();
+  const keys: string[] = [];
+  for (let i = 0; i < positions.count; i++) {
+    const key = [positions.getX(i), positions.getY(i), positions.getZ(i)].map(v => Math.round(v * 1e6)).join(",");
+    keys.push(key);
+    const sum = sums.get(key) ?? new THREE.Vector3();
+    sum.add(new THREE.Vector3(normals.getX(i), normals.getY(i), normals.getZ(i)));
+    sums.set(key, sum);
+  }
+  for (const normal of sums.values()) normal.normalize();
+  for (let i = 0; i < positions.count; i++) {
+    const z = positions.getZ(i);
+    const normal = sums.get(keys[i])!;
+    // Both the flat cap and the last bevel ring meet with the cap normal.
+    if (Math.abs(Math.abs(z) - thickness / 2) < 1e-5) normals.setXYZ(i, 0, 0, Math.sign(z));
+    else normals.setXYZ(i, normal.x, normal.y, normal.z);
+  }
+  normals.needsUpdate = true;
   return g;
 }
 
@@ -381,8 +430,8 @@ function softBoxLines(w: number, h: number, d: number, r: number): number[] {
 type Built = { mesh: THREE.BufferGeometry; edges: LineSegmentsGeometry; hull: boolean };
 const cache = new Map<string, Built>();
 
-function shapeGeometry(s: ShapeDef): Built {
-  const key = JSON.stringify({ ...s, pos: 0, rot: 0, color: 0, finish: 0, map: 0 });
+function shapeGeometry(s: ShapeDef, reference = false): Built {
+  const key = JSON.stringify({ ...s, pos: 0, rot: 0, color: 0, finish: 0, map: 0, reference });
   const hit = cache.get(key);
   if (hit) return hit;
 
@@ -400,7 +449,7 @@ function shapeGeometry(s: ShapeDef): Built {
       hull = false;
     } else {
       const r = bevelFor(s.bevel, smallest, smallest / 2);
-      mesh = new RoundedBoxGeometry(w, h, d, 6, r);
+      mesh = new RoundedBoxGeometry(w, h, d, reference ? 10 : 6, r);
       lines = softBoxLines(w, h, d, r);
     }
   } else if (s.k === "slab") {
@@ -408,7 +457,8 @@ function shapeGeometry(s: ShapeDef): Built {
     const b = s.t < 0.02 ? 0 : bevelFor(s.bevel, Math.min(s.t, w, h), Math.min(s.t, w, h) / 2);
     // The wall's corners can never be tighter than the bevel that rounds them.
     const r = Math.max(s.r, b);
-    mesh = toCreasedNormals(extrude(roundedRect(w - 2 * b, h - 2 * b, r - b), s.t, b, 20), 0.7);
+    const slab = extrude(roundedRect(w - 2 * b, h - 2 * b, r - b), s.t, b, reference ? 32 : 20, reference ? 10 : 6);
+    mesh = reference && b > 0 ? referenceExtrusion(slab, s.t) : toCreasedNormals(slab, 0.7);
     fitUv(mesh, w, h);
     const k = b * K;
     lines = edgePositions(extrude(roundedRect(w - 2 * k, h - 2 * k, r - k), s.t - 2 * k, 0, 14));
@@ -428,16 +478,19 @@ function shapeGeometry(s: ShapeDef): Built {
       pts.push(new THREE.Vector2(s.r - b + Math.cos(a) * b, s.h / 2 - b + Math.sin(a) * b));
     }
     if (s.r - b > 1e-4) pts.push(new THREE.Vector2(0, s.h / 2));
-    mesh = toCreasedNormals(new THREE.LatheGeometry(pts, 56), 0.7);
+    const lathe = new THREE.LatheGeometry(pts, reference ? 80 : 56);
+    // LatheGeometry already has analytic smooth profile normals. Coarse
+    // crease welding merges neighbouring rings on small TV buttons/leaves.
+    mesh = reference ? lathe : toCreasedNormals(lathe, 0.7);
     // Rim lines, unless the end is so round that it is a dome.
     if (b < s.r * 0.6) {
       const k = b * K;
       lines = edgePositions(new THREE.CylinderGeometry(s.r - k, s.r - k, s.h - 2 * k, 56));
     }
   } else if (s.k === "ball") {
-    mesh = new THREE.SphereGeometry(s.r, 48, 32);
+    mesh = new THREE.SphereGeometry(s.r, reference ? 64 : 48, reference ? 40 : 32);
   } else if (s.k === "torus") {
-    mesh = new THREE.TorusGeometry(s.R, s.tube, 20, 64);
+    mesh = new THREE.TorusGeometry(s.R, s.tube, reference ? 32 : 20, reference ? 96 : 64);
   } else if (s.k === "arch") {
     // A circular arc through the two feet and the top.
     const half = s.span / 2;
@@ -451,7 +504,8 @@ function shapeGeometry(s: ShapeDef): Built {
     const b = s.t < 0.02 ? 0 : bevelFor(s.bevel, s.t, s.t / 2);
     const outline = polygon(s.pts, s.r);
     const flatGeo = extrude(outline, s.t, 0, 8);
-    mesh = b > 0 ? toCreasedNormals(extrude(outline, s.t, b, 8), 0.7) : flatGeo;
+    const poly = b > 0 ? extrude(outline, s.t, b, reference ? 16 : 8, reference ? 10 : 6) : flatGeo;
+    mesh = b > 0 ? (reference ? referenceExtrusion(poly, s.t) : toCreasedNormals(poly, 0.7)) : flatGeo;
     lines = edgePositions(flatGeo);
     hull = s.t >= 0.04;
   }
@@ -476,6 +530,7 @@ export type BuiltFigure = {
 };
 
 export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): BuiltFigure {
+  const reference = def.id === "tv";
   const group = new THREE.Group();
   const parts: Record<string, PartRuntime> = {};
   const fade = { value: 0 };
@@ -483,6 +538,7 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
   const casters: THREE.Mesh[] = [];
 
   for (const part of def.parts) {
+    const drawing = part.drawing !== false;
     const pg = new THREE.Group();
     if (part.frame) {
       pg.position.set(part.frame.pos[0], part.frame.pos[1], part.frame.pos[2]);
@@ -505,13 +561,14 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
     const hullInk = hullMaterial(rt, fade, atmosphere);
 
     for (const s of part.shapes) {
-      const { mesh: geo, edges, hull } = shapeGeometry(s);
+      const { mesh: geo, edges, hull } = shapeGeometry(s, reference);
       const color = s.color ?? part.color;
       const finish = s.finish ?? part.finish ?? "clay";
       const fillKey = `${color}|${finish}|${s.map ?? ""}`;
       let fill = fills.get(fillKey);
       if (!fill) {
-        fill = fillMaterial(color, finish, s.map, rt, fade, origin, atmosphere);
+        const reflectance = reference ? (part.id === "rug" ? 0.85 : part.id === "tv-body" ? 1.45 : 1) : 1;
+        fill = fillMaterial(color, finish, s.map, rt, fade, origin, atmosphere, reference, drawing, reflectance);
         fills.set(fillKey, fill);
       }
       const mesh = new THREE.Mesh(geo, fill);
@@ -520,8 +577,8 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.customDepthMaterial = depth;
-      if (edges.attributes.instanceStart) mesh.add(new LineSegments2(edges, line));
-      if (hull) mesh.add(new THREE.Mesh(geo, hullInk));
+      if (drawing && edges.attributes.instanceStart) mesh.add(new LineSegments2(edges, line));
+      if (drawing && hull) mesh.add(new THREE.Mesh(geo, hullInk));
       casters.push(mesh);
       pg.add(mesh);
     }

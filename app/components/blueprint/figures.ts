@@ -94,6 +94,8 @@ export type PartDef = {
   /** Default colour and finish for the part's shapes. */
   color: string;
   finish?: Finish;
+  /** Supporting objects are revealed directly as solids, with no patent ink. */
+  drawing?: boolean;
   /** Optional local frame, so shapes can be authored on a tilted surface. */
   frame?: { pos: Vec3; rot: Vec3; scale?: number };
   shapes: ShapeDef[];
@@ -387,6 +389,29 @@ const QR_FRAME = {
   rot: [-0.18, 0.3, 0] as Vec3,
 };
 const TV_ANGLE = { pos: [0, 0, -0.02] as Vec3, rot: [0, 0.18, 0] as Vec3 };
+// Sampled from the approved TV reference; the surrounds have their own resin tint.
+const TV_FOCUS = { coral: "#FF835F", yellow: "#FFDC8E" };
+
+/** Constant-width upright focus surround, open at the floor. */
+function tvFocusFrame(width: number, height: number, stroke: number, radius: number): ShapeDef {
+  const half = width / 2;
+  const points: [number, number][] = [[-half, 0], [-half, height - radius]];
+  const arc = (cx: number, cy: number, r: number, start: number, end: number) => {
+    for (let i = 1; i <= 24; i++) {
+      const angle = start + ((end - start) * i) / 24;
+      points.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
+    }
+  };
+  arc(-half + radius, height - radius, radius, Math.PI, Math.PI / 2);
+  points.push([half - radius, height]);
+  arc(half - radius, height - radius, radius, Math.PI / 2, 0);
+  points.push([half, 0], [half - stroke, 0], [half - stroke, height - radius]);
+  arc(half - radius, height - radius, radius - stroke, 0, Math.PI / 2);
+  points.push([-half + radius, height - stroke]);
+  arc(-half + radius, height - radius, radius - stroke, Math.PI / 2, Math.PI);
+  points.push([-half + stroke, 0]);
+  return { k: "poly", pts: points, t: 0.11, bevel: 0.026, pos: [0, 0.026, 0] };
+}
 
 /** Two centered tiers with an even setback, sized to fit each figure's props. */
 function plinth(c: Palette, [width, depth]: [number, number] = [2.8, 1.9], top = 0.107): ShapeDef[] {
@@ -529,22 +554,24 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
               k: "box",
               size: [2.34, 0.4, 0.74],
               pos: [0, 0.42, 0],
-              bevel: 0.045,
+              bevel: 0.055,
             },
             // Two drawers: raised fronts and their pulls.
             {
               k: "slab",
               size: [1.0, 0.25],
-              t: 0.03,
+              t: 0.04,
               r: 0.07,
               pos: [-0.6, 0.42, 0.376],
+              bevel: 0.012,
             },
             {
               k: "slab",
               size: [1.0, 0.25],
-              t: 0.03,
+              t: 0.04,
               r: 0.07,
               pos: [0.6, 0.42, 0.376],
+              bevel: 0.012,
             },
             {
               k: "slab",
@@ -847,6 +874,35 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
               rot: flat(0.04),
               color: WHITE,
             },
+          ],
+        },
+        {
+          id: "focus-outer",
+          label: "Outer focus surround",
+          agent: 2,
+          color: TV_FOCUS.coral,
+          drawing: false,
+          frame: { pos: [-0.37, 0, -1.07], rot: [0, 0.319, 0] },
+          shapes: [tvFocusFrame(3.72, 2.505, 0.15, 0.33)],
+        },
+        {
+          id: "focus-inner",
+          label: "Inner focus surround",
+          agent: 3,
+          color: TV_FOCUS.yellow,
+          drawing: false,
+          frame: { pos: [-0.36, 0, -0.92], rot: [0, 0.319, 0] },
+          shapes: [tvFocusFrame(3.08, 2.175, 0.14, 0.29)],
+        },
+        {
+          id: "focus-plaque",
+          label: "Focus",
+          agent: 1,
+          color: c.coral,
+          drawing: false,
+          shapes: [
+            { k: "slab", size: [0.42, 0.18], t: 0.055, r: 0.025, bevel: 0.009, pos: [-1.01, 0.095, 1.04] },
+            { k: "slab", size: [0.36, 0.13], t: 0.004, r: 0.012, pos: [-1.01, 0.095, 1.0715], finish: "print", map: `label:Focus|${c.coral}|${c.white}|2.77` },
           ],
         },
       ],
