@@ -26,6 +26,8 @@ import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { AGENTS, INK, type FigureDef, type Finish, type ShapeDef } from "./figures";
 import { displayRgb, STUDIO_ATMOSPHERE, type StudioAtmosphere } from "./studio-atmosphere";
 import { getTexture } from "./textures";
+import { createIndirectUniforms, type ReferenceIndirectUniforms } from "./reference-irradiance";
+import { INDIRECT_FRAGMENT, INDIRECT_LIGHTING, INDIRECT_VERTEX } from "./reference-irradiance-shader";
 
 /** What the build engine reads and writes for one part. */
 export type PartRuntime = {
@@ -121,6 +123,7 @@ function fillMaterial(
   reference: boolean,
   drawing: boolean,
   reflectance: number,
+  indirect?: ReferenceIndirectUniforms,
 ) {
   const params: THREE.MeshPhysicalMaterialParameters = {
     ...(reference ? TV_FINISHES : FINISHES)[finish],
@@ -130,6 +133,7 @@ function fillMaterial(
     polygonOffsetFactor: 1,
     polygonOffsetUnits: 1,
   };
+  if (reference) params.shadowSide = THREE.FrontSide;
   if (finish === "screen" && map) {
     // A lit display: the picture is emitted, the glass on top reflects.
     params.color = "#050505";
@@ -146,17 +150,15 @@ function fillMaterial(
     // Clay and soft plastic let a little light through, so their shade keeps
     // its colour instead of going grey. A trace of self-colour stands in for that.
     params.emissive = color;
-    params.emissiveIntensity = 0.045;
+    params.emissiveIntensity = reference ? 0 : 0.045;
   }
   if (reference && !drawing && (finish === "clay" || finish === "soft")) {
-    // The freestanding surrounds receive an unobstructed softbox fill.
-    params.envMapIntensity = 2.8;
-    params.emissiveIntensity = 0.45;
+    params.envMapIntensity = 1;
     params.clearcoat = 0.3;
     params.clearcoatRoughness = 0.3;
   }
   const m = new THREE.MeshPhysicalMaterial(params);
-  m.customProgramCacheKey = () => `figure-fill:${reference ? "tv" : "clay"}:${drawing ? "drawing" : "environment"}`;
+  m.customProgramCacheKey = () => `figure-fill:${reference ? "tv-indirect" : "clay"}:${drawing ? "drawing" : "environment"}`;
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uH = rt.h;
     shader.uniforms.uBandOn = rt.bandOn;
@@ -165,12 +167,22 @@ function fillMaterial(
     shader.uniforms.uFade = fade;
     shader.uniforms.uGrain = { value: reference ? 0 : GRAIN[finish] };
     shader.uniforms.uOrigin = origin;
+    if (indirect) Object.assign(shader.uniforms, indirect);
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nvarying vec3 vFig;\nuniform vec3 uOrigin;")
       .replace(
         "#include <project_vertex>",
         WORLD_Y_VERTEX + "\nvGrainPos = position;\nvFig = (modelMatrix * vec4(transformed, 1.0)).xyz - uOrigin;",
       );
+    if (indirect) {
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\n" + INDIRECT_VERTEX)
+        .replace("#include <project_vertex>", "#include <project_vertex>\nvIndirectPosition = (uIndirectWorldToLocal * modelMatrix * vec4(transformed, 1.0)).xyz;");
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", "#include <common>\n" + INDIRECT_FRAGMENT)
+        .replace("#include <lights_fragment_maps>", "#include <lights_fragment_maps>\n" + INDIRECT_LIGHTING)
+        .replace("#include <clipping_planes_fragment>", "#include <clipping_planes_fragment>\nif (uIndirectCapture > 0.5 && vWorldY > uH) discard;");
+    }
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <clipping_planes_fragment>", "#include <clipping_planes_fragment>" + (drawing ? "" : "\nif (vWorldY > uH) discard;"))
       .replace(
@@ -525,12 +537,15 @@ export type BuiltFigure = {
   parts: Record<string, PartRuntime>;
   /** Where the figure stands in the world; the light falloff is measured from it. */
   origin: { value: THREE.Vector3 };
+  /** Local diffuse lighting captured from this figure's real geometry. */
+  indirect?: ReferenceIndirectUniforms;
   /** 0 = drawn normally, 1 = faded into the paper (while another figure is in focus). */
   setFade: (v: number) => void;
 };
 
 export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): BuiltFigure {
   const reference = def.id === "tv";
+  const indirect = reference ? createIndirectUniforms() : undefined;
   const group = new THREE.Group();
   const parts: Record<string, PartRuntime> = {};
   const fade = { value: 0 };
@@ -568,7 +583,7 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
       let fill = fills.get(fillKey);
       if (!fill) {
         const reflectance = reference ? (part.id === "rug" ? 0.85 : part.id === "tv-body" ? 1.45 : 1) : 1;
-        fill = fillMaterial(color, finish, s.map, rt, fade, origin, atmosphere, reference, drawing, reflectance);
+        fill = fillMaterial(color, finish, s.map, rt, fade, origin, atmosphere, reference, drawing, reflectance, indirect);
         fills.set(fillKey, fill);
       }
       const mesh = new THREE.Mesh(geo, fill);
@@ -594,7 +609,7 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
     if (casters[0].castShadow !== cast) for (const mesh of casters) mesh.castShadow = cast;
   };
 
-  return { def, group, parts, origin, setFade };
+  return { def, group, parts, origin, setFade, indirect };
 }
 
 /** Call once the figure sits at its final place in the scene. */

@@ -10,6 +10,7 @@ import { createFigure, HULL_U, measureFigure, type BuiltFigure } from "./figure-
 import { AGENTS, FIGURES, INK, type CalloutDef, type Vec3 } from "./figures";
 import { installSoftShadows } from "./soft-shadows";
 import { createStudioAtmosphere, displayRgb, paperCss, STUDIO_ATMOSPHERE, type StudioAtmosphere } from "./studio-atmosphere";
+import { createReferenceIrradiance } from "./reference-irradiance";
 
 installSoftShadows();
 
@@ -49,6 +50,7 @@ function slotPosition(i: number): THREE.Vector3 {
 
 // The key light's place relative to what the camera looks at.
 const KEY_OFFSET = new THREE.Vector3(-5, 14, 7);
+const REFERENCE_KEY_DELTA = new THREE.Vector3(0, -5, 2);
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
@@ -170,6 +172,7 @@ blendScene.add(blendQuad);
 const blendCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
 blendCamera.position.z = 1;
 const bufferSize = new THREE.Vector2();
+type StudioMaps = { standard: THREE.Texture; reference: THREE.Texture; radiance: THREE.CubeTexture };
 
 /** Broad photographic softboxes, generated locally for the TV reference look. */
 function referenceStudio(gl: THREE.WebGLRenderer) {
@@ -192,12 +195,21 @@ function referenceStudio(gl: THREE.WebGLRenderer) {
   }
   const generator = new THREE.PMREMGenerator(gl);
   const target = generator.fromScene(room, 0.035);
+  const radiance = new THREE.WebGLCubeRenderTarget(128, { type: THREE.HalfFloatType, colorSpace: THREE.LinearSRGBColorSpace, generateMipmaps: false });
+  const capture = new THREE.CubeCamera(0.1, 100, radiance);
+  const toneMapping = gl.toneMapping;
+  try {
+    gl.toneMapping = THREE.NoToneMapping;
+    capture.update(gl, room);
+  } finally {
+    gl.toneMapping = toneMapping;
+  }
   geometry.dispose();
   room.traverse((node) => {
     if (node instanceof THREE.Mesh) (node.material as THREE.Material).dispose();
   });
   generator.dispose();
-  return target;
+  return { reflection: target, radiance };
 }
 
 export type SceneProps = {
@@ -213,9 +225,9 @@ export type SceneProps = {
 
 export default function Scene(props: SceneProps) {
   const atmosphere = useMemo(() => createStudioAtmosphere(), []);
-  const bounce = useRef<THREE.HemisphereLight>(null);
+  const bounceRef = useRef<THREE.HemisphereLight>(null);
   const floorShadowRef = useRef<THREE.ShadowMaterial>(null);
-  const mapsRef = useRef<{ standard: THREE.Texture; reference: THREE.Texture } | null>(null);
+  const mapsRef = useRef<StudioMaps | null>(null);
   return (
     <Canvas
       orthographic
@@ -228,8 +240,8 @@ export default function Scene(props: SceneProps) {
       // sticker colours true instead of washing them out like a filmic curve.
       gl={{ antialias: true, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1 }}
     >
-      <Studio atmosphere={atmosphere} bounce={bounce} mapsRef={mapsRef} floorShadowRef={floorShadowRef} />
-      <Stage {...props} atmosphere={atmosphere} bounce={bounce} mapsRef={mapsRef} floorShadowRef={floorShadowRef} />
+      <Studio atmosphere={atmosphere} bounceRef={bounceRef} mapsRef={mapsRef} floorShadowRef={floorShadowRef} />
+      <Stage {...props} atmosphere={atmosphere} bounceRef={bounceRef} mapsRef={mapsRef} floorShadowRef={floorShadowRef} />
     </Canvas>
   );
 }
@@ -251,12 +263,12 @@ export default function Scene(props: SceneProps) {
  */
 type StudioProps = {
   atmosphere: StudioAtmosphere;
-  bounce: RefObject<THREE.HemisphereLight | null>;
-  mapsRef: RefObject<{ standard: THREE.Texture; reference: THREE.Texture } | null>;
+  bounceRef: RefObject<THREE.HemisphereLight | null>;
+  mapsRef: RefObject<StudioMaps | null>;
   floorShadowRef: RefObject<THREE.ShadowMaterial | null>;
 };
 
-function Studio({ atmosphere, bounce, mapsRef, floorShadowRef }: StudioProps) {
+function Studio({ atmosphere, bounceRef, mapsRef, floorShadowRef }: StudioProps) {
   const gl = useThree((state) => state.gl);
   const environment = useMemo(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
@@ -269,10 +281,11 @@ function Studio({ atmosphere, bounce, mapsRef, floorShadowRef }: StudioProps) {
   const reference = useMemo(() => referenceStudio(gl), [gl]);
   useEffect(() => () => environment.dispose(), [environment]);
   useEffect(() => {
-    mapsRef.current = { standard: environment, reference: reference.texture };
+    mapsRef.current = { standard: environment, reference: reference.reflection.texture, radiance: reference.radiance.texture };
     return () => {
       mapsRef.current = null;
-      reference.dispose();
+      reference.reflection.dispose();
+      reference.radiance.dispose();
     };
   }, [environment, mapsRef, reference]);
 
@@ -294,7 +307,7 @@ function Studio({ atmosphere, bounce, mapsRef, floorShadowRef }: StudioProps) {
           the sky light, which casts shadows, so creases and contacts darken. */}
       <Environment map={environment} environmentIntensity={0.22} />
       {/* The floor fill is quiet enough to keep the grey models neutral. */}
-      <hemisphereLight ref={bounce} args={["#fff5e8", neutralBounce, 0.36]} />
+      <hemisphereLight ref={bounceRef} args={["#fff5e8", neutralBounce, 0.36]} />
       <directionalLight
         ref={(light) => {
           shadowLights[0] = light;
@@ -337,7 +350,7 @@ function Studio({ atmosphere, bounce, mapsRef, floorShadowRef }: StudioProps) {
   );
 }
 
-function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt, atmosphere, bounce, mapsRef, floorShadowRef }: SceneProps & StudioProps) {
+function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt, atmosphere, bounceRef, mapsRef, floorShadowRef }: SceneProps & StudioProps) {
   const figs = useMemo<BuiltFigure[]>(() => FIGURES.map((figure) => createFigure(figure, atmosphere)), [atmosphere]);
   const positions = useMemo(() => FIGURES.map((_, i) => slotPosition(i)), []);
   const swayRefs = useRef<(THREE.Group | null)[]>([]);
@@ -394,6 +407,9 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     live.current = { focus, reducedMotion, onPartEvent, onBuilt, onSelect, onPainted };
   }, [focus, reducedMotion, onPartEvent, onBuilt, onSelect, onPainted]);
   const painted = useRef(false);
+  const indirectRef = useRef<ReturnType<typeof createReferenceIrradiance> | null>(null);
+  const indirectStateRef = useRef({ captured: false, started: false, mix: 0 });
+  useEffect(() => () => indirectRef.current?.dispose(), []);
 
   // The page the stage is on, to paint it the studio's paper colour.
   const page = useRef<HTMLElement | null>(null);
@@ -676,12 +692,29 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     if (floorShadowRef.current) floorShadowRef.current.opacity = mix(0.4, 0.62, referenceWeight);
     if (mapsRef.current) {
       state.scene.environment = referenceWeight > 0.5 ? mapsRef.current.reference : mapsRef.current.standard;
-      state.scene.environmentIntensity = mix(0.22, 0.34, referenceWeight);
+      state.scene.environmentIntensity = mix(0.22, 0.5, referenceWeight);
     }
     if (shadowLights[0]) {
-      shadowLights[0].intensity = mix(1.35, 1.55, referenceWeight);
-      shadowLights[0].shadow.normalBias = mix(0.012, 0.006, referenceWeight);
-      shadowLights[0].shadow.radius = mix(0.22, 0.34, referenceWeight);
+      shadowLights[0].intensity = mix(1.35, 1.9, referenceWeight);
+      shadowLights[0].shadow.normalBias = mix(0.012, 0.002, referenceWeight);
+      shadowLights[0].shadow.bias = mix(-0.0006, -0.00015, referenceWeight);
+      shadowLights[0].shadow.radius = mix(0.22, 0.28, referenceWeight);
+      shadowLights[0].shadow.intensity = mix(0.8, 0.95, referenceWeight);
+    }
+    if (shadowLights[1]) {
+      shadowLights[1].shadow.normalBias = mix(0.012, 0.002, referenceWeight);
+      shadowLights[1].shadow.bias = mix(-0.0004, -0.00012, referenceWeight);
+      shadowLights[1].shadow.radius = mix(0.48, 0.35, referenceWeight);
+    }
+    const shadowExtent = mix(9, 4.5, referenceWeight);
+    for (const light of shadowLights) {
+      if (!light) continue;
+      const camera = light.shadow.camera as THREE.OrthographicCamera;
+      if (camera.right !== shadowExtent) {
+        camera.left = camera.bottom = -shadowExtent;
+        camera.right = camera.top = shadowExtent;
+        camera.updateProjectionMatrix();
+      }
     }
     atmosphere.uStudioSweep.value.set((figureFoot.x + 1) / 2, (figureFoot.y + 1) / 2, Math.max(0.12, cam.zoom * 1.04 / h));
     atmosphere.uStudioWall.value.lerpVectors(currentStudio.wall, nextStudio.wall, blend).lerp(studioWhite, opening * 0.65);
@@ -693,7 +726,8 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       paperShown.current = paper;
       page.current?.style.setProperty("--studio-paper", paper);
     }
-    bounce.current?.groundColor.lerpColors(currentStudio.fill, nextStudio.fill, blend);
+    bounceRef.current?.groundColor.lerpColors(currentStudio.fill, nextStudio.fill, blend);
+    if (bounceRef.current) bounceRef.current.intensity = mix(0.36, 0.16, referenceWeight);
     // The lights travel with the camera, so their shadow maps only ever have
     // to cover the figure on stage — however long the row gets.
     for (const light of shadowLights) {
@@ -701,7 +735,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       light.target.position.copy(camTarget.current);
       light.target.updateMatrixWorld();
     }
-    shadowLights[0]?.position.copy(camTarget.current).add(KEY_OFFSET);
+    shadowLights[0]?.position.copy(camTarget.current).add(KEY_OFFSET).addScaledVector(REFERENCE_KEY_DELTA, referenceWeight);
 
     // ── Build engine: advance every scheduled part ──
     // A part at `t` seconds into its figure's schedule: how far it is built.
@@ -848,6 +882,36 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       }
     });
 
+    // Resolve local diffuse illumination from the real scene once the build
+    // and turn settle. A capture includes neighbouring coloured surfaces and
+    // their visibility; it does not add unshadowed coloured point lights.
+    const tv = figs[0];
+    const indirectState = indirectStateRef.current;
+    const tvBuilt = Object.values(tv.parts).every(part => part.progress >= 1);
+    const tvActive = focusId === "tv" && referenceWeight > 0.99 && !opening;
+    if (mapsRef.current && !indirectRef.current) indirectRef.current = createReferenceIrradiance(state.gl, state.scene, tv, mapsRef.current.radiance);
+    if (indirectRef.current && tv.indirect) {
+      tv.group.updateWorldMatrix(true, false);
+      tv.indirect.uIndirectWorldToLocal.value.copy(tv.group.matrixWorld).invert();
+      if (!tvBuilt || !tvActive) {
+        if (indirectState.started) indirectRef.current.reset();
+        indirectState.started = indirectState.captured = false;
+        indirectState.mix = 0;
+      } else {
+        const turnSettled = reduced || (time - swayStart.current[0] > 4.5 && Math.abs(swayRefs.current[0]?.rotation.y ?? 0) < 0.003);
+        if (turnSettled && !indirectState.captured) {
+          indirectState.started = true;
+          indirectState.captured = indirectRef.current.step();
+          dirty = true;
+        }
+        if (indirectState.captured && indirectState.mix < 1) {
+          indirectState.mix = Math.min(1, indirectState.mix + dt * 2.5);
+          dirty = true;
+        }
+      }
+      indirectRef.current.uniforms.uIndirectMix.value = indirectState.mix;
+    }
+
     // ── A figure that has just been built turns once, slowly, so it reads as
     // an object rather than a picture — then comes to rest, and so does the GPU.
     figs.forEach((fig, i) => {
@@ -903,7 +967,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
         const around = k * 2.3999632;
         sky.position.set(sin * Math.cos(around) * 20, cos * 20, sin * Math.sin(around) * 20).add(sky.target.position);
         // Flat tops get the same light from every sample; only what is in the way differs.
-        sky.intensity = SKY_INTENSITY / cos;
+        sky.intensity = mix(SKY_INTENSITY, 0.84, referenceWeight) / cos;
         sky.shadow.radius = (sky.shadow.radius % 1) + k;
       }
       gl.render(state.scene, state.camera);
