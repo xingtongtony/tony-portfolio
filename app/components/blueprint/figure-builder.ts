@@ -492,10 +492,12 @@ function shapeGeometry(s: ShapeDef, reference = false): Built {
       pts.push(new THREE.Vector2(s.r - b + Math.cos(a) * b, s.h / 2 - b + Math.sin(a) * b));
     }
     if (s.r - b > 1e-4) pts.push(new THREE.Vector2(0, s.h / 2));
-    const lathe = new THREE.LatheGeometry(pts, reference ? 80 : 56);
-    // LatheGeometry already has analytic smooth profile normals. Coarse
-    // crease welding merges neighbouring rings on small TV buttons/leaves.
-    mesh = reference ? lathe : toCreasedNormals(lathe, 0.7);
+    // Segments grow with the radius, so a big drum is as round as a button.
+    const lathe = new THREE.LatheGeometry(pts, reference ? 80 : Math.min(128, Math.max(56, Math.round(s.r * 420))));
+    // LatheGeometry already has analytic smooth profile normals. Crease
+    // welding them again merged neighbouring rings on small buttons and left
+    // vertical seams down every large drum (Tony, 2026-11-20: "not smooth").
+    mesh = lathe;
     // Rim lines, unless the end is so round that it is a dome.
     if (b < s.r * 0.6) {
       const k = b * K;

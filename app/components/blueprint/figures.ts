@@ -905,7 +905,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           color: TV_FOCUS.coral,
           drawing: false,
           frame: { pos: [-0.394, 0, -1.096], rot: [0, 0.287, 0] },
-          shapes: [tvFocusFrame(3.745, 2.479, 0.15, 0.33)],
+          shapes: [tvFocusFrame(3.745, 2.2, 0.15, 0.33)],
         },
         {
           id: "focus-inner",
@@ -914,7 +914,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           color: TV_FOCUS.yellow,
           drawing: false,
           frame: { pos: [-0.422, 0, -1.082], rot: [0, 0.287, 0] },
-          shapes: [tvFocusFrame(3.03, 2.066, 0.14, 0.29)],
+          shapes: [tvFocusFrame(3.03, 1.84, 0.14, 0.29)],
         },
         {
           id: "focus-plaque",
@@ -1238,7 +1238,19 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           { k: "cyl", r: 0.075, h: 0.06, pos: [-0.17, 1.18, 0], color: c.coral, bevel: 0.006 },
           { k: "cyl", r: 0.075, h: 0.024, pos: [-0.17, 1.2905, 0], color: c.mist, bevel: 0.008 },
           { k: "cyl", r: 0.009, h: 0.14, pos: [-0.155, 1.34, 0.01], color: c.plum, bevel: 0.009 },
-        ]),
+          // A surprise on top: the lucky cat a Chinese restaurant keeps by the till,
+  // one paw raised, a gold coin held in front.
+  { k: "cyl", r: 0.08, h: 0.15, pos: [-0.2, 1.612, 0], color: c.white, bevel: 0.05 },
+  { k: "ball", r: 0.07, pos: [-0.2, 1.737, 0.005], color: c.white },
+  ...[-1, 1].map((side): ShapeDef => (
+    { k: "poly", pts: [[-0.025, 0], [0.025, 0], [0, 0.045]], t: 0.02, r: 0.006, pos: [-0.2 + side * 0.04, 1.782, 0], rot: [0, 0, -side * 0.3], color: c.white })),
+  { k: "cyl", r: 0.022, h: 0.08, pos: [-0.125, 1.74, 0.03], color: c.white, bevel: 0.022 },
+  { k: "torus", R: 0.066, tube: 0.01, pos: [-0.2, 1.675, 0], rot: flat(), color: c.plum },
+  { k: "ball", r: 0.016, pos: [-0.2, 1.66, 0.075], color: c.yellow },
+  { k: "slab", size: [0.05, 0.075], t: 0.012, r: 0.02, pos: [-0.23, 1.6, 0.082], color: c.yellow },
+  ...[-1, 1].map((side): ShapeDef => ({ k: "ball", r: 0.009, pos: [-0.2 + side * 0.025, 1.75, 0.068], color: c.inky })),
+  { k: "ball", r: 0.007, pos: [-0.2, 1.73, 0.072], color: c.plum },
+]),
       ],
       callouts: [
         { n: "202", at: [-0.62, 1.56, -0.14], to: [-1.5, 2.0, -0.2] },
@@ -1417,7 +1429,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             ],
           },
           // The keyboard and pencil that come with the iPad, in front of it.
-          surround("keyboard", "Keyboard", 4, c.lilac, [0.34, 0.107, 0.5], 0, [
+          surround("keyboard", "Keyboard", 3, c.lilac, [0.34, 0.107, 0.5], 0, [
             { k: "slab", size: [1.2, 0.42], t: 0.034, r: 0.05, pos: [0, 0.014, 0], rot: flat(), bevel: 0.01 },
             ...[-0.13, -0.045, 0.04].flatMap((z) => row(10, [0.1, 0, 0], {
               k: "slab", size: [0.085, 0.07], t: 0.014, r: 0.014, pos: [-0.45, 0.035, z], rot: flat(), color: c.cream, bevel: 0.004 })),
@@ -1426,6 +1438,17 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             ...row(2, [0.1, 0, 0], { k: "slab", size: [0.085, 0.07], t: 0.014, r: 0.014, pos: [0.35, 0.035, 0.125], rot: flat(), color: c.cream, bevel: 0.004 }),
             { k: "cyl", r: 0.02, h: 0.6, pos: [0.05, 0.017, 0.37], rot: lying(), color: c.white, bevel: 0.02 },
             { k: "ball", r: 0.013, pos: [-0.256, 0.017, 0.37], color: c.inky },
+          ]),
+          // A surprise: popcorn, for an evening of videos. One piece has escaped.
+          surround("popcorn", "Popcorn", 4, c.cream, [1.12, 0.107, 0.62], 0, [
+            { k: "cyl", r: 0.1, h: 0.2, pos: [0, 0.097, 0], bevel: 0.012 },
+            ...[0, 1, 2, 3, 4, 5].map((i): ShapeDef => {
+              const a = (i * Math.PI) / 3 + Math.PI / 6;
+              return { k: "box", size: [0.03, 0.17, 0.012], pos: [Math.sin(a) * 0.1, 0.1, Math.cos(a) * 0.1], rot: [0, a, 0], color: c.coral, bevel: 0.005 };
+            }),
+            ...([[0, 0.232, 0, 0.035], [0.05, 0.212, 0.03, 0.03], [-0.05, 0.212, 0.02, 0.03], [0.02, 0.212, -0.05, 0.03], [-0.03, 0.218, -0.04, 0.03], [0.045, 0.248, -0.01, 0.025], [-0.02, 0.258, 0.025, 0.025]] as const).map(([x, y, z, r], i): ShapeDef => (
+              { k: "ball", r, pos: [x, y, z], color: i % 3 === 2 ? c.yellow : c.white })),
+            { k: "ball", r: 0.025, pos: [0.18, 0.022, 0.08], color: c.white },
           ]),
           // A floor lamp: an evening on the sofa, which is where the iPad gets used.
           surround("lamp", "Floor lamp", 1, c.plum, [1.78, 0, -1.3], 0, [
@@ -1789,14 +1812,26 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             }),
           ],
         },
-        // A poster stand with a printed TikCode: where the code meets the world.
-        surround("poster", "Poster stand", 1, c.lilac, [1.95, 0, -0.75], 0.1, [
-          { k: "cyl", r: 0.28, h: 0.05, pos: [0, 0.025, 0], color: c.plum, bevel: 0.02 },
-          { k: "cyl", r: 0.035, h: 0.98, pos: [0, 0.535, 0], color: c.plum, bevel: 0.015 },
-          { k: "slab", size: [0.78, 1.0], t: 0.05, r: 0.06, pos: [0, 1.5, 0], bevel: 0.016 },
-          { k: "slab", size: [0.7, 0.92], t: 0.01, r: 0.04, pos: [0, 1.5, 0.028], color: c.cream },
-          ...tikCodeRelief(c, [0, 1.6, 0.03], 0.052),
-          { k: "slab", size: [0.4, 0.09], t: 0.006, r: 0.022, pos: [0, 1.17, 0.035], finish: "print", map: `label:TikCode|${c.plum}|${c.white}|4.55` },
+        // A speaker on its stand: sounds are one of the four things a TikCode
+        // shares, and the figure has its codes already. A record leans on the stand.
+        surround("speaker", "Speaker", 1, c.plum, [1.95, 0, -0.7], 0.15, [
+          { k: "slab", size: [0.42, 0.36], t: 0.04, r: 0.05, pos: [0, 0.02, 0], rot: flat(), bevel: 0.012 },
+          { k: "box", size: [0.12, 0.79, 0.12], pos: [0, 0.43, 0], bevel: 0.02 },
+          { k: "slab", size: [0.4, 0.34], t: 0.035, r: 0.04, pos: [0, 0.8325, 0], rot: flat(), bevel: 0.01 },
+          { k: "box", size: [0.46, 0.68, 0.4], pos: [0, 1.186, 0], color: c.lilac, bevel: 0.03 },
+          // Woofer, tweeter and port on the front, and one small light.
+          { k: "cyl", r: 0.12, h: 0.03, pos: [0, 1.08, 0.205], rot: FACE, color: c.inky, bevel: 0.008 },
+          { k: "torus", R: 0.13, tube: 0.022, pos: [0, 1.08, 0.208] },
+          { k: "ball", r: 0.035, pos: [0, 1.08, 0.218] },
+          { k: "cyl", r: 0.06, h: 0.02, pos: [0, 1.37, 0.204], rot: FACE, color: c.inky, bevel: 0.006 },
+          { k: "torus", R: 0.055, tube: 0.014, pos: [0, 1.37, 0.208] },
+          { k: "ball", r: 0.032, pos: [0, 1.37, 0.207], color: c.cream },
+          { k: "cyl", r: 0.03, h: 0.012, pos: [-0.14, 0.92, 0.202], rot: FACE, color: c.inky, bevel: 0.004 },
+          { k: "cyl", r: 0.012, h: 0.008, pos: [0.16, 0.92, 0.202], rot: FACE, color: c.coral, finish: "led" },
+          // The record in its sleeve, its foot on the stand's base, its top on the column.
+          { k: "slab", size: [0.34, 0.34], t: 0.012, r: 0.012, pos: [0, 0.2065, 0.1], rot: [-0.2, 0, 0], color: c.cream },
+          { k: "cyl", r: 0.12, h: 0.006, pos: [0, 0.2065 + 0.009 * Math.sin(0.2), 0.1 + 0.009 * Math.cos(0.2)], rot: [Math.PI / 2 - 0.2, 0, 0], color: c.inky },
+          { k: "cyl", r: 0.04, h: 0.006, pos: [0, 0.2065 + 0.013 * Math.sin(0.2), 0.1 + 0.013 * Math.cos(0.2)], rot: [Math.PI / 2 - 0.2, 0, 0], color: c.coral },
         ]),
       ],
       callouts: [
@@ -2048,7 +2083,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         // Packed and waiting: the trip the shortlist is deciding.
-        surround("suitcase", "Suitcase", 1, c.lilac, [-2.0, 0, -0.5], 0.3, [
+        surround("suitcase", "Suitcase", 0, c.lilac, [-2.0, 0, -0.5], 0.3, [
           { k: "box", size: [0.6, 0.86, 0.3], pos: [0, 0.51, 0], bevel: 0.05 },
           ...[[-0.22, -0.1], [0.22, -0.1], [-0.22, 0.1], [0.22, 0.1]].flatMap(([x, z]): ShapeDef[] => [
             { k: "cyl", r: 0.038, h: 0.03, pos: [x, 0.038, z], rot: lying(), color: c.inky, bevel: 0.01 },
@@ -2064,7 +2099,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           { k: "slab", size: [0.11, 0.15], t: 0.012, r: 0.02, pos: [0.304, 0.74, 0], rot: [0, Math.PI / 2, 0], color: c.coral },
           { k: "slab", size: [0.07, 0.05], t: 0.006, r: 0.01, pos: [0.312, 0.76, 0], rot: [0, Math.PI / 2, 0], color: c.white },
         ]),
-        surround("carry-on", "Carry-on", 0, c.sand, [-1.97, 0, 0.22], 0.15, [
+        surround("carry-on", "Carry-on", 1, c.sand, [-1.97, 0, 0.22], 0.15, [
           { k: "box", size: [0.44, 0.6, 0.24], pos: [0, 0.37, 0], bevel: 0.045 },
           ...[[-0.16, -0.08], [0.16, -0.08], [-0.16, 0.08], [0.16, 0.08]].flatMap(([x, z]): ShapeDef[] => [
             { k: "cyl", r: 0.032, h: 0.026, pos: [x, 0.032, z], rot: lying(), color: c.inky, bevel: 0.008 },
@@ -2073,6 +2108,12 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ...[-0.08, 0.08].map((x): ShapeDef => (
             { k: "slab", size: [0.03, 0.5], t: 0.016, r: 0.014, pos: [x, 0.37, 0.125], bevel: 0.006 })),
           { k: "box", size: [0.16, 0.03, 0.045], pos: [0, 0.68, 0], color: c.plum, bevel: 0.012 },
+        ]),
+        // A surprise: a sun hat, put down by the luggage.
+        surround("sun-hat", "Sun hat", 2, c.sand, [-1.95, 0, 0.74], 0, [
+          { k: "cyl", r: 0.22, h: 0.016, pos: [0, 0.008, 0], bevel: 0.008 },
+          { k: "cyl", r: 0.105, h: 0.1, pos: [0, 0.063, 0], bevel: 0.045 },
+          { k: "cyl", r: 0.11, h: 0.026, pos: [0, 0.03, 0], color: c.coral, bevel: 0.004 },
         ]),
       ],
       callouts: [
@@ -2157,10 +2198,17 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             ...[[0, 0.32], [0.277, -0.16], [-0.277, -0.16]].map(([x, z]): ShapeDef => (
               { k: "ball", r: 0.03, pos: [x, 0.028, z], color: c.plum })),
             { k: "cyl", r: 0.05, h: 0.1, pos: [0, 0.42, 0], color: c.plum, bevel: 0.02 },
-            { k: "cyl", r: 0.03, h: 1.02, pos: [0, 0.9, 0], bevel: 0.014 },
-            { k: "box", size: [0.08, 0.12, 0.07], pos: [0, 1.43, 0], color: c.plum, bevel: 0.02 },
-            { k: "torus", R: 0.36, tube: 0.06, pos: [0, 1.84, 0] },
-            { k: "torus", R: 0.36, tube: 0.04, pos: [0, 1.84, 0.03], color: c.cream, finish: "led" },
+            { k: "cyl", r: 0.03, h: 0.92, pos: [0, 0.85, 0], bevel: 0.014 },
+            { k: "box", size: [0.08, 0.12, 0.07], pos: [0, 1.33, 0], color: c.plum, bevel: 0.02 },
+            { k: "torus", R: 0.36, tube: 0.06, pos: [0, 1.74, 0] },
+            { k: "torus", R: 0.36, tube: 0.04, pos: [0, 1.74, 0.03], color: c.cream, finish: "led" },
+            // A surprise: the ring light wears the effect on the phone — a cat-ear
+            // headband clipped over its top.
+            { k: "arch", span: 0.504, rise: 0.0796, tube: 0.016, pos: [0, 2.1, 0], color: c.plum },
+            ...[-1, 1].map((side): ShapeDef => (
+              { k: "poly", pts: [[-0.07, 0], [0.07, 0], [0, 0.15]], t: 0.03, r: 0.02, pos: [side * 0.241, 2.064, 0], rot: [0, 0, -side * 0.61], color: c.plum })),
+            ...[-1, 1].map((side): ShapeDef => (
+              { k: "poly", pts: [[-0.038, 0], [0.038, 0], [0, 0.085]], t: 0.01, r: 0.012, pos: [side * (0.241 + 0.014), 2.084, 0.019], rot: [0, 0, -side * 0.61], color: c.coral })),
           ]),
         ],
         callouts: [
@@ -2235,7 +2283,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         // A roll-up banner: the campaign, promoted.
-        surround("banner", "Roll-up banner", 2, c.cream, [2.03, 0, -0.55], 0.12, [
+        surround("banner", "Roll-up banner", 1, c.cream, [2.03, 0, -0.55], 0.12, [
           ...[-0.34, 0.34].map((x): ShapeDef => (
             { k: "box", size: [0.06, 0.024, 0.3], pos: [x, 0.012, 0], color: c.lilac, bevel: 0.01 })),
           { k: "box", size: [0.86, 0.1, 0.2], pos: [0, 0.072, 0], color: c.lilac, bevel: 0.035 },
