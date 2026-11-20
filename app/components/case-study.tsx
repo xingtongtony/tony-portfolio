@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Reveal } from "./motion";
+import { InViewVideo } from "./in-view-video";
 import { eyebrowMeta, eyebrowSection } from "../lib/tokens";
 
 /**
@@ -160,14 +161,9 @@ export function VideoFrame({
   square?: boolean;
 }) {
   return (
-    <video
+    <InViewVideo
       src={src}
       className={`block h-auto w-full border border-[var(--cs-border)] ${square ? "" : "rounded-[1.5rem]"} ${className}`}
-      autoPlay
-      loop
-      muted
-      playsInline
-      preload="metadata"
     />
   );
 }

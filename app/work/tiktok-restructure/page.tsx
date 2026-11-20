@@ -34,31 +34,31 @@ const todos = [
     n: 1,
     title: "Discoverable Index",
     lead: "Improve SEO",
-    body: "Identifiable as “applications” allowing search engines to find them.",
+    body: "Identifiable as “applications”, allowing search engines to find them.",
   },
   {
     n: 2,
-    title: "Level up Acquisition",
+    title: "Level Up Acquisition",
     lead: "Overall Experience",
-    body: "Better promote and guide user login and sign up to TikTok.",
+    body: "Better promote and guide user login and sign-up to TikTok.",
   },
   {
     n: 3,
     title: "Immersive Experience",
-    lead: "Browser mode & Responsive",
-    body: "Improve the consuming experience in WebApp but not like a version of native.",
+    lead: "Browser Mode & Responsive",
+    body: "Improve the consuming experience in the WebApp, but not like a version of native.",
   },
 ];
 
 const embedResults = [
-  ["+82%", "Click on Video cover"],
-  ["+3.41%", "Redirect to webapp"],
+  ["+82%", "Click on video cover"],
+  ["+3.41%", "Redirect to WebApp"],
   ["+3.2%", "Click red button"],
 ];
 
 const signUpResults = [
-  ["+8.2%", "Sign Up"],
-  ["+38.2%", "View Duration"],
+  ["+8.2%", "Sign up"],
+  ["+38.2%", "View duration"],
   ["+47.8%", "Video view over 1+ video"],
 ];
 
@@ -145,9 +145,9 @@ export default function TikTokRestructurePage() {
             <p className={eyebrowSection}>Overview</p>
             <p className="mt-6 max-w-3xl text-lg leading-[1.5] tracking-[-0.01em] text-[var(--cs-body)]">
               The WebApp’s DAU is around 10 million compared to our app’s 500
-              million DAU, marking a 1:50 ratio. However, in comparison to
-              platforms like Facebook, Instagram, etc., their WebApp users
-              already account for up to 30% of their mobile users. This
+              million DAU, marking a 1:50 ratio. However, on platforms like
+              Facebook and Instagram, WebApp users already account for up to
+              30% of mobile users. This
               highlights the substantial potential of TikTok’s WebApp.
             </p>
           </div>
@@ -187,7 +187,7 @@ export default function TikTokRestructurePage() {
           {/* CONTEXT */}
           <CaseSection
             eyebrow="Context"
-            title="Why restructure the TikTok WebApp?"
+            title="The web reaches users the app can’t"
           >
             <StaggerGrid className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-3">
               <StaggerItem index={0}>
@@ -195,17 +195,17 @@ export default function TikTokRestructurePage() {
                 <p className={`mt-4 ${bodyMd}`}>
                   Including mobile web and desktop visitors: we’ve only been
                   serving our native app users so far, but other products (e.g.
-                  Facebook, Instagram, Pinterest, Youtube) find there are 30% of
-                  native App traffic also coming from mobile web and desktop.
+                  Facebook, Instagram, Pinterest, YouTube) find there is 30% of
+                  native app traffic also coming from mobile web and desktop.
                 </p>
               </StaggerItem>
               <StaggerItem index={1}>
                 <SubHeading>Improve brand image</SubHeading>
                 <p className={`mt-4 ${bodyMd}`}>
-                  Expose the TikTok community and contents to the world via the
-                  web could raise the brand awareness; by providing a full
-                  product experience and more content to prospective users via
-                  web, we can drive improvement in our brand and increase the
+                  Exposing the TikTok community and content to the world via the
+                  web could raise brand awareness; by providing a full product
+                  experience and more content to prospective users via the web,
+                  we can drive improvement in our brand and increase
                   conversion.
                 </p>
               </StaggerItem>
@@ -232,7 +232,7 @@ export default function TikTokRestructurePage() {
               <p>
                 We use the WebApp as a tool for referrals and improving organic
                 search, directing users to download the native TikTok app, while
-                also help to better serve users who consume videos on the
+                also helping to better serve users who consume videos on the
                 WebApp.
               </p>
             </Reveal>
@@ -247,7 +247,7 @@ export default function TikTokRestructurePage() {
               spacing is unchanged. */}
           <div data-dark-zone className="flex flex-col gap-24 sm:gap-32 lg:gap-40">
           {/* PROBLEMS — left paragraph + right icon cards */}
-          <CaseSection eyebrow="Problems" title="Commonness and Differences">
+          <CaseSection eyebrow="Problems" title="Short videos aren’t enough on the web">
             <div className="mt-12 grid gap-x-12 gap-y-10 lg:grid-cols-2">
               {/* Left — the framing paragraph */}
               <Reveal className={bodyMd}>
@@ -257,8 +257,8 @@ export default function TikTokRestructurePage() {
                   the early stage when compared to DouYin (the Chinese TikTok).
                   In the future, TikTok definitely doesn’t want to just build a
                   video platform as a pure entertainment app. We aim to have over
-                  40%+ of landscape videos as long videos which is more
-                  educational on TikTok. The next step involves serving those
+                  40% of landscape videos on TikTok as long videos, which are
+                  more educational. The next step involves serving those
                   creators and enhancing the consumption experience.
                 </p>
               </Reveal>
@@ -326,7 +326,7 @@ export default function TikTokRestructurePage() {
           </CaseSection>
 
           {/* GOAL */}
-          <CaseSection eyebrow="Goal" title="Job to be done">
+          <CaseSection eyebrow="Goal" title="Three jobs: SEO, sign-ups, immersion">
             <StaggerGrid className="mt-10 grid gap-5 sm:grid-cols-3">
               {todos.map((t) => (
                 <StaggerItem
@@ -352,7 +352,7 @@ export default function TikTokRestructurePage() {
           </CaseSection>
 
           {/* SUCCESS METRIC */}
-          <CaseSection eyebrow="Success metric" title="How to measure success?">
+          <CaseSection eyebrow="Success metric" title="Success is more than video views">
             <Reveal className="mt-10">
               <ImageFrame
                 src={`${A}/tr-07.jpg`}
@@ -368,10 +368,10 @@ export default function TikTokRestructurePage() {
           {/* DESIGN PROCESS */}
           <CaseSection
             eyebrow="Design process"
-            title="Redesign the TikTok Structure"
+            title="We learned from products unlike ours"
           >
             <Reveal className="mt-8 max-w-3xl">
-              <SubHeading>Competitor Research</SubHeading>
+              <SubHeading>Competitor research</SubHeading>
               <p className={`mt-5 ${bodyMd}`}>
                 We stand apart from subscription video services, traditional long
                 video sites, and typical social media platforms. However, we’ve
@@ -383,27 +383,27 @@ export default function TikTokRestructurePage() {
           </CaseSection>
 
           {/* TODO 1 — IMPROVE SEO */}
-          <CaseSection title="Improve SEO in TT WebApp">
+          <CaseSection title="The embed redesign lifted clicks">
             <div className="mt-10 grid sm:grid-cols-3">
               <Reveal>
                 <TodoCard
                   n={1}
                   title="Discoverable"
                   lead="Improve SEO"
-                  body="Identifiable as “applications” allowing search engines to find them."
+                  body="Identifiable as “applications”, allowing search engines to find them."
                 />
               </Reveal>
             </div>
 
             <Reveal className="mt-16 max-w-3xl">
-              <SubHeading>Video Share &amp; Embed</SubHeading>
+              <SubHeading>Video share &amp; embed</SubHeading>
               <p className={`mt-5 ${bodyMd}`}>
-                Embedded Videos enable TikTok videos to be embedded into any
-                articles or websites. This helps to foster storytelling, and
+                Embedded videos enable TikTok videos to be embedded into any
+                articles or websites. This helps to foster storytelling and
                 provides proper attribution by showing the video creator, video
                 description and background sound in the form of TikTok’s custom
                 player. It also links back to the corresponding content on
-                TikTok. Its improve the{" "}
+                TikTok. It improves{" "}
                 <strong className={emphasis}>acquisition and SEO</strong>.
               </p>
             </Reveal>
@@ -413,12 +413,13 @@ export default function TikTokRestructurePage() {
                 <p>
                   Embed video has huge exposure outside of the TikTok WebApp
                   (daily average PV 14.46M, UV 8.30M), but the conversion rate
-                  CTR is low, The DAU of Embed contribute to the WebApp is low.
+                  (CTR) is low, and the DAU that Embed contributes to the WebApp
+                  is low.
                 </p>
               </Reveal>
               <Reveal className={bodyMd}>
                 <p>
-                  WebApp DNU are slowdown and it needs a new way to get
+                  WebApp DNU is slowing down, and it needs a new way to get
                   acquisition.
                 </p>
               </Reveal>
@@ -435,9 +436,9 @@ export default function TikTokRestructurePage() {
 
             <Reveal className="mt-16 max-w-3xl">
               <p className={bodyMd}>
-                I noticed that related videos after the video playback ends,
-                there’s high click rate but very low sharing and commenting
-                actions. I hypothesize that users will do actions after watching
+                I noticed that for related videos after the video playback ends,
+                there’s a high click rate but very low sharing and commenting
+                actions. I hypothesize that users will take actions after watching
                 the video. Therefore, we’ve enhanced the post-video interactions.
               </p>
             </Reveal>
@@ -463,14 +464,14 @@ export default function TikTokRestructurePage() {
             <div className={`mt-10 flex max-w-3xl flex-col gap-6 ${bodyMd}`}>
               <Reveal>
                 <p>
-                  AB test on pause screen, play button as previous design or show
-                  video covers.
+                  AB test on the pause screen: play button as in the previous
+                  design, or show video covers.
                 </p>
               </Reveal>
               <Reveal>
                 <p>
-                  AB test on video finished screen, 1 cover, 4 covers, 3 covers
-                  without action button.
+                  AB test on the video-finished screen: 1 cover, 4 covers, or 3
+                  covers without an action button.
                 </p>
               </Reveal>
               <Reveal>
@@ -506,15 +507,15 @@ export default function TikTokRestructurePage() {
           {/* TODO 2 — OVERALL EXPERIENCE */}
           <CaseSection
             eyebrow="Overall Experience"
-            title="Improve sign-up & consuming experience"
+            title="Browser mode helps SEO and immersion"
           >
             <div className="mt-10 grid sm:grid-cols-3">
               <Reveal>
                 <TodoCard
                   n={2}
-                  title="Level up Acquisition"
+                  title="Level Up Acquisition"
                   lead="Overall Experience"
-                  body="Better promote and guide user login and sign up to TikTok."
+                  body="Better promote and guide user login and sign-up to TikTok."
                 />
               </Reveal>
             </div>
@@ -523,25 +524,25 @@ export default function TikTokRestructurePage() {
               <StaggerItem index={0}>
                 <SubHeading>Browser mode for SEO</SubHeading>
                 <p className={`mt-4 ${bodyMd}`}>
-                  Browser mode are helping SEO dramatically. It provide share and
-                  embed ability, the video has it own URL, the video content and
-                  video comments are bring a lot of organic traffic to the
+                  Browser mode is helping SEO dramatically. It provides share and
+                  embed ability, the video has its own URL, and the video content
+                  and video comments bring a lot of organic traffic to the
                   website.
                 </p>
               </StaggerItem>
               <StaggerItem index={1}>
                 <SubHeading>Immersive experience</SubHeading>
                 <p className={`mt-4 ${bodyMd}`}>
-                  User get into a larger player with the comments displayed on
-                  the right side of the screen. User can add comment, like,
-                  follow and navigate to the next video in your feed as well.
+                  Users get into a larger player with the comments displayed on
+                  the right side of the screen. Users can add comments, like,
+                  follow and navigate to the next video in their feed as well.
                   It’s a more immersive way to consume TikTok content for sure.
                 </p>
               </StaggerItem>
               <StaggerItem index={2}>
                 <SubHeading>The player for short video</SubHeading>
                 <p className={`mt-4 ${bodyMd}`}>
-                  Autoplay reduce the interaction between the user and the
+                  Autoplay reduces the interaction between the user and the
                   device. A square player maintains consistent experiences for
                   both landscape and portrait videos.
                 </p>
@@ -550,19 +551,19 @@ export default function TikTokRestructurePage() {
           </CaseSection>
 
           {/* PROBLEMS & BUSINESS GOAL */}
-          <CaseSection title="Problems & Business Goal">
+          <CaseSection title="Too much freedom kept sign-ups low">
             <StaggerGrid className="mt-10 grid gap-5 sm:grid-cols-3">
               <StaggerItem
                 index={0}
                 className="flex h-full flex-col gap-2.5 rounded-[var(--r-md)] border border-[#d1c70a] bg-[#ffe563] px-6 py-5 text-[#1a1a1a] shadow-[2px_2px_8px_#00000029]"
               >
                 <h3 className="text-[1.0625rem] font-semibold leading-snug tracking-[-0.01em]">
-                  Low Sign up &amp; Sign in rate
+                  Low sign-up &amp; sign-in rate
                 </h3>
                 <p className="text-sm leading-[1.5] text-[#1a1a1a]/80">
                   Users leave the page after consuming or commenting on videos.
                   Users can comment on and watch videos in browser mode at no
-                  cost which
+                  cost, so they have little reason to sign up.
                 </p>
               </StaggerItem>
               <StaggerItem
@@ -570,19 +571,19 @@ export default function TikTokRestructurePage() {
                 className="flex h-full flex-col gap-2.5 rounded-[var(--r-md)] border border-[#d1c70a] bg-[#ffe563] px-6 py-5 text-[#1a1a1a] shadow-[2px_2px_8px_#00000029]"
               >
                 <h3 className="text-[1.0625rem] font-semibold leading-snug tracking-[-0.01em]">
-                  Users cannot consume videos when multitasking.
+                  Users cannot consume videos when multitasking
                 </h3>
                 <p className="text-sm leading-[1.5] text-[#1a1a1a]/80">
                   Users enjoy viewing videos while concurrently handling
                   different tasks in browser mode, but they have to switch to
-                  next video manually.
+                  the next video manually.
                 </p>
               </StaggerItem>
             </StaggerGrid>
 
             <Reveal className={`mt-10 max-w-3xl flex flex-col gap-7 ${bodyMd}`}>
               <p>
-                In Browser mode, users can focus more on the video itself rather
+                In browser mode, users can focus more on the video itself rather
                 than numerous entries and content. However, providing users with
                 excessive freedom has resulted in low sign-up and engagement
                 rates in browser mode.
@@ -632,8 +633,8 @@ export default function TikTokRestructurePage() {
             <Reveal className={`mt-12 max-w-3xl ${bodyMd}`}>
               <p>
                 In browser mode, users can set the next video to autoplay or
-                switch videos by clicking button. Short videos can be viewed
-                similarly as long video without the need for frequent
+                switch videos by clicking a button. Short videos can be viewed
+                similarly to long videos without the need for frequent
                 interactions.
               </p>
             </Reveal>
@@ -665,14 +666,14 @@ export default function TikTokRestructurePage() {
           </CaseSection>
 
           {/* TODO 3 — RESPONSIVE */}
-          <CaseSection title="Responsive video player and page">
+          <CaseSection title="One video per screen, high bounce rate">
             <div className="mt-10 grid items-start gap-x-12 gap-y-8 lg:grid-cols-2">
               <Reveal>
                 <TodoCard
                   n={3}
                   title="Immersive Experience"
                   lead="Responsive Video"
-                  body="Improve the consuming experience in WebApp but not like a version of native."
+                  body="Improve the consuming experience in the WebApp, but not like a version of native."
                 />
               </Reveal>
               <Reveal>
@@ -692,7 +693,7 @@ export default function TikTokRestructurePage() {
                 <strong className={emphasis}>
                   bounce rate was excessively high
                 </strong>{" "}
-                when user entry into the WebApp at first time. We attempted
+                when users entered the WebApp for the first time. We attempted
                 various measures to reduce this rate but discovered that the
                 WebApp only displayed one video within the viewport on 13-15 inch
                 devices. As a result, we needed to{" "}
@@ -707,14 +708,15 @@ export default function TikTokRestructurePage() {
           {/* ACTIONS */}
           <CaseSection
             eyebrow="Actions"
-            title="Responsive both video and page"
+            title="Five breakpoints, the same experience"
           >
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
-                We setting up 5 different breaking point allow user to have same
-                experience on different device. The video within the current
-                viewport will always be maximized in size. Additionally, ensure
-                that the current viewport consistently displays the next video.
+                We set up 5 different breakpoints to allow users to have the
+                same experience on different devices. The video within the
+                current viewport will always be maximized in size. Additionally,
+                we ensure that the current viewport consistently displays the
+                next video.
               </p>
             </Reveal>
 
@@ -743,8 +745,8 @@ export default function TikTokRestructurePage() {
               </Reveal>
               <Reveal className={bodyMd}>
                 <p>
-                  TikTok contains both landscape and portrait videos, put the
-                  video within square player{" "}
+                  TikTok contains both landscape and portrait videos; putting
+                  the video within a square player{" "}
                   <strong className={emphasis}>
                     ensures a uniform viewing experience
                   </strong>{" "}

@@ -38,7 +38,7 @@ export default function TikTokTikcodePage() {
         <figure className="overflow-hidden rounded-[1.75rem] border border-[var(--cs-border)]">
           <Image
             src={`${A}/tk-02.jpg`}
-            alt="TikCode — personal profile QR page with a scannable code on a colourful gradient"
+            alt="TikCode — personal profile QR page with a scannable code on a colorful gradient"
             width={2700}
             height={1605}
             priority
@@ -57,10 +57,10 @@ export default function TikTokTikcodePage() {
           <div className="mt-12">
             <p className={eyebrowSection}>Overview</p>
             <p className="mt-6 max-w-3xl text-lg leading-[1.5] tracking-[-0.01em] text-[var(--cs-body)]">
-              A QR code for users to connect with their friends. Provide QR codes
-              for users to access various pages such as Hashtags, Sounds, and
-              Effects. Showcase the brand style and creativity, offering users a
-              unique experience when interacting with the TikTok QR code.
+              A QR code for users to connect with their friends. It provides QR
+              codes for users to access various pages such as Hashtags, Sounds,
+              and Effects. It showcases the brand style and creativity, offering
+              users a unique experience when interacting with the TikTok QR code.
             </p>
           </div>
 
@@ -101,7 +101,7 @@ export default function TikTokTikcodePage() {
                   Design Patent
                 </h3>
                 <p className="mt-1 text-sm leading-[1.4] text-[var(--cs-body)]">
-                  QR code and Motion related
+                  QR code and motion related
                 </p>
                 <p className={`mt-2 ${eyebrowMeta}`}>Mar 2021</p>
               </div>
@@ -112,11 +112,11 @@ export default function TikTokTikcodePage() {
         {/* SECTION FLOW */}
         <div className="mt-24 flex flex-col gap-24 sm:gap-32 lg:mt-28 lg:gap-40">
           {/* BACKGROUND */}
-          <CaseSection eyebrow="Background" title="Design for Creativity">
+          <CaseSection eyebrow="Background" title="Every TikCode is a visual URL">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
-                With numerous other apps, TikTok has crafted a distinctive
-                visualized Tikcode, representing a unique URL. Users can employ
+                Like numerous other apps, TikTok has crafted a distinctive
+                visualized TikCode, representing a unique URL. Users can employ
                 their camera for scanning or utilize the in-app scanning feature
                 to navigate to the relevant page. Simply put, any code serves as
                 a visual representation of a URL.
@@ -125,7 +125,7 @@ export default function TikTokTikcodePage() {
             <Reveal className="mt-10">
               <ImageFrame
                 src={`${A}/tk-04.jpg`}
-                alt="Tikcode variants for personal profile, hashtag, sounds and effects — each a visual TikTok URL"
+                alt="TikCode variants for personal profile, hashtag, sounds and effects — each a visual TikTok URL"
                 width={5760}
                 height={3069}
               />
@@ -133,14 +133,14 @@ export default function TikTokTikcodePage() {
           </CaseSection>
 
           {/* CURRENT STAGE */}
-          <CaseSection eyebrow="Current stage" title="Customized TikTok QR code">
+          <CaseSection eyebrow="Current stage" title="Standard QR codes work without the app">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
-                We propose transitioning from the Tikcode to a standard QR code.
+                We propose transitioning from the TikCode to a standard QR code.
                 Using the conventional QR format, out-of-app users can access
                 information without opening or having the TikTok app. This
                 broadening of sharing touchpoints aims to attract new users (to
-                download TT through WebApp) and re-engage existing users with the
+                download TT through the WebApp) and re-engage existing users with the
                 app.
               </p>
             </Reveal>
@@ -157,7 +157,7 @@ export default function TikTokTikcodePage() {
           {/* PRINCIPLE */}
           <CaseSection
             eyebrow="Principle"
-            title="Guiding users through the QR code"
+            title="A scan opens the app or the WebApp"
           >
             <div className={`mt-8 max-w-3xl flex flex-col gap-7 ${bodyMd}`}>
               <Reveal>
@@ -171,7 +171,7 @@ export default function TikTokTikcodePage() {
                   If the user has already installed TikTok and scans the QR code
                   through the camera embedded in a third-party application,
                   whether the app launches depends on the block strategy. If the
-                  third party hasn’t blocked:
+                  third party hasn’t blocked it:
                 </p>
                 <ul className="mt-4 flex list-disc flex-col gap-2 pl-5">
                   <li>Scan and recognize;</li>
@@ -181,7 +181,7 @@ export default function TikTokTikcodePage() {
               <Reveal>
                 <p>
                   If the user hasn’t installed TikTok, scanning the code will
-                  allow them to browse the WebApp (*with guidelines to download
+                  allow them to browse the WebApp (with guidelines to download
                   the app).
                 </p>
               </Reveal>
@@ -190,7 +190,7 @@ export default function TikTokTikcodePage() {
             <Reveal className="mt-10">
               <ImageFrame
                 src={`${A}/tk-06.jpg`}
-                alt="Tikcode anatomy — Code Eye 4-dot anchoring, Pattern and Pattern+ dot rules tinted Main Light / Primary #FE2C50"
+                alt="TikCode anatomy — Code Eye 4-dot anchoring, Pattern and Pattern+ dot rules tinted Main Light / Primary #FE2C50"
                 width={5234}
                 height={1934}
               />
@@ -206,7 +206,7 @@ export default function TikTokTikcodePage() {
           </CaseSection>
 
           {/* QR VISUAL */}
-          <CaseSection eyebrow="QR Visual" title="Redesigned TikCode">
+          <CaseSection eyebrow="QR Visual" title="The redesign goes beyond the profile">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
                 We redesigned the personal profile QR page, as well as the QR
@@ -224,7 +224,7 @@ export default function TikTokTikcodePage() {
           </CaseSection>
 
           {/* AB TEST */}
-          <CaseSection eyebrow="AB test" title="Improving share experience">
+          <CaseSection eyebrow="AB test" title="Default channels gave a small lift">
             <Reveal className={`mt-8 max-w-3xl flex flex-col gap-5 ${bodyMd}`}>
               <p>
                 Five groups were configured to test the impact of button layout
@@ -251,7 +251,7 @@ export default function TikTokTikcodePage() {
           </CaseSection>
 
           {/* TIKCODE ANIMATION */}
-          <CaseSection eyebrow="Motion" title="Tikcode animation">
+          <CaseSection eyebrow="Motion" title="Animation makes the card more personal">
             <Reveal className={`mt-8 max-w-3xl flex flex-col gap-5 ${bodyMd}`}>
               <p>
                 To encourage user sharing, we experimented with adding animation
@@ -259,9 +259,9 @@ export default function TikTokTikcodePage() {
                 personalized QR card. You can preview the animation mock below.
               </p>
               <p>
-                Click on the TikCode background, with the click point at 40×40
-                pixels as the center, expanding to the maximum radius of the
-                screen as the mask.
+                Click on the TikCode background: with the click point at 40×40
+                pixels as the center, the mask expands to the maximum radius of
+                the screen.
               </p>
             </Reveal>
             <Reveal className="mt-10">

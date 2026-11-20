@@ -30,15 +30,15 @@ const projectStats = [
 const recognition = [
   {
     icon: "mp-03.png",
-    title: "10 Design Patent",
-    subtitle: "Video related interactive patent",
+    title: "10 Design Patents",
+    subtitle: "Video-related interactive patent",
     date: "Apr 2021",
   },
   {
     icon: "mp-04.png",
     title: "Featured on Apple Events",
     subtitle: "What you can do with your iPad",
-    date: "Set 2021",
+    date: "Sep 2021",
   },
 ];
 
@@ -82,9 +82,9 @@ export default function TikTokMultiPlatformPage() {
           <div className="mt-12">
             <p className={eyebrowSection}>Overview</p>
             <p className="mt-6 max-w-3xl text-lg leading-[1.5] tracking-[-0.01em] text-[var(--cs-body)]">
-              It’s essential to explore optimal LTV on UID level for TikTok
-              users. To optimize cross-end user experience, we need adapt product
-              framework in different ends, as well as define the key issue of
+              It’s essential to explore optimal LTV at the UID level for TikTok
+              users. To optimize cross-end user experience, we need to adapt the
+              product framework to different ends, as well as define the key issue of
               “cross-end experience”.
             </p>
           </div>
@@ -150,7 +150,7 @@ export default function TikTokMultiPlatformPage() {
         {/* SECTION FLOW */}
         <div className="mt-24 flex flex-col gap-24 sm:gap-32 lg:mt-28 lg:gap-40">
           {/* BACKGROUND */}
-          <CaseSection eyebrow="Background" title="Design for iPad">
+          <CaseSection eyebrow="Background" title="The iPad is more than a touch screen">
             <Reveal className={`mt-8 max-w-3xl flex flex-col gap-7 ${bodyMd}`}>
               <p>
                 In recent years, the iPad has undergone a significant
@@ -183,7 +183,7 @@ export default function TikTokMultiPlatformPage() {
           {/* DESIGN RULES */}
           <CaseSection
             eyebrow="Design rules"
-            title="Designing a great iPad app: 4 parts"
+            title="A great iPad app rests on four parts"
           >
             <ol
               className={`mt-8 flex max-w-3xl list-decimal flex-col gap-5 pl-5 ${bodyMd}`}
@@ -193,7 +193,7 @@ export default function TikTokMultiPlatformPage() {
                 displays ≥ 10 inches.
               </li>
               <li>
-                Support for multiple input methods like the Keyboard, Trackpad
+                Support for multiple input methods like the keyboard, trackpad
                 and Apple Pencil.
               </li>
               <li>
@@ -226,9 +226,9 @@ export default function TikTokMultiPlatformPage() {
           >
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
-                The first step is to take the advantage of the display, to show
+                The first step is to take advantage of the display, to show
                 the content and user interface in the best possible light.
-                Instead of empty space, it fills the display with the content
+                Instead of empty space, it fills the display with content
                 like notifications, messages, comments.
               </p>
             </Reveal>
@@ -277,9 +277,9 @@ export default function TikTokMultiPlatformPage() {
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
                 iPad can take up <strong className={emphasis}>300% capacity</strong>{" "}
-                to presenting a lot more contents, use the grid system to show
-                more content. In iPad, we user 3 column grid, the video cover and
-                sounds track are still plenty big enough to see, read and tap on.
+                to present a lot more content. Use the grid system to show
+                more content. On iPad, we use a 3-column grid; the video cover
+                and sound track are still plenty big enough to see, read and tap on.
               </p>
             </Reveal>
 
@@ -299,8 +299,8 @@ export default function TikTokMultiPlatformPage() {
               <p>
                 In TikTok, there’s an increasing trend of segmented videos, where
                 users divide a long video into several short ones. Tapping
-                ‘profile’ will redirects to new page on mobile. However, on the
-                iPad, we enable users to watch videos and browse profiles in the
+                ‘profile’ will redirect to a new page on mobile. However, on the
+                iPad, we enable users to watch videos and browse profiles at the
                 same time.
               </p>
             </Reveal>
@@ -313,22 +313,22 @@ export default function TikTokMultiPlatformPage() {
           {/* 04 — CREATE IMMERSIVE EXPERIENCE */}
           <CaseSection
             eyebrow="Dynamic layout"
-            title="04 · Create immersive experience"
+            title="04 · Create an immersive experience"
           >
             <Reveal className={`mt-8 max-w-3xl flex flex-col gap-5 ${bodyMd}`}>
               <p>
-                The customized immersive layout is specific for iPad design, the
-                icons are in the outside of the content which make the video is
-                more clean.{" "}
+                The customized immersive layout is specific to iPad design; the
+                icons are outside the content, which makes the video
+                cleaner.{" "}
                 <strong className={emphasis}>
-                  The entire device becoming a piece of content
+                  The entire device becomes a piece of content
                 </strong>
                 .
               </p>
               <p>
-                <strong className={emphasis}>Gesture specific for iPad</strong>,
-                The icons are placed in the both side of the screen when you
-                Shooting a video. it’s easy to use with 2 hands when holding an
+                <strong className={emphasis}>Gestures specific to iPad</strong>:
+                the icons are placed on both sides of the screen when you
+                shoot a video. It’s easy to use with 2 hands when holding an
                 iPad.
               </p>
             </Reveal>
@@ -346,11 +346,11 @@ export default function TikTokMultiPlatformPage() {
           {/* 05 — MULTI WINDOW */}
           <CaseSection
             eyebrow="Multi-task"
-            title="05 · Multi-window & split view"
+            title="05 · Keep watching while multitasking"
           >
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
-                From iPad, many people tend to multitask while watching videos,
+                On iPad, many people tend to multitask while watching videos,
                 such as writing documents, drawing, or even cooking… Users can
                 watch TikTok while doing other tasks, and the video will
                 automatically switch to the next in split view.
@@ -370,7 +370,7 @@ export default function TikTokMultiPlatformPage() {
           {/* CLOSING */}
           <Reveal className="text-center">
             <p className="text-[clamp(1.25rem,2.4vw,1.75rem)] font-medium leading-[1.2] tracking-[-0.02em] text-[var(--cs-lead)]">
-              Mac OS &amp; TikTok TV to be continue…
+              Mac OS &amp; TikTok TV to be continued…
             </p>
           </Reveal>
         </div>

@@ -7,7 +7,7 @@ import { CaseHeader, CaseSection, CaseStudyFooter, Chapter, MediaCaption, SubHea
 import { HoverVideo } from "../../components/hover-video";
 import { ScrollSteps } from "../../components/scroll-steps";
 import { TT_ACCENT, TV_CANVAS } from "../../lib/tiktok-tv";
-import { surfaceQuiet, surfaceDefault, bodyMd, bodySm, emphasis, cardLeadTitle, cardHoverDark } from "../../lib/tokens";
+import { eyebrowMeta, surfaceQuiet, surfaceDefault, bodyMd, bodySm, emphasis, cardLeadTitle, cardHoverDark } from "../../lib/tokens";
 
 const A = "/portfolio/tiktok-tv-search";
 
@@ -37,7 +37,7 @@ const relatedCases = [
   },
   {
     title: "Navigation",
-    body: "Flexible navigation structure, improve user experience, and usage.",
+    body: "A flexible navigation structure that improves the experience and usage.",
     image: `${A}/sr-17.png`,
     href: "/work/tiktok-tv-navigation",
   },
@@ -87,7 +87,7 @@ export default function TikTokTvSearchPage() {
             id="dissatisfied"
             n="01"
             eyebrow="Background"
-            title="Dissatisfied users"
+            title="Many users gave up on search"
             accent={TT_ACCENT}
             intro={
               <p className={bodyMd}>
@@ -97,9 +97,31 @@ export default function TikTokTvSearchPage() {
                 Android TV users used search only once, indicating dissatisfaction and room for improvement.
               </p>
             }
-          />
+          >
+            {/* The paragraph's figures, grouped by what they measure. */}
+            <StaggerGrid className="mt-14 grid gap-5 sm:grid-cols-2">
+              {[
+                { what: "Opened search but didn't search", rows: [["Web", "27%"], ["Android TV", "12%"]] },
+                { what: "Used search only once", rows: [["Web TV", "48%"], ["Android TV", "42%"]] },
+              ].map(({ what, rows }, i) => (
+                <StaggerItem key={what} index={i} className={`h-full rounded-[1.25rem] px-6 py-6 ${surfaceDefault}`}>
+                  <p className={eyebrowMeta}>{what}</p>
+                  <div className="mt-5 grid grid-cols-2 gap-4">
+                    {rows.map(([platform, value]) => (
+                      <div key={platform} className="@container">
+                        <p className="whitespace-nowrap text-[clamp(1.75rem,26cqw,3rem)] font-medium leading-none tracking-[-0.04em] text-[var(--cs-heading)]">
+                          {value}
+                        </p>
+                        <p className={`mt-2 ${bodySm}`}>{platform}</p>
+                      </div>
+                    ))}
+                  </div>
+                </StaggerItem>
+              ))}
+            </StaggerGrid>
+          </Chapter>
 
-          <Chapter id="frustrated" n="02" eyebrow="Problems" title="Frustrated users in search" accent={TT_ACCENT}>
+          <Chapter id="frustrated" n="02" eyebrow="Problems" title="Search made users work too hard" accent={TT_ACCENT}>
             {/* Each paragraph pairs with the clip below it. */}
             <StaggerGrid className="mt-12 grid gap-x-12 gap-y-12 sm:grid-cols-2">
               <StaggerItem index={0} className="flex h-full flex-col">
@@ -125,19 +147,18 @@ export default function TikTokTvSearchPage() {
             </StaggerGrid>
           </Chapter>
 
-          <Chapter id="structure" n="03" eyebrow="New Structure" title="Redefine the user purpose" accent={TT_ACCENT}>
+          <Chapter id="structure" n="03" eyebrow="New Structure" title="Left-right rows suit search best" accent={TT_ACCENT}>
             <Reveal className={`mt-14 ${WIDE_GRID}`}>
               <div className="min-[1180px]:col-span-5">
                 <SubHeading>Structure</SubHeading>
               </div>
               <div className={`flex flex-col gap-6 min-[1180px]:col-span-7 ${bodyMd}`}>
                 <p>
-                  Based on previous profile research, the <strong className={emphasis}>left-right structure</strong> is the
-                  best option for a short video platform because it has more capacity.
+                  Based on previous profile research, the <strong className={emphasis}>left-right structure</strong> is the best option for a short-video platform because it has more capacity.
                 </p>
                 <p>
                   The row layout is more suitable for search scenarios, giving users a feeling of continuous video
-                  consumption. It is the opposite with profile structure. Waterfall layouts, on the other hand, are
+                  consumption. This is the opposite of the profile structure. Waterfall layouts, on the other hand, are
                   generally designed to help users quickly find specific content.
                 </p>
               </div>
@@ -145,8 +166,8 @@ export default function TikTokTvSearchPage() {
 
             <StaggerGrid className="mt-12 grid gap-x-12 gap-y-12 sm:grid-cols-2">
               {[
-                { src: `${A}/sr-05.mp4`, title: "Up-down", points: ["· Not intuitive interactions", "· Only show 1 row at a time"] },
-                { src: `${A}/sr-06.mp4`, title: "Left-right", points: ["· More intuitive interactions", "· Show more rows at a time"] },
+                { src: `${A}/sr-05.mp4`, title: "Up-down", points: ["· Less intuitive interactions", "· Shows only 1 row at a time"] },
+                { src: `${A}/sr-06.mp4`, title: "Left-right", points: ["· More intuitive interactions", "· Shows more rows at a time"] },
               ].map((c, i) => (
                 <StaggerItem key={c.title} index={i}>
                   <HoverVideo src={c.src} />
@@ -162,12 +183,11 @@ export default function TikTokTvSearchPage() {
           </Chapter>
 
           {/* KEYBOARD — a sub-feature of the new structure: a smaller title, no number. */}
-          <CaseSection title="Keyboard" compact>
+          <CaseSection title="A keyboard with fewer steps" compact>
             <Reveal>
               <p className={`mt-8 max-w-3xl ${bodyMd}`}>
-                The user&apos;s intuition should focus on the <strong className={emphasis}>&apos;Search Button&apos;</strong>{" "}
-                but not &apos;clear&apos; after typing the keyword, and after coming back from the search result, we will
-                help the user focus on the <strong className={emphasis}>&apos;Clear Button&apos;</strong> automatically.
+                After typing a keyword, focus should land on the <strong className={emphasis}>&apos;Search Button&apos;</strong>, not &apos;Clear&apos;; when users come back from the results, we move focus to the{" "}
+                <strong className={emphasis}>&apos;Clear Button&apos;</strong> automatically.
               </p>
             </Reveal>
             <Reveal className="mt-10">
@@ -175,8 +195,7 @@ export default function TikTokTvSearchPage() {
             </Reveal>
             <Reveal>
               <p className={`mt-12 max-w-3xl ${bodyMd}`}>
-                To give the user a better and smoother experience on TV, we try to minimize the steps that users have to
-                take when searching. The TikTok keyboard is the most efficient keyboard among all competitors.
+                To give users a better, smoother experience on TV, we minimize the steps they have to take when searching. The TikTok keyboard is the most efficient keyboard among all competitors.
               </p>
             </Reveal>
             <div className="mt-10">
@@ -188,12 +207,11 @@ export default function TikTokTvSearchPage() {
             id="top-user-card"
             n="04"
             eyebrow="Result design"
-            title="Top user card"
+            title="Creators’ videos without the detour"
             accent={TT_ACCENT}
             intro={
               <p className={bodyMd}>
-                Adding the top user card in the search result could help users decrease the step of browsing videos, just
-                keeping pressing &apos;right&apos; without getting into the user&apos;s profile.
+                A top user card in the search results cuts the steps to a creator&apos;s videos: users just keep pressing &apos;right&apos;, without opening the profile.
               </p>
             }
           >
@@ -202,7 +220,7 @@ export default function TikTokTvSearchPage() {
             </Reveal>
           </Chapter>
 
-          <Chapter id="animation" n="05" eyebrow="Animation" title="Suggestion & Result overview" accent={TT_ACCENT}>
+          <Chapter id="animation" n="05" eyebrow="Animation" title="Suggestions and results in motion" accent={TT_ACCENT}>
             <Reveal className="mt-12">
               <VideoFrame src={`${A}/sr-15.mp4`} className="border-0" />
             </Reveal>
@@ -212,7 +230,7 @@ export default function TikTokTvSearchPage() {
             id="result"
             n="06"
             eyebrow="Impact"
-            title="The Result"
+            title="Results are still coming in"
             accent={TT_ACCENT}
             intro={<p className={bodyMd}>To be continued…</p>}
           />

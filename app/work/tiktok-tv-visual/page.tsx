@@ -60,7 +60,7 @@ const focusRules: { label: string; body: ReactNode; video: string }[] = [
 const features: { title: string; body: string; image: string; href?: string }[] = [
   {
     title: "Navigation",
-    body: "Flexible navigation structure, improve user experience and usage.",
+    body: "A flexible navigation structure that improves the experience and usage.",
     image: `${A}/tv-12.png`,
     href: "/work/tiktok-tv-navigation",
   },
@@ -68,11 +68,13 @@ const features: { title: string; body: string; image: string; href?: string }[] 
     title: "My & Others Profile",
     body: "Differentiated profile designs meet user consumption needs across different scenarios.",
     image: `${A}/tv-18.png`,
+    href: "/work/tiktok-tv-profile",
   },
   {
     title: "Search & Result",
     body: "The first TV search feature specifically designed for short videos.",
     image: `${A}/tv-10.png`,
+    href: "/work/tiktok-tv-search",
   },
 ];
 
@@ -111,14 +113,14 @@ export default function TikTokTvVisualPage() {
           <CaseHeader
             date="Apr 2024 — Oct 2024"
             title="TikTok TV revamp"
-            overview="TikTok is a fast growing product, and we started to realize that TikTok TV can showcase a wider variety of content better suited for TV viewing experiences — such as longer videos, series, and subscription-based videos."
+            overview="TikTok is a fast-growing product, and we started to realize that TikTok TV can showcase a wider variety of content better suited for TV viewing experiences — such as longer videos, series, and subscription-based videos."
             facts={projectStats}
           >
             <div className="mt-14 grid gap-4 lg:grid-cols-2">
               <MetaCard
                 icon={`${A}/tv-15.png`}
                 iconSize={72}
-                title="6 Design Patent"
+                title="6 Design Patents"
                 lines={["Video related interactive patent", "Design inventions", "Apr 2024 — Oct 2024"]}
               />
               <MetaCard icon={`${A}/tv-13.png`} iconSize={112} title="Special thanks" lines={["Nina Ding", "Zhanchen Zhang", "Weilong Gao"]} />
@@ -131,7 +133,7 @@ export default function TikTokTvVisualPage() {
               id="why-tv"
               n="01"
               eyebrow="Background"
-              title="Why TV?"
+              title="TV became a core business for TikTok"
               accent={TT_ACCENT}
               intro={
                 <div className={`flex flex-col gap-6 ${bodyMd}`}>
@@ -163,7 +165,7 @@ export default function TikTokTvVisualPage() {
               id="vast-window"
               n="02"
               eyebrow="The new visual"
-              title="A vast window of TV"
+              title="The screen as a window, not a surface"
               accent={TT_ACCENT}
               intro={
                 <p className={bodyMd}>
@@ -196,7 +198,7 @@ export default function TikTokTvVisualPage() {
               id="interactions"
               n="03"
               eyebrow="The new identity"
-              title="Interactions & Animation"
+              title="Motion that answers the remote"
               accent={TT_ACCENT}
               intro={
                 <div className={`flex flex-col gap-6 ${bodyMd}`}>
@@ -273,7 +275,7 @@ export default function TikTokTvVisualPage() {
               </Reveal>
             </Chapter>
 
-            <Chapter id="components-focus" n="04" eyebrow="The new looks" title="Components & Focus" accent={TT_ACCENT}>
+            <Chapter id="components-focus" n="04" eyebrow="The new looks" title="Focus that stays where you expect" accent={TT_ACCENT}>
               <Reveal className="mt-14 grid gap-8 lg:grid-cols-2 lg:items-start lg:gap-12">
                 <div>
                   <SubHeading>Components</SubHeading>

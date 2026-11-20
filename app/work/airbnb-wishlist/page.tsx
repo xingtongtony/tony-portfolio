@@ -29,11 +29,11 @@ const problems = [
   {
     n: "Problem 1",
     title: "Unexpected flow",
-    body: "‘Save Listing’ have to create or select a folder, a flow that falls beyond user expectations, reducing the efficiency of saving listing.",
+    body: "To ‘Save Listing’, users have to create or select a folder, a flow that falls outside user expectations, reducing the efficiency of saving listings.",
   },
   {
     n: "Problem 2",
-    title: "Multiple folders for same destination",
+    title: "Multiple folders for the same destination",
     body: "Creation of multiple folders for the same destination, such as ‘Tokyo’ and ‘Shinjuku City’.",
   },
   {
@@ -43,7 +43,7 @@ const problems = [
   },
   {
     n: "Problem 4",
-    title: "Confused when share",
+    title: "Confused when sharing",
     body: "While folders emphasize inviting friends to collect inspiration together, users feel confused when attempting to share.",
   },
 ];
@@ -51,28 +51,28 @@ const problems = [
 const todos = [
   {
     n: "To-do 1",
-    title: "Efficient Saving Process",
-    body: "One-click to save favorites listings, moving away from folder-based logic. Folders become separate entities.",
+    title: "Efficient saving process",
+    body: "One click to save favorite listings, moving away from folder-based logic. Folders become separate entities.",
   },
   {
     n: "To-do 2",
-    title: "Enhanced Listing Cards",
-    body: "Easy comparison of property information and efficient filtering. Implement different filters for large quantities of listings: organize by city, time etc.",
+    title: "Enhanced listing cards",
+    body: "Easy comparison of property information and efficient filtering. Implement different filters for large quantities of listings: organize by city, time, etc.",
   },
   {
     n: "To-do 3",
-    title: "Improved Sharing Experience",
-    body: "Introduce multi-select sharing without folders. Optimize WeChat viewing through sharing as a mini-app. Refining invitation prompts; View the listing without login.",
+    title: "Improved sharing experience",
+    body: "Introduce multi-select sharing without folders. Optimize WeChat viewing through sharing as a mini app. Refine invitation prompts; view the listing without login.",
   },
   {
     n: "To-do 4",
     title: "Long-term",
-    body: "Enable efficient management of saved content with too many favorites listing, including easy deletion and add into folders.",
+    body: "Enable efficient management of saved content with too many favorite listings, including easy deletion and adding to folders.",
   },
   {
     n: "To-do 5",
-    title: "Additional Factors",
-    body: "Display current available discounts and promotions based on selected dates to aid users in their decision-making process.",
+    title: "Additional factors",
+    body: "Display currently available discounts and promotions based on selected dates to aid users in their decision-making process.",
   },
 ];
 
@@ -117,7 +117,7 @@ export default function AirbnbWishlistPage() {
           <div className="mt-12">
             <p className={eyebrowSection}>Overview</p>
             <p className="mt-6 max-w-3xl text-lg leading-[1.5] tracking-[-0.01em] text-[var(--cs-body)]">
-              Wishlist help you keep track of all the wonderful things you
+              Wishlists help you keep track of all the wonderful things you
               discover on Airbnb. Simply click or tap the heart on any listing
               you want to keep top of mind. You’ll have the option to create and
               name a new wishlist or add it to an existing wishlist.
@@ -148,7 +148,7 @@ export default function AirbnbWishlistPage() {
         {/* SECTION FLOW */}
         <div className="mt-24 flex flex-col gap-24 sm:gap-32 lg:mt-28 lg:gap-40">
           {/* BACKGROUND */}
-          <CaseSection eyebrow="Background" title="User’s Regional Differences">
+          <CaseSection eyebrow="Background" title="China guests use the Wishlist to book">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
                 The original intent behind the ‘Wishlist’ feature was to assist
@@ -167,7 +167,7 @@ export default function AirbnbWishlistPage() {
           </CaseSection>
 
           {/* PROBLEM */}
-          <CaseSection eyebrow="Problem" title="Mismatched intention">
+          <CaseSection eyebrow="Problem" title="Folders get in the guests’ way">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
                 This mismatch between the intended design and user behavior has
@@ -202,12 +202,12 @@ export default function AirbnbWishlistPage() {
           </CaseSection>
 
           {/* GOAL */}
-          <CaseSection eyebrow="Goal" title="End to end sharing improvement">
+          <CaseSection eyebrow="Goal" title="Restructure the wishlist end to end">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
-                From collecting Listings to final completing orders payment,
+                From collecting listings to finally completing order payment,
                 completely restructuring the Airbnb wishlist system to better
-                serve local guest.
+                serve local guests.
               </p>
             </Reveal>
 
@@ -241,17 +241,17 @@ export default function AirbnbWishlistPage() {
           </CaseSection>
 
           {/* DESIGN PROCESS */}
-          <CaseSection eyebrow="Design process" title="Job to be done">
+          <CaseSection eyebrow="Design process" title="One flow from collecting to voting">
             <Reveal className={`mt-8 max-w-3xl flex flex-col gap-5 ${bodyMd}`}>
               <p>
-                All the listing, experience, story, host listing, and city ranks
-                can be collected in the wishlist and list folders. This is a
-                basic flow of how wishlist works from collecting to voting.
+                All the listings, experiences, stories, host listings, and city
+                ranks can be collected in the wishlist and list folders. This is
+                a basic flow of how the wishlist works from collecting to voting.
               </p>
               <p>
                 From Empathize, Define, Ideate, to Final Deliver, and Test the
-                design we have been through all the design process to achieve the
-                goal.
+                design, we have been through the whole design process to achieve
+                the goal.
               </p>
             </Reveal>
 
@@ -290,7 +290,7 @@ export default function AirbnbWishlistPage() {
           </CaseSection>
 
           {/* TOP CITY LIST */}
-          <CaseSection eyebrow="Long-term" title="Top city list">
+          <CaseSection eyebrow="Long-term" title="Next: lists for cities and hosts">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
                 For our long-term goals, we plan to create a Top City list, host
@@ -303,7 +303,7 @@ export default function AirbnbWishlistPage() {
             <Reveal className="mt-10">
               <ImageFrame
                 src={`${A}/ab-09.jpg`}
-                alt="Top city list — category, filter and city tabs driving users to collect listings and share for booking lift"
+                alt="Top City list — category, filter and city tabs driving users to collect listings and share for booking lift"
                 width={2880}
                 height={1800}
               />
@@ -311,7 +311,7 @@ export default function AirbnbWishlistPage() {
           </CaseSection>
 
           {/* RESULT */}
-          <CaseSection eyebrow="Result" title="The result">
+          <CaseSection eyebrow="Result" title="Bookings rose in both apps">
             <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
               <p>
                 We released the new designs in phases. For confidentiality

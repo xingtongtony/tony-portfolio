@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
-import { ArrowDown, ArrowRight, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUpRight, TrendingUp } from "lucide-react";
 import { PortfolioShell } from "../../components/portfolio-shell";
 import { Reveal, StaggerGrid, StaggerItem } from "../../components/motion";
 import { NextSectionButton } from "../../components/next-section-button";
@@ -8,6 +8,7 @@ import { SmoothAnchor } from "../../components/smooth-anchor";
 import { Board, BoardGallery, type BoardImage } from "../../components/board-viewer";
 import { SubHeading, GradientTag, VideoFrame, CaseStudyFooter } from "../../components/case-study";
 import { eyebrowSection, eyebrowMeta, bodyMd, bodySm, emphasis } from "../../lib/tokens";
+import { EMAIL_HREF } from "../../lib/site-links";
 
 // White page, so every design board (grey, #f3f3f3) and video (#eeeeee)
 // reads as a panel by its own background: rounded corners, no border. Tried
@@ -57,12 +58,12 @@ const productMap: { module: string; owners: Owner[]; features: string[] }[] = [
 ];
 
 const personas = [
-  "Most of them are new merchant.",
-  "They require a lot of labor costs and money on a personal assistant.",
-  "They are having difficulty to manage their data in several platforms.",
-  "Their education is not too high, so They’re not use to technology products.",
-  "They are willing to spend money on purchasing traffic rather than functionalities.",
-  "They view us exclusively as an application for printing.",
+  "Most of them are new merchants.",
+  "They spend a lot of labor and money on personal assistants.",
+  "They have difficulty managing their data across several platforms.",
+  "Their education level is not high, so they’re not used to technology products.",
+  "They would rather spend money on buying traffic than on features.",
+  "They see us only as a printing app.",
 ];
 
 const problems = [
@@ -83,16 +84,14 @@ const problems = [
 const strong = "font-semibold text-[#1a1a1a]";
 const hypotheses: ReactNode[] = [
   <span key="h1">
-    Providing the <strong className={strong}>Coupon Distribution feature</strong> for new merchants and helping them{" "}
+    Provide a <strong className={strong}>Coupon Distribution feature</strong> that helps new merchants{" "}
     <strong className={strong}>boost their business within a short period.</strong>
   </span>,
   <span key="h2">
-    <strong className={strong}>Develop an AI assistant</strong> that could guide users through various scenarios, assisting
-    merchants in making fundamental decisions.
+    <strong className={strong}>Develop an AI assistant</strong> that guides users through various scenarios and helps merchants make fundamental decisions.
   </span>,
   <span key="h3">
-    Collect the data from all delivery platforms in a <strong className={strong}>central dashboard</strong>. Users don’t need
-    to check data on each platform.
+    Bring the data from all delivery platforms into a <strong className={strong}>central dashboard</strong>, so users don’t need to check each platform.
   </span>,
 ];
 
@@ -101,44 +100,71 @@ const phasedOutcome: ReactNode[] = [
     They <strong className={emphasis}>don’t come back to review</strong> and improve their coupon{" "}
     <strong className={emphasis}>strategy</strong>.
   </span>,
-  <span key="o2">Merchant have no clear concept of how to set the coupon value. The coupons don’t perform well in practical usage.</span>,
+  <span key="o2">Merchants have no clear sense of how to set the coupon value, so the coupons don’t perform well in practice.</span>,
   <span key="o3">
-    Our merchant does <strong className={emphasis}>not believe in the product</strong>, so we need to give users the clue
-    that <strong className={emphasis}>we are capable of providing all the eaters data</strong>, and the coupons are truly
-    sent to the eaters’ hands.
+    Our merchants <strong className={emphasis}>don’t believe in the product</strong>, so we need to show them that{" "}
+    <strong className={emphasis}>we can provide all the eater data</strong> and that the coupons really reach eaters.
   </span>,
 ];
 
 const iterationGoals: ReactNode[] = [
   <span key="g1">
-    AI Assistant could give user actions on the <strong className={emphasis}>homepage card</strong>, give them more
-    detailed data for their coupon result and lead the user to change the coupon strategy when the performance is not
-    good. Give them the coupon <strong className={emphasis}>history comparison</strong> page.
+    The AI Assistant suggests actions on the <strong className={emphasis}>homepage card</strong>, gives more detailed data on coupon results, and prompts users to change their coupon strategy when performance is poor. Add a coupon{" "}
+    <strong className={emphasis}>history comparison</strong> page.
   </span>,
   <span key="g2">
-    Give the user a list of AI <strong className={emphasis}>recommendation</strong> coupon values for the user to choose
-    from, give user the opportunity to build several coupons.
+    Offer a list of <strong className={emphasis}>AI-recommended</strong> coupon values to choose from, and let users build several coupons.
   </span>,
   <span key="g3">
-    We will <strong className={emphasis}>indicate the locations on the map</strong> where the coupon goes.
+    <strong className={emphasis}>Show on a map</strong> where the coupons go.
   </span>,
 ];
 
+// The outcome recap: each hypothesis, what shipped for it, and the results
+// already reported above. Hypotheses 2 and 3 shipped together in the analysis
+// dashboard (Operation Automation), so they share its results.
+const outcomes: { hypotheses: [number, string][]; shipped: string; href: `#${string}`; results: string[][] }[] = [
+  {
+    hypotheses: [[1, "Coupons that help new merchants grow fast"]],
+    shipped: "Order Booster",
+    href: "#final-design",
+    results: [
+      ["+31.5%", "Monthly orders"],
+      ["+23.2%", "Monthly revenue"],
+      ["+14.8%", "Monthly new eaters"],
+    ],
+  },
+  {
+    hypotheses: [
+      [2, "An AI assistant for everyday decisions"],
+      [3, "One dashboard for every delivery platform"],
+    ],
+    shipped: "Analysis dashboard & AI Assistant",
+    href: "#operation-automation",
+    results: [
+      ["+0.5", "Monthly rating"],
+      ["+7.2%", "Monthly revenue"],
+      ["+9.7%", "Monthly orders"],
+      ["+11.3%", "Monthly new eaters"],
+    ],
+  },
+];
+
 const businessResults = [
-  ["+75.7%", "Click Rate"],
-  ["+12.2%", "Adjusting Coupon"],
+  ["+75.7%", "Click rate"],
+  ["+12.2%", "Coupon adjustments"],
   ["92%", "Satisfaction"],
 ];
 const merchantResults = [
-  ["+31.5%", "Monthly Order"],
-  ["+23.2%", "Monthly Revenue"],
-  ["+14.8%", "Monthly New Eater"],
+  ["+31.5%", "Monthly orders"],
+  ["+23.2%", "Monthly revenue"],
+  ["+14.8%", "Monthly new eaters"],
 ];
 const assistantResults = [
-  ["+0.5", "Monthly Rating"],
-  ["+7.2%", "Monthly Revenue"],
-  ["+9.7%", "Monthly Order"],
-  ["+11.3%", "Monthly New Eater"],
+  ["+0.5", "Monthly rating"],
+  ["+7.2%", "Monthly revenue"],
+  ["+9.7%", "Monthly orders"],
+  ["+11.3%", "Monthly new eaters"],
 ];
 
 // Two columns (heading left, text right) only where the content area is wide
@@ -355,21 +381,20 @@ export default function CloudKitchensPage() {
               id="background"
               n="01"
               eyebrow="Background"
-              title="The potential of Chinese merchants"
+              title="A vast market where kitchens fail fast"
               intro={
                 <div className={`flex flex-col gap-6 ${bodyMd}`}>
                   <p>
-                    The Chinese restaurant industry is vast, There are many individual merchants and chain stores.
+                    The Chinese restaurant industry is vast, with many individual merchants and chain stores.
                     Operating in this sector poses various challenges, including site selection, data analysis,
-                    operational strategies, and growth. The average business cycle of a new kitchen only survive six
-                    months in a extremely competitive environment.
+                    operational strategies, and growth. In an extremely competitive environment, the average new kitchen survives only six months.
                   </p>
                   <p>
                     Our mission is to assist merchants in enhancing their operational capabilities, fostering profitability
                     and growth.
                   </p>
                   <p>
-                    We initially drove got 200,000 small and medium-sized merchants by selling printers. Our goal is to
+                    We initially reached 200,000 small and medium-sized merchants by selling printers. Our goal is to
                     better utilize our merchant resources and achieve our mission through our product, thereby helping
                     businesses improve their operations.
                   </p>
@@ -385,7 +410,7 @@ export default function CloudKitchensPage() {
               id="research"
               n="02"
               eyebrow="Research"
-              title="User Feedback"
+              title="Merchants want help, not another tool"
             >
               <StaggerGrid className="mt-10 grid gap-6 sm:grid-cols-3">
                 {[
@@ -426,16 +451,14 @@ export default function CloudKitchensPage() {
               id="identify-problems"
               n="03"
               eyebrow="Identify problems"
-              title="Experience vs. data-informed decisions"
+              title="Merchants run on instinct, not data"
               intro={
                 <div className={`flex flex-col gap-6 ${bodyMd}`}>
                   <p>
-                    Over 70% of merchant terminate their leases annually, and over 50% of merchants have a monthly order
-                    volume of less than 100 in China. They entered the catering industry without sufficient preparation.
+                    In China, over 70% of merchants terminate their leases each year, and over 50% have fewer than 100 orders a month. They entered the catering industry without sufficient preparation.
                   </p>
                   <p>
-                    We need to improve their data-driven mindset and educate merchants group, meanwhile, help them increase
-                    their store orders and revenue at beginning.
+                    We need to build their data-driven mindset and, at the same time, help them increase orders and revenue from the start.
                   </p>
                 </div>
               }
@@ -459,7 +482,7 @@ export default function CloudKitchensPage() {
               </StaggerGrid>
             </Chapter>
 
-            <Chapter id="hypothesis" n="04" eyebrow="Hypothesis" title="Hypothesis">
+            <Chapter id="hypothesis" n="04" eyebrow="Hypothesis" title="Three bets to help merchants grow">
               <StaggerGrid className="mt-12 grid gap-5 sm:grid-cols-3">
                 {hypotheses.map((body, i) => (
                   <StaggerItem
@@ -479,12 +502,6 @@ export default function CloudKitchensPage() {
               n="05"
               eyebrow="Design process"
               title="Build an MVP to verify the hypothesis"
-              intro={
-                <p className={bodyMd}>
-                  From this 0-1 project, I worked on many more projects during my time at CloudKitchens; if you’re
-                  interested, please reach out to me.
-                </p>
-              }
             >
               <Reveal className="mt-14">
                 <Board {...B.core} />
@@ -497,13 +514,10 @@ export default function CloudKitchensPage() {
                   </div>
                   <div className={`flex flex-col gap-5 min-[1180px]:col-span-7 ${bodyMd}`}>
                     <p>
-                      The design from Storyboarding, Ideations, Prototyping. After extensive research and
-                      experimentation, we arrived at the final design, and we are still iterating based on AB test, user
-                      feedback and product research.
+                      The design went through storyboarding, ideation and prototyping. After extensive research and experimentation we arrived at the final design, and we keep iterating based on A/B tests, user feedback and product research.
                     </p>
                     <p>
-                      The MVP of Order Booster is helping merchants boost store orders and revenue by allowing them to set
-                      coupon values before initiating the distribution of coupons.
+                      The Order Booster MVP helps merchants boost store orders and revenue by letting them set coupon values before coupons are distributed.
                     </p>
                   </div>
                 </Reveal>
@@ -538,7 +552,7 @@ export default function CloudKitchensPage() {
               </Reveal>
             </Chapter>
 
-            <Chapter id="final-design" n="06" eyebrow="Final design" title="Final design & Visual craft">
+            <Chapter id="final-design" n="06" eyebrow="Final design" title="Smarter coupons, visible results">
               <Goal
                 n={1}
                 board={
@@ -547,9 +561,8 @@ export default function CloudKitchensPage() {
                   </Reveal>
                 }
               >
-                AI Assistant could give user actions on the <strong className={emphasis}>homepage card</strong>, give them
-                more detailed data for their coupon result and lead the user to change the coupon strategy when the
-                performance is not good. Give them the coupon <strong className={emphasis}>history comparison</strong> page.
+                The AI Assistant suggests actions on the <strong className={emphasis}>homepage card</strong>, gives more detailed data on coupon results, and prompts users to change their coupon strategy when performance is poor. Add a coupon{" "}
+    <strong className={emphasis}>history comparison</strong> page.
               </Goal>
               <Goal
                 n={2}
@@ -567,8 +580,7 @@ export default function CloudKitchensPage() {
                   </>
                 }
               >
-                Give the user a list of AI <strong className={emphasis}>recommendation</strong> coupon values for the user
-                to choose from, give user the opportunity to build several coupons.
+                Offer a list of <strong className={emphasis}>AI-recommended</strong> coupon values to choose from, and let users build several coupons.
               </Goal>
               <Goal
                 n={3}
@@ -578,34 +590,29 @@ export default function CloudKitchensPage() {
                   </Reveal>
                 }
               >
-                We will <strong className={emphasis}>indicate the locations on the map</strong> where the coupon goes, and
-                provide a central dashboard of their coupon data. They don’t need to go back and forth on different
-                platforms.
+                <strong className={emphasis}>Show on a map</strong> where the coupons go, and provide a central dashboard of coupon data, so users don’t need to go back and forth between platforms.
               </Goal>
 
               <div className="mt-20 flex flex-col gap-8">
-                <Results label="From business goal" items={businessResults} />
-                <Results label="From merchant goal" items={merchantResults} />
+                <Results label="Business results" items={businessResults} />
+                <Results label="Merchant results" items={merchantResults} />
               </div>
             </Chapter>
 
             <Chapter
               id="operation-automation"
               n="07"
-              title="Operation Automation"
+              title="AI turns store data into next steps"
               intro={
                 <p className={bodyMd}>
-                  The analysis dashboard encompasses all restaurant data, utilizing AI to provide stage-specific
-                  recommendations based on each dataset for the current merchant’s store. Users can take corresponding
-                  actions in the analyze sub-features to enhance store ratings. It includes various sub-features such as
-                  Store Monitor, Review Management, Ad Bidding, etc.
+                  The analysis dashboard brings together all of a restaurant’s data and uses AI to give stage-specific recommendations for the merchant’s store. Users act on them in the Analyze sub-features — Store Monitor, Review Management, Ad Bidding and more — to improve their store ratings.
                 </p>
               }
             >
               <StaggerGrid className="mt-14 grid gap-3 sm:grid-cols-2">
                 {[
-                  ["Auto Ad Bidding", "Assisting users in securing the most cost-effective advertising placements on delivery platforms."],
-                  ["Lutra AI Assistant", "Offering store optimization and guidance plans within various features for user."],
+                  ["Auto Ad Bidding", "Helps users secure the most cost-effective ad placements on delivery platforms."],
+                  ["Lutra AI Assistant", "Offers store optimization and guidance plans across features."],
                 ].map(([title, body], i) => (
                   <StaggerItem key={title} index={i} className="h-full rounded-[1.25rem] bg-[#f6f6f6] px-6 py-6">
                     <SubHeading>{title}</SubHeading>
@@ -632,11 +639,66 @@ export default function CloudKitchensPage() {
             <Chapter
               id="core-tabs"
               n="08"
-              title="Core Tabs"
-              intro={<p className={bodyMd}>Me Tab, Printer, and Orders. Reach out to me if you are interested in more details.</p>}
+              title="Core tabs cover the daily basics"
+              intro={<p className={bodyMd}>Orders, Printer and Me.</p>}
             >
               <Reveal className="mt-14">
                 <Board {...B.tabs} />
+              </Reveal>
+            </Chapter>
+
+            <Chapter id="outcome" n="09" eyebrow="Outcome" title="What the three bets delivered">
+              <div className="mt-12 flex flex-col gap-4">
+                {outcomes.map((o, i) => (
+                  <Reveal key={o.shipped} className="grid gap-6 rounded-[1.25rem] bg-[#f6f6f6] p-6 sm:p-8 lg:grid-cols-12 lg:items-center lg:gap-8">
+                    <ul className="flex flex-col gap-3 lg:col-span-4">
+                      {o.hypotheses.map(([n, text]) => (
+                        <li key={n} className="flex flex-col gap-1.5">
+                          <GradientTag tone="warm">Hypothesis {n}</GradientTag>
+                          <span className="text-[15px] leading-6 text-[var(--cs-heading)]">{text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex items-center gap-3 lg:col-span-3">
+                      <ArrowRight aria-hidden className="hidden size-5 shrink-0 lg:block" style={{ color: ORANGE }} strokeWidth={2.25} />
+                      <div>
+                        <p className={eyebrowMeta}>Shipped</p>
+                        <SmoothAnchor
+                          href={o.href}
+                          className={`mt-1 inline-block text-base font-semibold ${ORANGE_TEXT} hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c13d22]`}
+                        >
+                          {/* The arrow stays with the last word, so a wrapped name ends in it. */}
+                          {o.shipped.split(" ").slice(0, -1).join(" ")}{" "}
+                          <span className="whitespace-nowrap">
+                            {o.shipped.split(" ").at(-1)}
+                            <ArrowDown aria-hidden className="ml-1 inline-block size-3.5 -rotate-180 align-[-0.1em]" strokeWidth={2.5} />
+                          </span>
+                        </SmoothAnchor>
+                      </div>
+                    </div>
+                    <dl className={`grid grid-cols-2 gap-x-6 gap-y-4 lg:col-span-5 ${i === 1 ? "sm:grid-cols-4 lg:grid-cols-2" : "sm:grid-cols-3 lg:grid-cols-3"}`}>
+                      {o.results.map(([value, name]) => (
+                        <div key={name}>
+                          <dd className="whitespace-nowrap text-[1.75rem] font-medium leading-none tracking-[-0.03em] text-[var(--cs-heading)]">{value}</dd>
+                          <dt className={`mt-1.5 ${bodySm}`}>{name}</dt>
+                        </div>
+                      ))}
+                    </dl>
+                  </Reveal>
+                ))}
+              </div>
+              <Reveal className="mt-16 flex flex-col gap-4 border-t border-black/[0.08] pt-8 sm:flex-row sm:items-center sm:justify-between">
+                <p className={`max-w-[52ch] ${bodyMd}`}>
+                  Beyond this 0-1 project, I worked on many more projects during my time at CloudKitchens. If you’d like to
+                  hear about them, please reach out.
+                </p>
+                <a
+                  href={EMAIL_HREF}
+                  className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full bg-[#171717] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c13d22]"
+                >
+                  Say hi
+                  <ArrowUpRight aria-hidden className="size-4" strokeWidth={2.25} />
+                </a>
               </Reveal>
             </Chapter>
           </div>

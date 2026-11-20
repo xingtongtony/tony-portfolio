@@ -4,7 +4,7 @@ import { PortfolioShell } from "../../components/portfolio-shell";
 import { Reveal, StaggerGrid, StaggerItem } from "../../components/motion";
 import { NextSectionButton } from "../../components/next-section-button";
 import { Board, BoardGallery, type BoardImage } from "../../components/board-viewer";
-import { CaseHeader, CaseStudyFooter, Chapter, MediaCaption, SubPair, VideoFrame } from "../../components/case-study";
+import { CaseHeader, CaseStudyFooter, Chapter, MediaCaption, SubHeading, SubPair, VideoFrame } from "../../components/case-study";
 import { HoverVideo } from "../../components/hover-video";
 import { ScrollRevealText } from "../../components/scroll-reveal-text";
 import { TT_ACCENT, TV_CANVAS } from "../../lib/tiktok-tv";
@@ -14,7 +14,7 @@ const A = "/portfolio/tiktok-tv-profile";
 
 const B = {
   mine: { src: `${A}/pf-03.png`, alt: "My Profile — original 2020 MVP layout", width: 1280, height: 720 },
-  others: { src: `${A}/pf-04.png`, alt: "Others Profile — original 2020 MVP layout", width: 1164, height: 670 },
+  others: { src: `${A}/pf-04.png`, alt: "Others' Profile — original 2020 MVP layout", width: 1164, height: 670 },
 } satisfies Record<string, BoardImage>;
 
 const projectStats = [
@@ -24,17 +24,18 @@ const projectStats = [
   ["Patents", "1 Design Patent"],
 ];
 
-// Possibility — four wireframe directions, each a hover-to-play clip + a
-// pros/cons checklist (✅/❎ preserved from the source).
+// Possibility — four wireframe directions, each a hover-to-play clip and its
+// pros (✅) and cons (❎). From md up the points are lined up in one table
+// (COMPARISON) so the four can be compared; on a phone each keeps its list.
 const wireframes: { src: string; title: string; points: string[] }[] = [
   {
     src: `${A}/pf-05.mp4`,
     title: "Left-right & Waterfall",
     points: [
-      "✅ Show 8 videos",
+      "✅ Shows 8 videos",
       "✅ Easy to follow the creators",
-      "✅ Intentionally feeling of searching consuming",
-      "❎ Return to the Nav will take two steps",
+      "✅ Intentionally feels like searching and consuming",
+      "❎ Returning to the nav takes two steps",
       "❎ Focus position is not stable",
     ],
   },
@@ -42,35 +43,50 @@ const wireframes: { src: string; title: string; points: string[] }[] = [
     src: `${A}/pf-06.mp4`,
     title: "Left-right & Rows",
     points: [
-      "❎ Show 4.5 videos",
-      "❎ Hard to follow if the users browse too many videos",
-      "✅ Return to the Nav can be only one step",
-      "❎ Other rows may disturb the user",
-      "❎ Returning to the front of the row is hard after focusing a history video",
+      "❎ Shows 4.5 videos",
+      "❎ Hard to keep track if users browse too many videos",
+      "✅ Returning to the nav takes only one step",
+      "❎ Other rows may distract the user",
+      "❎ Hard to return to the start of a row after focusing a history video",
     ],
   },
   {
     src: `${A}/pf-07.mp4`,
     title: "Up-down & Waterfall",
     points: [
-      "❎ Show 5 videos",
-      "❎ Waste too much white space",
-      "✅ Intentionally feeling of searching not consuming",
-      "✅ Always show the creator's info and follow the button",
-      "❎ Hard to follow if the users browse too many videos",
+      "❎ Shows 5 videos",
+      "❎ Wastes too much white space",
+      "✅ Intentionally feels like searching, not consuming",
+      "✅ Always shows the creator's info and the Follow button",
+      "❎ Hard to keep track if users browse too many videos",
     ],
   },
   {
     src: `${A}/pf-08.mp4`,
     title: "Up-down & Rows",
     points: [
-      "❎ Show 5.5 videos",
-      "❎ Waste too much white space",
-      "✅ Return to the Nav can be only one step",
-      "❎ Returning to the front of the row is hard after focusing a history video",
+      "❎ Shows 5.5 videos",
+      "❎ Wastes too much white space",
+      "✅ Returning to the nav takes only one step",
+      "❎ Hard to return to the start of a row after focusing a history video",
     ],
   },
 ];
+
+/** The same points by criterion: [good?, note] per option, or null where that option's list doesn't say. */
+type Cell = [boolean, string] | null;
+const COMPARISON: { criterion: string; cells: Cell[] }[] = [
+  { criterion: "Videos on screen", cells: [[true, "8"], [false, "4.5"], [false, "5"], [false, "5.5"]] },
+  { criterion: "Back to the nav", cells: [[false, "Two steps"], [true, "One step"], null, [true, "One step"]] },
+  { criterion: "Following the creator", cells: [[true, "Easy"], null, [true, "Info and Follow always shown"], null] },
+  { criterion: "Keeping track of many videos", cells: [null, [false, "Hard"], [false, "Hard"], null] },
+  { criterion: "Feels like", cells: [[true, "Searching and consuming"], null, [true, "Searching, not consuming"], null] },
+  { criterion: "Focus position", cells: [[false, "Not stable"], null, null, null] },
+  { criterion: "Use of the screen", cells: [null, [false, "Other rows distract"], [false, "Too much white space"], [false, "Too much white space"]] },
+  { criterion: "Back to the start of a row", cells: [null, [false, "Hard after a history video"], null, [false, "Hard after a history video"]] },
+];
+/** The direction the Conclusion chapter settles on: waterfall, left & right. */
+const CHOSEN = 0;
 
 const relatedCases = [
   {
@@ -81,7 +97,7 @@ const relatedCases = [
   },
   {
     title: "Navigation",
-    body: "Flexible navigation structure, improve user experience, and usage.",
+    body: "A flexible navigation structure that improves the experience and usage.",
     image: `${A}/pf-16.png`,
     href: "/work/tiktok-tv-navigation",
   },
@@ -113,7 +129,7 @@ export default function TikTokTvProfilePage() {
           <CaseHeader
             date="Apr 2024 — Oct 2024"
             title="TikTok TV Profile"
-            overview="We are optimizing the 'My Profile' and 'Other's Profile' features to deliver enhanced value to TikTok TV users. The updated profiles will allow users to effortlessly access their curated content assets and quickly build relationships through other creators' profiles."
+            overview="We are optimizing the 'My Profile' and 'Others' Profile' features to deliver enhanced value to TikTok TV users. The updated profiles will allow users to effortlessly access their curated content assets and quickly build relationships through other creators' profiles."
             facts={projectStats}
           >
             <article className={`mt-14 rounded-[1.25rem] px-6 py-6 ${surfaceQuiet}`}>
@@ -132,7 +148,7 @@ export default function TikTokTvProfilePage() {
               id="difference"
               n="01"
               eyebrow="Problems"
-              title="What's the difference?"
+              title="One layout can’t serve both profiles"
               accent={TT_ACCENT}
               intro={
                 <div className={`flex flex-col gap-6 ${bodyMd}`}>
@@ -141,9 +157,7 @@ export default function TikTokTvProfilePage() {
                     creator&apos;s details.
                   </p>
                   <p>
-                    We found out that interactions vary between &apos;My Profile&apos; and &apos;Others Profile&apos;:
-                    focus on Liked and Favorited video consumption in &apos;My Profile&apos;, with no social features. In
-                    &apos;Others Profiles&apos;, prioritize social attributes, placing user info at the top visual area.
+                    We found that interactions differ between &apos;My Profile&apos; and &apos;Others&apos; Profile&apos;: &apos;My Profile&apos; centers on watching Liked and Favorited videos, with no social features, while &apos;Others&apos; Profile&apos; puts social attributes first, with user info at the top.
                   </p>
                 </div>
               }
@@ -151,7 +165,7 @@ export default function TikTokTvProfilePage() {
               <StaggerGrid className="mt-14 grid gap-x-12 gap-y-10 sm:grid-cols-2">
                 {[
                   { board: B.mine, label: "My Profile" },
-                  { board: B.others, label: "Others Profile" },
+                  { board: B.others, label: "Others' Profile" },
                 ].map(({ board, label }, i) => (
                   <StaggerItem key={label} index={i}>
                     <Board {...board} />
@@ -184,18 +198,21 @@ export default function TikTokTvProfilePage() {
                   { text: "32% visit other profiles via “Following” and “Followers.”", bold: true },
                   { text: "My profile, the place for logged-in users to consume videos," },
                   { text: "shouldn’t have the same structure", bold: true },
-                  { text: "as other’s profile." },
+                  { text: "as others’ profiles." },
                 ]}
               />
             </section>
 
-            <Chapter id="wireframing" n="03" eyebrow="Possibility" title="Wireframing" accent={TT_ACCENT}>
+            <Chapter id="wireframing" n="03" eyebrow="Possibility" title="Four layouts, one clear winner" accent={TT_ACCENT}>
               <StaggerGrid className="mt-12 grid gap-x-12 gap-y-12 sm:grid-cols-2">
                 {wireframes.map((w, i) => (
                   <StaggerItem key={w.title} index={i}>
                     <HoverVideo src={w.src} />
-                    <MediaCaption className="mt-5">{w.title}</MediaCaption>
-                    <ul className="mt-3 flex flex-col gap-1 text-sm leading-[1.4] text-[var(--cs-body-sm)]">
+                    <MediaCaption className="mt-5">
+                      {w.title}
+                      {i === CHOSEN ? <span className={`ml-2 text-xs font-semibold uppercase tracking-[0.12em] ${TT_ACCENT}`}>Chosen</span> : null}
+                    </MediaCaption>
+                    <ul className="mt-3 flex flex-col gap-1 text-sm leading-[1.4] text-[var(--cs-body-sm)] md:hidden">
                       {w.points.map((p) => (
                         <li key={p}>{p}</li>
                       ))}
@@ -203,9 +220,61 @@ export default function TikTokTvProfilePage() {
                   </StaggerItem>
                 ))}
               </StaggerGrid>
+
+              {/* The four side by side, by criterion (md and up). */}
+              <Reveal className="mt-14 hidden md:block">
+                <SubHeading>How the four compare</SubHeading>
+                <div className={`mt-6 overflow-hidden rounded-[1.25rem] ${surfaceDefault}`}>
+                  <table className="w-full table-fixed border-collapse text-left text-sm leading-[1.35]">
+                    <thead>
+                      <tr>
+                        <th scope="col" className="w-[22%] px-5 py-4 align-bottom">
+                          <span className="sr-only">Criterion</span>
+                        </th>
+                        {wireframes.map((w, i) => (
+                          <th
+                            key={w.title}
+                            scope="col"
+                            className={`px-4 py-4 align-bottom font-semibold text-[var(--cs-heading)] ${i === CHOSEN ? "bg-[var(--cs-surface-2)]" : ""}`}
+                          >
+                            {i === CHOSEN ? (
+                              <span className={`mb-1 block text-[10px] font-semibold uppercase tracking-[0.14em] ${TT_ACCENT}`}>Chosen</span>
+                            ) : null}
+                            {w.title}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {COMPARISON.map(({ criterion, cells }) => (
+                        <tr key={criterion} className="border-t border-[var(--cs-border-2)]">
+                          <th scope="row" className="px-5 py-3.5 font-medium text-[var(--cs-body)]">
+                            {criterion}
+                          </th>
+                          {cells.map((cell, i) => (
+                            <td key={i} className={`px-4 py-3.5 ${i === CHOSEN ? "bg-[var(--cs-surface-2)]" : ""}`}>
+                              {cell ? (
+                                <span className={`inline-flex items-start gap-1.5 ${cell[0] ? "text-[var(--cs-heading)]" : "text-[var(--cs-body-sm)]"}`}>
+                                  <span aria-hidden className={`mt-px shrink-0 ${cell[0] ? "text-[#2fbf71]" : "opacity-60"}`}>{cell[0] ? "✓" : "✕"}</span>
+                                  <span>
+                                    <span className="sr-only">{cell[0] ? "Pro: " : "Con: "}</span>
+                                    {cell[1]}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className="text-[var(--cs-eyebrow-meta)]" aria-label="Not noted">—</span>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Reveal>
             </Chapter>
 
-            <Chapter id="conclusion" n="04" eyebrow="Conclusion" title="Waterfall, left & right" accent={TT_ACCENT}>
+            <Chapter id="conclusion" n="04" eyebrow="Conclusion" title="Waterfall grid, split screen" accent={TT_ACCENT}>
               <StaggerGrid className="mt-12 grid auto-rows-fr gap-5 sm:grid-cols-2">
                 {[
                   {
@@ -213,8 +282,7 @@ export default function TikTokTvProfilePage() {
                     title: "Waterfall Format",
                     body: (
                       <>
-                        The waterfall format allows users to search certain content, but the rows format will enable users
-                        to consume content continuously. In the case of the profile page,{" "}
+                        The waterfall format helps users search for specific content, while rows let them consume content continuously. For the profile page,{" "}
                         <strong className={emphasis}>the waterfall format is the best solution.</strong>
                       </>
                     ),
@@ -224,10 +292,7 @@ export default function TikTokTvProfilePage() {
                     title: "Left & Right",
                     body: (
                       <>
-                        To <strong className={emphasis}>improve the capacity</strong> of the screen but not too
-                        overwhelming, we are using left &amp; right structures for both my profile &amp; other&apos;s
-                        profiles. The right side of the content area can show <strong className={emphasis}>8-12 videos</strong>{" "}
-                        at a maximum.
+                        To <strong className={emphasis}>use more of the screen</strong> without overwhelming it, we use a left &amp; right structure for both My Profile and Others&apos; Profile. The content area on the right shows up to <strong className={emphasis}>8–12 videos</strong>.
                       </>
                     ),
                   },
@@ -247,17 +312,16 @@ export default function TikTokTvProfilePage() {
               id="differentiated"
               n="05"
               eyebrow="New experience"
-              title="Differentiated profile"
+              title="Each profile built for its job"
               accent={TT_ACCENT}
               intro={
                 <p className={bodyMd}>
-                  In &apos;my profile&apos;, users are already somewhat familiar with the content they have previously
-                  viewed. In this scenario, they are more concerned with{" "}
-                  <strong className={emphasis}>searching for videos rather than consuming them.</strong>
+                  In &apos;My Profile&apos;, users are already somewhat familiar with the content they have viewed before, so they care more about{" "}
+                  <strong className={emphasis}>searching for videos than consuming them.</strong>
                 </p>
               }
             >
-              <SubPair title="My profile" className="mt-20">
+              <SubPair title="My Profile" className="mt-20">
                 <p>
                   To allow users to access their collected videos more quickly, the user{" "}
                   <strong className={emphasis}>bio is no longer emphasized</strong> on TV. Instead,{" "}
@@ -268,11 +332,9 @@ export default function TikTokTvProfilePage() {
                 <VideoFrame src={`${A}/pf-11.mp4`} className="border-0" />
               </Reveal>
 
-              <SubPair title="Others profile" className="mt-20">
+              <SubPair title="Others’ Profile" className="mt-20">
                 <p>
-                  Keep the social genes as the core content on other&apos;s profiles. Users can press &apos;left&apos; for
-                  at most <strong className={emphasis}>5 steps</strong> to follow the creators no matter how many videos
-                  they browsed.
+                  Social features stay at the core of others&apos; profiles. However many videos users have browsed, they can reach Follow in at most <strong className={emphasis}>5 steps</strong> by pressing &apos;left&apos;.
                 </p>
               </SubPair>
               <Reveal className="mt-10">
@@ -280,11 +342,11 @@ export default function TikTokTvProfilePage() {
               </Reveal>
             </Chapter>
 
-            <Chapter id="inner-flow" n="06" eyebrow="Prototype" title="Inner flow" accent={TT_ACCENT}>
+            <Chapter id="inner-flow" n="06" eyebrow="Prototype" title="Both profiles in motion" accent={TT_ACCENT}>
               <StaggerGrid className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2">
                 {[
-                  { src: `${A}/pf-13.mp4`, label: "My profile" },
-                  { src: `${A}/pf-14.mp4`, label: "Others profile" },
+                  { src: `${A}/pf-13.mp4`, label: "My Profile" },
+                  { src: `${A}/pf-14.mp4`, label: "Others’ Profile" },
                 ].map((it, i) => (
                   <StaggerItem key={it.label} index={i}>
                     <VideoFrame src={it.src} className="border-0" />
@@ -300,7 +362,7 @@ export default function TikTokTvProfilePage() {
               id="result"
               n="07"
               eyebrow="Impact"
-              title="The Result"
+              title="Results are still coming in"
               accent={TT_ACCENT}
               intro={<p className={bodyMd}>To be continued…</p>}
             />

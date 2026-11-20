@@ -28,10 +28,10 @@ const projectStats = [
 ];
 
 const iterations: [string, string, BoardImage][] = [
-  ["V1", "Nav covered on videos too much", B.v1],
-  ["V2", "Transition of animation on large screen is too dramatic", B.v2],
-  ["V3", "Go to setting & feedback tab take too much effort", B.v3],
-  ["V4", "Covered too much on landscape videos", B.v4],
+  ["V1", "The nav covered too much of the video", B.v1],
+  ["V2", "The transition animation was too dramatic on a large screen", B.v2],
+  ["V3", "Getting to Settings & Feedback took too much effort", B.v3],
+  ["V4", "It covered too much of landscape videos", B.v4],
 ];
 
 const categoryPenetration: [string, string][] = [
@@ -97,13 +97,12 @@ export default function TikTokTvNavigationPage() {
               id="choice-impact"
               n="01"
               eyebrow="Problems"
-              title="Choice impact"
+              title="Too many choices push viewers away"
               accent={TT_ACCENT}
               intro={
                 <p className={bodyMd}>
                   According to Netflix research, streaming services should help users find something to watch in{" "}
-                  <strong className={emphasis}>90 seconds</strong> to keep them from looking elsewhere. Too many choices
-                  slow down how fast users pick something to watch, and may push them off the platform entirely.
+                  <strong className={emphasis}>90 seconds</strong> to keep them from looking elsewhere. Too many choices slow down how fast users pick something to watch and may push them off the platform entirely.
                 </p>
               }
             >
@@ -153,7 +152,7 @@ export default function TikTokTvNavigationPage() {
               id="iterations"
               n="03"
               eyebrow="Process"
-              title="Four iterations in"
+              title="Four rounds toward instant watching"
               accent={TT_ACCENT}
               intro={
                 <p className={bodyMd}>
@@ -181,7 +180,7 @@ export default function TikTokTvNavigationPage() {
               id="visual-disruption"
               n="04"
               eyebrow="The new visual"
-              title="Reduce visual disruption"
+              title="Video first, navigation second"
               accent={TT_ACCENT}
               intro={
                 <p className={bodyMd}>
@@ -237,7 +236,7 @@ export default function TikTokTvNavigationPage() {
               id="results"
               n="05"
               eyebrow="Impact"
-              title="Results"
+              title="Watch time, views and active days rose"
               accent={TT_ACCENT}
               intro={
                 <p className={bodyMd}>

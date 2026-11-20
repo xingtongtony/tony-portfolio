@@ -20,7 +20,7 @@ const A = "/portfolio/tiktok-design-system";
 const projectStats = [
   ["Role", "Lead Product Designer"],
   ["Skills", "Design system / Visual design"],
-  ["Platform", "Cross platform"],
+  ["Platform", "Cross-platform"],
 ];
 
 // The "32 components" showcase — component spec sheets (all 1662×2048).
@@ -55,9 +55,9 @@ export default function TikTokDesignSystemPage() {
           <div className="mt-12">
             <p className={eyebrowSection}>Overview</p>
             <p className="mt-6 max-w-3xl text-lg leading-[1.5] tracking-[-0.01em] text-[var(--cs-body)]">
-              TikTok WebApp Design system is supporting central design team which
-              including the LIVE design team (to C), LIVE design team (to B),
-              commercialization design team, Core product UX team etc.
+              The TikTok WebApp Design System is supporting the central design
+              team, which includes the LIVE design team (to C), LIVE design team
+              (to B), commercialization design team, Core product UX team, etc.
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export default function TikTokDesignSystemPage() {
 
         {/* ===== DARK INTRO ===== */}
         <div className="mt-24 flex flex-col gap-24 sm:gap-32 lg:mt-28 lg:gap-40">
-          <CaseSection eyebrow="Context" title="The Lifecycle of an Element">
+          <CaseSection eyebrow="Context" title="Components have a long lifecycle">
             <Reveal className="mt-8 max-w-3xl">
               <SubHeading>A typical development process</SubHeading>
               <p className={`mt-5 ${bodyMd}`}>
@@ -164,8 +164,8 @@ export default function TikTokDesignSystemPage() {
                     <div>
                       <SubHeading>Efficient to manage the components</SubHeading>
                       <p className={`mt-4 ${bodyMd}`}>
-                        It will automatically revise components in all screens, if
-                        designers are using the components master piece.
+                        It will automatically revise components in all screens if
+                        designers are using the master component.
                       </p>
                     </div>
                   </div>
@@ -186,12 +186,12 @@ export default function TikTokDesignSystemPage() {
               <div className="grid items-start gap-x-12 gap-y-10 lg:grid-cols-2">
                 <Reveal>
                   <p className={eyebrowSection}>Basic rules</p>
-                  <h2 className={`mt-4 ${sectionTitle}`}>Adaptive component</h2>
+                  <h2 className={`mt-4 ${sectionTitle}`}>Adaptive components fit any device</h2>
                   <div className="mt-8">
                     <SubHeading>Adjustable and responsive</SubHeading>
                     <p className={`mt-4 ${bodyMd}`}>
-                      The WebApp components should responsive on any size of
-                      device. Designer don’t need to change the entire component.
+                      The WebApp components should be responsive on any size of
+                      device. Designers don’t need to change the entire component.
                     </p>
                   </div>
                 </Reveal>
@@ -207,17 +207,17 @@ export default function TikTokDesignSystemPage() {
             </section>
 
             {/* COMPONENTS TRACKING DOC */}
-            <CaseSection eyebrow="Process" title="Components tracking doc">
+            <CaseSection eyebrow="Process" title="Tracking keeps both teams informed">
               <Reveal className={`mt-8 max-w-3xl flex flex-col gap-5 ${bodyMd}`}>
                 <p>
                   To track the whole design system process is also a part of the
                   work we do.
                 </p>
                 <p>
-                  The tracking doc includes design status, priority, design Wiki,
-                  and development status. The components tracking doc are helping
-                  design team and front engineer team to have better knowledge
-                  about the whole design system process.
+                  The tracking doc includes design status, priority, design wiki,
+                  and development status. The components tracking doc is helping
+                  the design team and front-end engineering team to have better
+                  knowledge about the whole design system process.
                 </p>
               </Reveal>
               <Reveal className="mt-10">
@@ -231,13 +231,13 @@ export default function TikTokDesignSystemPage() {
             </CaseSection>
 
             {/* STRUCTURE OF THE DOCUMENT */}
-            <CaseSection eyebrow="Documentation" title="Structure of the document">
+            <CaseSection eyebrow="Documentation" title="Every doc follows a similar structure">
               <Reveal className={`mt-8 max-w-3xl ${bodyMd}`}>
                 <p>
-                  Each components will have there own documentation to help our
-                  designer better understanding of all the components. The
-                  documentation have pretty similar structure: Anatomy, Type(size,
-                  functionality, interactions), Layout, and Motion.
+                  Each component will have its own documentation to help our
+                  designers better understand all the components. The
+                  documentation has a pretty similar structure: Anatomy, Type
+                  (size, functionality, interactions), Layout, and Motion.
                 </p>
               </Reveal>
               <Reveal className="mt-10">
@@ -298,9 +298,9 @@ export default function TikTokDesignSystemPage() {
                   use of the sense of touch in a user interface design to provide
                   information to an end user
                 </strong>
-                .” one of the most understudied fields in user experience. As our
-                everyday device interactions shift from keyboard+mouse to phones.
-                Combining haptic touch with interactive motion can offer users a
+                ,” one of the most understudied fields in user experience. As our
+                everyday device interactions shift from keyboard+mouse to phones,
+                combining haptic touch with interactive motion can offer users a
                 wider range of emotional expression.
               </p>
             </Reveal>
@@ -315,7 +315,7 @@ export default function TikTokDesignSystemPage() {
                       Haptic Touch
                     </h4>
                     <p className={`mt-3 ${bodyMd}`}>
-                      Establishing the principles of IOS &amp; Android Haptic
+                      Establishing the principles of iOS &amp; Android Haptic
                       Effects. Engineers can directly incorporate effects when our
                       designers designate the specific haptic variant name in
                       their designs prior to shipping.
@@ -345,7 +345,7 @@ export default function TikTokDesignSystemPage() {
             <Reveal className={`mt-16 max-w-3xl ${bodyMd}`}>
               <p>
                 The TikTok motion system comprises transition patterns designed
-                to assist users in comprehending and navigating through in the
+                to assist users in comprehending and navigating through the
                 TikTok app.
               </p>
             </Reveal>
@@ -368,7 +368,7 @@ export default function TikTokDesignSystemPage() {
                       Easy to manipulate
                     </h4>
                     <p className={`mt-3 ${bodyMd}`}>
-                      How the components interact and enter or exit the page — is
+                      How the components interact and enter or exit the page is
                       up to each product team to implement. Use this guidance to
                       customize, combine, coordinate, and choreograph this aspect
                       of motion in the UI.
@@ -376,12 +376,12 @@ export default function TikTokDesignSystemPage() {
                   </div>
                   <div>
                     <h4 className="text-base font-semibold tracking-[-0.01em] text-[var(--cs-heading)]">
-                      Principles to guide designer
+                      Principles to guide designers
                     </h4>
                     <p className={`mt-3 ${bodyMd}`}>
-                      We also support other request when designer have build a new
-                      component that need to add motion on it. The curve and
-                      duration principle will help then make the decisions.
+                      We also support other requests when designers have built a
+                      new component that needs motion added to it. The curve and
+                      duration principle will help them make the decisions.
                     </p>
                   </div>
                 </div>
@@ -400,7 +400,7 @@ export default function TikTokDesignSystemPage() {
           {/* TESTING */}
           <CaseSection
             eyebrow="Testing"
-            title="Testing components back to design file"
+            title="Code-to-design cuts time and errors"
           >
             <ul className={`mt-8 flex max-w-3xl list-disc flex-col gap-3 pl-5 ${bodyMd}`}>
               <li>Less time spent on coding new components.</li>
