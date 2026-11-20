@@ -66,7 +66,7 @@ that looks rough.
 | File | Role |
 | --- | --- |
 | `figures.ts` | Data: `THEMES` (one palette per figure), `AGENTS`, and `FIGURES` — each figure is parts, each part is a list of solids (`box`, `slab`, `cyl`, `ball`, `torus`, `arch`, `poly`). |
-| `figure-builder.ts` | Turns that data into meshes, ink lines and silhouette hulls; the build shader; finishes and clay grain. |
+| `figure-builder.ts` | Turns that data into meshes, ink lines and silhouette hulls; the build shader; finishes and clay grain. Each part is drawn as one mesh per material (its shapes' placements baked in and merged, indexed and unindexed geometry apart), one ink line object and one hull — not one of each per shape. `sync()` hides, each frame, what would draw nothing: a built part's ink and hull, an unbuilt part's shadow, an unbuilt surrounding's fill. |
 | `studio-atmosphere.ts` | Display-space wall and floor lighting shared by the backdrop and patent drawing shaders. |
 | `soft-shadows.ts` | Replaces three.js's basic shadow lookup with area-light shadows (PCSS); TV contacts can resolve down to half a shadow texel. |
 | `reference-ground.ts` | TV floor shadow catcher compares actual received diffuse energy with the unoccluded room; unshadowed pixels match the studio paper. Other figures retain their legacy shadow blend. |
@@ -307,6 +307,13 @@ the same scale, about to close in.
 
 ## 4. Things that will bite
 
+- **There are no per-shape meshes.** Since 2026-11-20 a part's shapes are
+  merged per material at build time (draw calls fell about 3x, frame cost
+  about a fifth; the picture is pixel-identical). Anything that needs one
+  shape — a construction path, a measurement — reads the shape definitions in
+  `figures.ts`, not the scene graph. If a shader's discard rule changes (ink
+  above the build front, fills and shadows below it), change `sync()` to
+  match, or it will hide something that should draw.
 - **three.js 0.18x shadows are not the ones in older tutorials.**
   `PCFSoftShadowMap` is gone, drei's `<SoftShadows>` targets the old shader, and
   the published build strips GLSL comments. `soft-shadows.ts` patches by

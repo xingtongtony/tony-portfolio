@@ -923,7 +923,10 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           color: c.coral,
           drawing: false,
           shapes: [
-            { k: "slab", size: [0.42, 0.18], t: 0.055, r: 0.025, bevel: 0.009, pos: [-1.01, 0.095, 1.04], map: `label:Focus|${c.coral}|${c.white}|2.3333333333` },
+            // Stands on the lower tier's ledge (top 0.04), its back against
+            // the deck's front edge (half the deck's depth, 0.95). It used to
+            // sink 0.035 into the tier.
+            { k: "slab", size: [0.42, 0.18], t: 0.055, r: 0.025, bevel: 0.009, pos: [-1.01, 0.04 + 0.09 - 0.003, 0.95 + 0.055 / 2 + 0.004], map: `label:Focus|${c.coral}|${c.white}|2.3333333333` },
           ],
         },
       ],

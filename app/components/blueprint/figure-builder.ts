@@ -21,6 +21,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineSegments2 } from "three/addons/lines/LineSegments2.js";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
 import { toCreasedNormals } from "three/addons/utils/BufferGeometryUtils.js";
 import { AGENTS, INK, type FigureDef, type Finish, type ShapeDef } from "./figures";
@@ -441,7 +442,7 @@ function softBoxLines(w: number, h: number, d: number, r: number): number[] {
   return out;
 }
 
-type Built = { mesh: THREE.BufferGeometry; edges: LineSegmentsGeometry; hull: boolean };
+type Built = { mesh: THREE.BufferGeometry; lines: number[]; hull: boolean };
 const cache = new Map<string, Built>();
 
 function shapeGeometry(s: ShapeDef, reference = false): Built {
@@ -526,9 +527,7 @@ function shapeGeometry(s: ShapeDef, reference = false): Built {
     hull = s.t >= 0.04;
   }
 
-  const edges = new LineSegmentsGeometry();
-  if (lines.length) edges.setPositions(lines);
-  const built = { mesh, edges, hull };
+  const built = { mesh, lines, hull };
   cache.set(key, built);
   return built;
 }
@@ -545,7 +544,48 @@ export type BuiltFigure = {
   indirect?: ReferenceIndirectUniforms;
   /** 0 = drawn normally, 1 = faded into the paper (while another figure is in focus). */
   setFade: (v: number) => void;
+  /**
+   * Hide what would draw nothing this frame: a built part's ink and hull
+   * (they only draw above the build front), and an unbuilt part's shadow and,
+   * for supporting objects, its fill (they only draw below it). Call after
+   * the build heights are set. It changes no pixel; it only skips draws.
+   */
+  sync: () => void;
 };
+
+/**
+ * A shape's geometry in its part's space, with position, normal and uv only,
+ * so shapes can be merged. Indexed geometry (lathes, spheres, rings, soft
+ * boxes) keeps its index: unrolling it would repeat each vertex for every
+ * triangle that shares it.
+ */
+function placed(geo: THREE.BufferGeometry, s: ShapeDef): THREE.BufferGeometry {
+  const out = new THREE.BufferGeometry();
+  out.setAttribute("position", geo.getAttribute("position").clone());
+  out.setAttribute("normal", geo.getAttribute("normal").clone());
+  const uv = geo.getAttribute("uv");
+  out.setAttribute("uv", uv ? uv.clone() : new THREE.BufferAttribute(new Float32Array(geo.getAttribute("position").count * 2), 2));
+  if (geo.index) out.setIndex(geo.index.clone());
+  out.applyMatrix4(shapeMatrix(s));
+  return out;
+}
+
+/** Merge what can be merged: indexed and unindexed geometry separately. */
+function mergeAll(geos: THREE.BufferGeometry[]): THREE.BufferGeometry[] {
+  const indexed = geos.filter((g) => g.index), plain = geos.filter((g) => !g.index);
+  return [indexed, plain].filter((set) => set.length).map((set) => (set.length > 1 ? mergeGeometries(set) : set[0]));
+}
+
+function shapeMatrix(s: ShapeDef) {
+  const rot = s.k !== "ball" && s.rot ? s.rot : [0, 0, 0];
+  return new THREE.Matrix4().compose(
+    new THREE.Vector3(s.pos[0], s.pos[1], s.pos[2]),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(rot[0], rot[1], rot[2])),
+    new THREE.Vector3(1, 1, 1),
+  );
+}
+
+type PartDraw = { rt: PartRuntime; env: boolean; fills: THREE.Mesh[]; ink: THREE.Object3D[] };
 
 export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): BuiltFigure {
   const reference = def.id === "tv";
@@ -554,7 +594,7 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
   const parts: Record<string, PartRuntime> = {};
   const fade = { value: 0 };
   const origin = { value: new THREE.Vector3() };
-  const casters: THREE.Mesh[] = [];
+  const draws: PartDraw[] = [];
 
   for (const part of def.parts) {
     const drawing = part.drawing !== false;
@@ -579,8 +619,17 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
     const line = lineMaterial(rt, fade, atmosphere);
     const hullInk = hullMaterial(rt, fade, atmosphere);
 
+    // One mesh per material per part, not one per shape: each shape's
+    // placement is baked into its geometry and the shapes are merged. Same
+    // triangles, same materials, same look — a fraction of the draw calls,
+    // which is most of what a frame costs (and it is paid three times, for
+    // the two shadow maps and the picture).
+    const byFill = new Map<THREE.Material, THREE.BufferGeometry[]>();
+    const hulls: THREE.BufferGeometry[] = [];
+    const ink: number[] = [];
+    const point = new THREE.Vector3();
     for (const s of part.shapes) {
-      const { mesh: geo, edges, hull } = shapeGeometry(s, reference);
+      const { mesh: geo, lines, hull } = shapeGeometry(s, reference);
       const color = s.color ?? part.color;
       const finish = s.finish ?? part.finish ?? "clay";
       const fillKey = `${color}|${finish}|${s.map ?? ""}`;
@@ -590,30 +639,65 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
         fill = fillMaterial(color, finish, s.map, rt, fade, origin, atmosphere, reference, drawing, reflectance, indirect);
         fills.set(fillKey, fill);
       }
-      const mesh = new THREE.Mesh(geo, fill);
-      mesh.position.set(s.pos[0], s.pos[1], s.pos[2]);
-      if (s.k !== "ball" && s.rot) mesh.rotation.set(s.rot[0], s.rot[1], s.rot[2]);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.customDepthMaterial = depth;
-      if (drawing && edges.attributes.instanceStart) mesh.add(new LineSegments2(edges, line));
-      if (drawing && hull) mesh.add(new THREE.Mesh(geo, hullInk));
-      casters.push(mesh);
-      pg.add(mesh);
+      const shaped = placed(geo, s);
+      byFill.set(fill, [...(byFill.get(fill) ?? []), shaped]);
+      if (drawing && hull) hulls.push(shaped);
+      if (drawing && lines.length) {
+        const m = shapeMatrix(s);
+        for (let i = 0; i < lines.length; i += 3) {
+          point.set(lines[i], lines[i + 1], lines[i + 2]).applyMatrix4(m);
+          ink.push(point.x, point.y, point.z);
+        }
+      }
     }
+    const draw: PartDraw = { rt, env: !drawing, fills: [], ink: [] };
+    for (const [fill, geos] of byFill) {
+      for (const merged of mergeAll(geos)) {
+        const mesh = new THREE.Mesh(merged, fill);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.customDepthMaterial = depth;
+        draw.fills.push(mesh);
+        pg.add(mesh);
+      }
+    }
+    for (const merged of mergeAll(hulls)) {
+      const hullMesh = new THREE.Mesh(merged, hullInk);
+      draw.ink.push(hullMesh);
+      pg.add(hullMesh);
+    }
+    if (ink.length) {
+      const edges = new LineSegmentsGeometry();
+      edges.setPositions(ink);
+      const lineMesh = new LineSegments2(edges, line);
+      draw.ink.push(lineMesh);
+      pg.add(lineMesh);
+    }
+    draws.push(draw);
 
     group.add(pg);
     parts[part.id] = rt;
   }
 
+  const sync = () => {
+    // A figure faded into the paper must not leave its shadow behind.
+    const castable = fade.value < 0.5;
+    for (const { rt, env, fills: meshes, ink: inked } of draws) {
+      const built = rt.h.value >= 1e3;
+      const unbuilt = rt.h.value <= -1e3;
+      for (const mesh of meshes) {
+        mesh.castShadow = castable && !unbuilt;
+        mesh.visible = !(env && unbuilt);
+      }
+      for (const object of inked) object.visible = !built;
+    }
+  };
   const setFade = (v: number) => {
     fade.value = v;
-    // A figure faded into the paper must not leave its shadow behind.
-    const cast = v < 0.5;
-    if (casters[0].castShadow !== cast) for (const mesh of casters) mesh.castShadow = cast;
+    sync();
   };
 
-  return { def, group, parts, origin, setFade, indirect };
+  return { def, group, parts, origin, setFade, sync, indirect };
 }
 
 /** Call once the figure sits at its final place in the scene. */
