@@ -59,10 +59,10 @@ export function BoardGallery({ boards, children }: { boards: BoardImage[]; child
 }
 
 /**
- * A board on the page. `framed` gives it rounded corners and a hairline edge —
- * for boards whose own background differs from the page (dark flows, white
- * sheets). Without it the board sits on the page with no frame at all, which
- * is right when the board's background is the page's colour.
+ * A board on the page, with rounded corners and no border: on a page of a
+ * different colour its own background is its edge (see PORTFOLIO_WORKING_RULES
+ * → "Boards are panels"). `framed` is kept for a board whose background is
+ * the page's own colour and needs a hairline edge.
  */
 export function Board({
   src,
@@ -86,7 +86,7 @@ export function Board({
         width={width}
         height={height}
         sizes="(min-width: 1024px) 70vw, 100vw"
-        className={`h-auto w-full ${framed ? "rounded-[1.5rem] border border-black/[0.09]" : ""}`}
+        className={`h-auto w-full rounded-[1.5rem] ${framed ? "border border-black/[0.09]" : ""}`}
       />
       <span
         aria-hidden

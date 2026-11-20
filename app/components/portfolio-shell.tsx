@@ -7,7 +7,7 @@ import { RootBackground } from "./root-background";
 import { MobileHeader, type ShellTheme } from "./mobile-header";
 import { ABOUT_HREF, EMAIL_HREF, EXTERNAL_LINKS } from "../lib/site-links";
 
-type SidebarTheme = "home" | "tiktok-tv" | "light" | "paper" | "stage";
+type SidebarTheme = "home" | "tiktok-tv" | "light" | "stage";
 
 type PortfolioShellProps = {
   children: ReactNode;
@@ -60,23 +60,6 @@ const sidebarThemes: Record<SidebarTheme, ShellTheme> = {
     copyright: "text-black/35",
     bar: "border-black/[0.06] bg-white/80",
     sheet: "bg-[#f6f6f6] text-[#171717]",
-    tone: "light",
-  },
-  // A case study whose page is a light grey paper (CloudKitchens: the grey
-  // of its own design boards, so the boards sit on the page unframed). A
-  // white panel keeps the navigation apart from that grey; the light panel's
-  // #f6f6f6 is too close to it to read as a panel at all.
-  paper: {
-    panel: "border-black/[0.06] bg-white text-[#171717]",
-    logo: "brightness-0",
-    muted: "text-black/45",
-    nav: "text-black/45",
-    navHover: "hover:text-black",
-    status:
-      "bg-black/[0.05] text-black/66 hover:bg-black/[0.1] hover:text-black",
-    copyright: "text-black/35",
-    bar: "border-black/[0.06] bg-[#f3f3f3]/80",
-    sheet: "bg-white text-[#171717]",
     tone: "light",
   },
   // The homepage. From lg the page is the blueprint stage's tinted paper

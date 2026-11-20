@@ -9,16 +9,17 @@ import { Board, BoardGallery, type BoardImage } from "../../components/board-vie
 import { SubHeading, GradientTag, VideoFrame, CaseStudyFooter } from "../../components/case-study";
 import { eyebrowSection, eyebrowMeta, bodyMd, bodySm, emphasis } from "../../lib/tokens";
 
-// The page is the grey of Lutra's own design boards (#f3f3f3). Every board
-// keeps a hairline frame: their phone screens are long screenshots cut off
-// mid-screen, and with no edge round the board a cut screen looked as if the
-// page had cut it (Tony, 2026-11-20). Every board opens full screen
-// (BoardGallery). Lutra's
+// White page, so every design board (grey, #f3f3f3) and video (#eeeeee)
+// reads as a panel by its own background: rounded corners, no border. Tried
+// and dropped the same day: a grey page with unframed boards (screens
+// cropped mid-screen looked cut off by the page), then a hairline frame on
+// every board (a double grey edge on boards and videos with a tint of their
+// own). Cards are a light grey to sit with the boards. Every board opens
+// full screen (BoardGallery). Lutra's
 // orange is the accent: #f05536 for graphics and large type, #c13d22 for
 // small text (it keeps 4.5:1 on the grey).
 
 const A = "/portfolio/cloudkitchens";
-const PAPER = "#f3f3f3";
 const ORANGE = "#f05536";
 const ORANGE_TEXT = "text-[#c13d22]";
 
@@ -47,13 +48,12 @@ const projectStats = [
 ];
 
 // The product map (formerly an image): who owned which module, and its features.
-// Features this case study covers link to where it covers them.
 type Owner = "tony" | "yf" | "xx";
-const productMap: { module: string; owners: Owner[]; features: [string, `#${string}`?][] }[] = [
-  { module: "Core Flow", owners: ["tony"], features: [["Lutra Academy"], ["Order Booster", "#order-booster"], ["AI Assistant", "#operation-automation"], ["Me Tab", "#core-tabs"]] },
-  { module: "Order Manager", owners: ["yf", "xx"], features: [["Order Manager", "#core-tabs"]] },
-  { module: "Analyze", owners: ["tony"], features: [["Store Monitor", "#operation-automation"], ["Review Analyze", "#operation-automation"], ["Review Manager", "#operation-automation"], ["Ad Bidding", "#operation-automation"]] },
-  { module: "Printer", owners: ["yf", "xx"], features: [["Printer Pair"], ["Receipt Customize"]] },
+const productMap: { module: string; owners: Owner[]; features: string[] }[] = [
+  { module: "Core Flow", owners: ["tony"], features: ["Lutra Academy", "Order Booster", "AI Assistant", "Me Tab"] },
+  { module: "Order Manager", owners: ["yf", "xx"], features: ["Order Manager"] },
+  { module: "Analyze", owners: ["tony"], features: ["Store Monitor", "Review Analyze", "Review Manager", "Ad Bidding"] },
+  { module: "Printer", owners: ["yf", "xx"], features: ["Printer Pair", "Receipt Customize"] },
 ];
 
 const personas = [
@@ -206,9 +206,9 @@ function Results({ items, label }: { items: string[][]; label?: string }) {
           <SubHeading>{label}</SubHeading>
         </Reveal>
       ) : null}
-      <StaggerGrid className={`mt-5 grid gap-px overflow-hidden rounded-[1.25rem] bg-black/[0.06] ${cols}`}>
+      <StaggerGrid className={`mt-5 grid gap-px overflow-hidden rounded-[1.25rem] bg-black/[0.05] ${cols}`}>
         {items.map(([value, name], i) => (
-          <StaggerItem key={name} index={i} className="@container bg-white px-6 py-7">
+          <StaggerItem key={name} index={i} className="@container bg-[#f6f6f6] px-6 py-7">
             <p className="flex items-center gap-2 whitespace-nowrap text-[clamp(1.75rem,19cqw,3.5rem)] font-medium leading-none tracking-[-0.04em] text-[var(--cs-heading)]">
               {value}
               {value.startsWith("+") ? (
@@ -244,10 +244,9 @@ function Goal({ n, children, board }: { n: number; children: ReactNode; board: R
 export default function CloudKitchensPage() {
   return (
     <PortfolioShell
-      sidebarTheme="paper"
-      rootBg={PAPER}
-      mainClassName="bg-[#f3f3f3] text-[#171717]"
-      contentClassName="min-w-0 bg-[#f3f3f3] text-[#171717]"
+      sidebarTheme="light"
+      mainClassName="bg-white text-[#171717]"
+      contentClassName="min-w-0 bg-white text-[#171717]"
     >
       <BoardGallery boards={Object.values(B)}>
         <article
@@ -291,7 +290,7 @@ export default function CloudKitchensPage() {
             </div>
 
             {/* Team — formerly an image, now text */}
-            <Reveal className={`mt-14 grid gap-8 rounded-[1.25rem] bg-white p-6 sm:p-8 min-[1180px]:grid-cols-12 min-[1180px]:gap-10`}>
+            <Reveal className={`mt-14 grid gap-8 rounded-[1.25rem] bg-[#f6f6f6] p-6 sm:p-8 min-[1180px]:grid-cols-12 min-[1180px]:gap-10`}>
               <figure className={`flex gap-4 min-[1180px]:col-span-7`}>
                 <Avatar who="tony" size="size-12 shrink-0" />
                 <div>
@@ -303,7 +302,7 @@ export default function CloudKitchensPage() {
                   </blockquote>
                 </div>
               </figure>
-              <ul className={`flex flex-col gap-5 sm:max-[1179px]:flex-row sm:max-[1179px]:gap-10 min-[1180px]:col-span-5 min-[1180px]:border-l min-[1180px]:border-black/[0.06] min-[1180px]:pl-10`}>
+              <ul className={`flex flex-col gap-5 sm:max-[1179px]:flex-row sm:max-[1179px]:gap-10 min-[1180px]:col-span-5 min-[1180px]:border-l min-[1180px]:border-black/[0.07] min-[1180px]:pl-10`}>
                 {(
                   [
                     ["yf", "Yifan"],
@@ -321,8 +320,8 @@ export default function CloudKitchensPage() {
               </ul>
             </Reveal>
 
-            {/* Product map — formerly an image; covered features link to their part of the story */}
-            <StaggerGrid className="mt-5 grid grid-cols-2 gap-x-2 gap-y-10 rounded-[1.25rem] bg-white px-3 py-8 sm:grid-cols-4 sm:gap-x-4 sm:px-8">
+            {/* Product map — formerly an image */}
+            <StaggerGrid className="mt-5 grid grid-cols-2 gap-x-2 gap-y-10 rounded-[1.25rem] bg-[#f6f6f6] px-3 py-8 sm:grid-cols-4 sm:gap-x-4 sm:px-8">
               {productMap.map((column, i) => (
                 <StaggerItem key={column.module} index={i} className="flex flex-col items-center gap-3">
                   <div className="flex -space-x-1.5">
@@ -330,7 +329,7 @@ export default function CloudKitchensPage() {
                       Owned by {column.owners.map((o) => (o === "tony" ? "Tony Xing" : o === "yf" ? "Yifan" : "Xinxuan")).join(" and ")}
                     </span>
                     {column.owners.map((o) => (
-                      <span key={o} className="rounded-full ring-2 ring-white">
+                      <span key={o} className="rounded-full ring-2 ring-[#f6f6f6]">
                         <Avatar who={o} size="size-9" />
                       </span>
                     ))}
@@ -339,19 +338,9 @@ export default function CloudKitchensPage() {
                     {column.module}
                   </p>
                   <ul className="flex flex-col items-center gap-2">
-                    {column.features.map(([feature, href]) => (
-                      <li key={feature}>
-                        {href ? (
-                          <SmoothAnchor
-                            href={href}
-                            className="group inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-[#f3f3f3] px-2.5 py-1.5 text-[12px] sm:px-3.5 sm:text-[13px] text-black/75 transition-colors hover:bg-black hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c13d22]"
-                          >
-                            {feature}
-                            <ArrowDown aria-hidden className="size-3 opacity-40 transition-opacity group-hover:opacity-100" strokeWidth={2.5} />
-                          </SmoothAnchor>
-                        ) : (
-                          <span className="inline-flex whitespace-nowrap rounded-full bg-[#f3f3f3] px-2.5 py-1.5 text-[12px] text-black/55 sm:px-3.5 sm:text-[13px]">{feature}</span>
-                        )}
+                    {column.features.map((feature) => (
+                      <li key={feature} className="whitespace-nowrap rounded-full bg-white px-2.5 py-1.5 text-[12px] text-black/75 sm:px-3.5 sm:text-[13px]">
+                        {feature}
                       </li>
                     ))}
                   </ul>
@@ -388,7 +377,7 @@ export default function CloudKitchensPage() {
               }
             >
               <Reveal className="mt-14">
-                <Board {...B.posters} framed />
+                <Board {...B.posters} />
               </Reveal>
             </Chapter>
 
@@ -413,7 +402,7 @@ export default function CloudKitchensPage() {
                 ))}
               </StaggerGrid>
               <Reveal className="mt-14">
-                <Board {...B.field} framed />
+                <Board {...B.field} />
               </Reveal>
               {/* User personas — formerly an image, now text */}
               <div className="mt-16">
@@ -422,7 +411,7 @@ export default function CloudKitchensPage() {
                 </Reveal>
                 <StaggerGrid className="mt-6 grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {personas.map((line, i) => (
-                    <StaggerItem key={line} index={i} className="flex h-full gap-4 rounded-[1.25rem] bg-white px-5 py-5">
+                    <StaggerItem key={line} index={i} className="flex h-full gap-4 rounded-[1.25rem] bg-[#f6f6f6] px-5 py-5">
                       <span aria-hidden className={`text-xs font-semibold tabular-nums leading-6 ${ORANGE_TEXT}`}>
                         {String(i + 1).padStart(2, "0")}
                       </span>
@@ -498,7 +487,7 @@ export default function CloudKitchensPage() {
               }
             >
               <Reveal className="mt-14">
-                <Board {...B.core} framed />
+                <Board {...B.core} />
               </Reveal>
 
               <div id="order-booster" className="mt-20 scroll-mt-8">
@@ -519,7 +508,7 @@ export default function CloudKitchensPage() {
                   </div>
                 </Reveal>
                 <Reveal className="mt-10">
-                  <Board {...B.mvp} framed />
+                  <Board {...B.mvp} />
                 </Reveal>
               </div>
 
@@ -539,13 +528,13 @@ export default function CloudKitchensPage() {
               </div>
 
               <Reveal className="mt-20">
-                <Board {...B.flow} framed />
+                <Board {...B.flow} />
               </Reveal>
               <Reveal className="mt-12">
-                <Board {...B.subscribe} framed />
+                <Board {...B.subscribe} />
               </Reveal>
               <Reveal className="mt-12">
-                <Board {...B.history} framed />
+                <Board {...B.history} />
               </Reveal>
             </Chapter>
 
@@ -554,7 +543,7 @@ export default function CloudKitchensPage() {
                 n={1}
                 board={
                   <Reveal>
-                    <Board {...B.goal1} framed />
+                    <Board {...B.goal1} />
                   </Reveal>
                 }
               >
@@ -567,13 +556,13 @@ export default function CloudKitchensPage() {
                 board={
                   <>
                     <Reveal>
-                      <Board {...B.goal2} framed />
+                      <Board {...B.goal2} />
                     </Reveal>
                     <Reveal>
-                      <VideoFrame src={`${A}/ck-16.mp4`} className="border-black/[0.04]" />
+                      <VideoFrame src={`${A}/ck-16.mp4`} className="border-0" />
                     </Reveal>
                     <Reveal>
-                      <VideoFrame src={`${A}/ck-17.mp4`} className="border-black/[0.04]" />
+                      <VideoFrame src={`${A}/ck-17.mp4`} className="border-0" />
                     </Reveal>
                   </>
                 }
@@ -585,7 +574,7 @@ export default function CloudKitchensPage() {
                 n={3}
                 board={
                   <Reveal>
-                    <Board {...B.goal3} framed />
+                    <Board {...B.goal3} />
                   </Reveal>
                 }
               >
@@ -618,7 +607,7 @@ export default function CloudKitchensPage() {
                   ["Auto Ad Bidding", "Assisting users in securing the most cost-effective advertising placements on delivery platforms."],
                   ["Lutra AI Assistant", "Offering store optimization and guidance plans within various features for user."],
                 ].map(([title, body], i) => (
-                  <StaggerItem key={title} index={i} className="h-full rounded-[1.25rem] bg-white px-6 py-6">
+                  <StaggerItem key={title} index={i} className="h-full rounded-[1.25rem] bg-[#f6f6f6] px-6 py-6">
                     <SubHeading>{title}</SubHeading>
                     <p className={`mt-3 ${bodyMd}`}>{body}</p>
                   </StaggerItem>
@@ -626,13 +615,13 @@ export default function CloudKitchensPage() {
               </StaggerGrid>
               <div className="mt-12 flex flex-col gap-12">
                 <Reveal>
-                  <Board {...B.dashboard} framed />
+                  <Board {...B.dashboard} />
                 </Reveal>
                 <Reveal>
-                  <Board {...B.reviews} framed />
+                  <Board {...B.reviews} />
                 </Reveal>
                 <Reveal>
-                  <Board {...B.monitor} framed />
+                  <Board {...B.monitor} />
                 </Reveal>
               </div>
               <div className="mt-6">
@@ -647,7 +636,7 @@ export default function CloudKitchensPage() {
               intro={<p className={bodyMd}>Me Tab, Printer, and Orders. Reach out to me if you are interested in more details.</p>}
             >
               <Reveal className="mt-14">
-                <Board {...B.tabs} framed />
+                <Board {...B.tabs} />
               </Reveal>
             </Chapter>
           </div>
@@ -665,7 +654,7 @@ function PairRow({ i, outcome, goal }: { i: number; outcome: ReactNode; goal: Re
   return (
     <>
       <Reveal className={`${["order-2", "order-3", "order-4"][i]} lg:order-none`}>
-        <div className="flex h-full gap-4 rounded-[1.25rem] bg-white px-5 py-5">
+        <div className="flex h-full gap-4 rounded-[1.25rem] bg-[#f6f6f6] px-5 py-5">
           <span aria-hidden className="text-xs font-semibold tabular-nums leading-7 text-black/35">{n}</span>
           <p className={bodyMd}>{outcome}</p>
         </div>
@@ -674,7 +663,7 @@ function PairRow({ i, outcome, goal }: { i: number; outcome: ReactNode; goal: Re
         <ArrowRight className="size-5" style={{ color: ORANGE }} strokeWidth={2.25} />
       </div>
       <Reveal className={`${["order-6", "order-7", "order-8"][i]} lg:order-none`}>
-        <div className="flex h-full gap-4 rounded-[1.25rem] bg-white px-5 py-5">
+        <div className="flex h-full gap-4 rounded-[1.25rem] bg-[#f6f6f6] px-5 py-5">
           <span aria-hidden className={`text-xs font-semibold tabular-nums leading-7 ${ORANGE_TEXT}`}>{n}</span>
           <div className="flex flex-1 flex-col gap-3">
             <p className={bodyMd}>{goal}</p>
