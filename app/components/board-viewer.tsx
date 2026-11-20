@@ -86,7 +86,7 @@ export function Board({
         width={width}
         height={height}
         sizes="(min-width: 1024px) 70vw, 100vw"
-        className={`h-auto w-full ${framed ? "rounded-[1.5rem] border border-black/[0.06]" : ""}`}
+        className={`h-auto w-full ${framed ? "rounded-[1.5rem] border border-black/[0.09]" : ""}`}
       />
       <span
         aria-hidden

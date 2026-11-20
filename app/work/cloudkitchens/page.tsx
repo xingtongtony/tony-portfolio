@@ -9,10 +9,11 @@ import { Board, BoardGallery, type BoardImage } from "../../components/board-vie
 import { SubHeading, GradientTag, VideoFrame, CaseStudyFooter } from "../../components/case-study";
 import { eyebrowSection, eyebrowMeta, bodyMd, bodySm, emphasis } from "../../lib/tokens";
 
-// The page is the grey of Lutra's own design boards (#f3f3f3), so the boards
-// sit on it unframed — screens laid out on a desk rather than ~17 grey boxes
-// in a stack. Boards whose background differs (white sheets, dark flows)
-// keep a frame. Every board opens full screen (BoardGallery). Lutra's
+// The page is the grey of Lutra's own design boards (#f3f3f3). Every board
+// keeps a hairline frame: their phone screens are long screenshots cut off
+// mid-screen, and with no edge round the board a cut screen looked as if the
+// page had cut it (Tony, 2026-11-20). Every board opens full screen
+// (BoardGallery). Lutra's
 // orange is the accent: #f05536 for graphics and large type, #c13d22 for
 // small text (it keeps 4.5:1 on the grey).
 
@@ -26,6 +27,7 @@ const B = {
   field: { src: `${A}/ck-06.jpg`, alt: "Field research — merchant photos and verbatim feedback", width: 4000, height: 2030 },
   core: { src: `${A}/ck-09.jpg`, alt: "Lutra — the core product screens", width: 5942, height: 2480 },
   mvp: { src: `${A}/ck-10.jpg`, alt: "MVP Order Booster — set coupon value and view distribution results", width: 4000, height: 2400 },
+  flow: { src: `${A}/ck-11.jpg`, alt: "Order Booster user flow — from opening the app to checking history", width: 4952, height: 1580 },
   subscribe: { src: `${A}/ck-12.png`, alt: "Unsubscribed → Subscribe flow", width: 3088, height: 1608 },
   history: { src: `${A}/ck-13.png`, alt: "After subscribed & coupon history", width: 3086, height: 1608 },
   goal1: { src: `${A}/ck-14.jpg`, alt: "Order Booster states when a new merchant first opens the app", width: 4000, height: 3048 },
@@ -92,20 +94,6 @@ const hypotheses: ReactNode[] = [
     Collect the data from all delivery platforms in a <strong className={strong}>central dashboard</strong>. Users don’t need
     to check data on each platform.
   </span>,
-];
-
-// The user flow (formerly an image): ten steps, two of them branching.
-const userFlow: { step: string; branches?: [string, string][] }[] = [
-  { step: "Open App" },
-  { step: "Open Order Booster On Homepage" },
-  { step: "Read The Subscribe Content" },
-  { step: "Pay The Price", branches: [["Authorized", "Set Up The Coupon Value"], ["Unauthorized", "Authorization"]] },
-  { step: "Set Up The Coupon Value" },
-  { step: "Start To Distribute Coupon" },
-  { step: "Get The Data After 1 Day" },
-  { step: "Check The Data", branches: [["Good", "Keep Posted Everyday"], ["Bad", "Change The Coupon Strategy"]] },
-  { step: "Check The Orders" },
-  { step: "Check History" },
 ];
 
 const phasedOutcome: ReactNode[] = [
@@ -220,8 +208,8 @@ function Results({ items, label }: { items: string[][]; label?: string }) {
       ) : null}
       <StaggerGrid className={`mt-5 grid gap-px overflow-hidden rounded-[1.25rem] bg-black/[0.06] ${cols}`}>
         {items.map(([value, name], i) => (
-          <StaggerItem key={name} index={i} className="bg-white px-6 py-7">
-            <p className="flex items-center gap-2 text-[clamp(2.25rem,4vw,3.5rem)] font-medium leading-none tracking-[-0.04em] text-[var(--cs-heading)]">
+          <StaggerItem key={name} index={i} className="@container bg-white px-6 py-7">
+            <p className="flex items-center gap-2 whitespace-nowrap text-[clamp(1.75rem,19cqw,3.5rem)] font-medium leading-none tracking-[-0.04em] text-[var(--cs-heading)]">
               {value}
               {value.startsWith("+") ? (
                 <TrendingUp aria-hidden className="size-6 shrink-0" style={{ color: ORANGE }} strokeWidth={2.5} />
@@ -409,32 +397,30 @@ export default function CloudKitchensPage() {
               n="02"
               eyebrow="Research"
               title="User Feedback"
-              intro={
-                <StaggerGrid className="grid gap-6 sm:grid-cols-3">
-                  {[
-                    ["Interview: 30 min", "32 Calls"],
-                    ["Interview: 30 min", "24 Visits"],
-                    ["Form: 5 min to finish", "160 Surveys"],
-                  ].map(([label, value], i) => (
-                    <StaggerItem key={value} index={i}>
-                      <p className={bodySm}>{label}</p>
-                      <p className="mt-2 text-[clamp(1.75rem,3vw,2.5rem)] font-medium leading-none tracking-[-0.03em] text-[var(--cs-heading)]">
-                        {value}
-                      </p>
-                    </StaggerItem>
-                  ))}
-                </StaggerGrid>
-              }
             >
+              <StaggerGrid className="mt-10 grid gap-6 sm:grid-cols-3">
+                {[
+                  ["Interview: 30 min", "32 Calls"],
+                  ["Interview: 30 min", "24 Visits"],
+                  ["Form: 5 min to finish", "160 Surveys"],
+                ].map(([label, value], i) => (
+                  <StaggerItem key={value} index={i} className="@container">
+                    <p className={bodySm}>{label}</p>
+                    <p className="mt-2 whitespace-nowrap text-[clamp(1.75rem,15cqw,2.75rem)] font-medium leading-none tracking-[-0.03em] text-[var(--cs-heading)]">
+                      {value}
+                    </p>
+                  </StaggerItem>
+                ))}
+              </StaggerGrid>
               <Reveal className="mt-14">
-                <Board {...B.field} />
+                <Board {...B.field} framed />
               </Reveal>
               {/* User personas — formerly an image, now text */}
               <div className="mt-16">
                 <Reveal>
                   <SubHeading>User Personas</SubHeading>
                 </Reveal>
-                <StaggerGrid className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <StaggerGrid className="mt-6 grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {personas.map((line, i) => (
                     <StaggerItem key={line} index={i} className="flex h-full gap-4 rounded-[1.25rem] bg-white px-5 py-5">
                       <span aria-hidden className={`text-xs font-semibold tabular-nums leading-6 ${ORANGE_TEXT}`}>
@@ -512,7 +498,7 @@ export default function CloudKitchensPage() {
               }
             >
               <Reveal className="mt-14">
-                <Board {...B.core} />
+                <Board {...B.core} framed />
               </Reveal>
 
               <div id="order-booster" className="mt-20 scroll-mt-8">
@@ -533,7 +519,7 @@ export default function CloudKitchensPage() {
                   </div>
                 </Reveal>
                 <Reveal className="mt-10">
-                  <Board {...B.mvp} />
+                  <Board {...B.mvp} framed />
                 </Reveal>
               </div>
 
@@ -553,7 +539,7 @@ export default function CloudKitchensPage() {
               </div>
 
               <Reveal className="mt-20">
-                <UserFlow />
+                <Board {...B.flow} framed />
               </Reveal>
               <Reveal className="mt-12">
                 <Board {...B.subscribe} framed />
@@ -568,7 +554,7 @@ export default function CloudKitchensPage() {
                 n={1}
                 board={
                   <Reveal>
-                    <Board {...B.goal1} />
+                    <Board {...B.goal1} framed />
                   </Reveal>
                 }
               >
@@ -581,7 +567,7 @@ export default function CloudKitchensPage() {
                 board={
                   <>
                     <Reveal>
-                      <Board {...B.goal2} />
+                      <Board {...B.goal2} framed />
                     </Reveal>
                     <Reveal>
                       <VideoFrame src={`${A}/ck-16.mp4`} className="border-black/[0.04]" />
@@ -599,7 +585,7 @@ export default function CloudKitchensPage() {
                 n={3}
                 board={
                   <Reveal>
-                    <Board {...B.goal3} />
+                    <Board {...B.goal3} framed />
                   </Reveal>
                 }
               >
@@ -640,13 +626,13 @@ export default function CloudKitchensPage() {
               </StaggerGrid>
               <div className="mt-12 flex flex-col gap-12">
                 <Reveal>
-                  <Board {...B.dashboard} />
+                  <Board {...B.dashboard} framed />
                 </Reveal>
                 <Reveal>
-                  <Board {...B.reviews} />
+                  <Board {...B.reviews} framed />
                 </Reveal>
                 <Reveal>
-                  <Board {...B.monitor} />
+                  <Board {...B.monitor} framed />
                 </Reveal>
               </div>
               <div className="mt-6">
@@ -661,7 +647,7 @@ export default function CloudKitchensPage() {
               intro={<p className={bodyMd}>Me Tab, Printer, and Orders. Reach out to me if you are interested in more details.</p>}
             >
               <Reveal className="mt-14">
-                <Board {...B.tabs} />
+                <Board {...B.tabs} framed />
               </Reveal>
             </Chapter>
           </div>
@@ -704,33 +690,5 @@ function PairRow({ i, outcome, goal }: { i: number; outcome: ReactNode; goal: Re
         </div>
       </Reveal>
     </>
-  );
-}
-
-/** The Order Booster user flow — formerly an image. Ten steps; two branch. */
-function UserFlow() {
-  return (
-    <figure className="rounded-[1.5rem] bg-[#404040] p-5 text-white sm:p-8" aria-label="User flow">
-      <p className="inline-flex rounded-md bg-[#2b2b2b] px-2.5 py-1 text-xs font-medium text-white/85">User flow</p>
-      <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {userFlow.map(({ step, branches }, i) => (
-          <li key={step} className="flex flex-col gap-2 rounded-xl bg-white px-4 py-3.5 text-[#171717]">
-            <span className="text-[11px] font-semibold tabular-nums text-black/40">{String(i + 1).padStart(2, "0")}</span>
-            <span className="text-sm font-medium leading-snug">{step}</span>
-            {branches ? (
-              <span className="mt-1 flex flex-col gap-1.5">
-                {branches.map(([when, next]) => (
-                  <span key={when} className="flex flex-wrap items-center gap-1.5 text-xs text-black/60">
-                    <span className="rounded bg-[#6b6b6b] px-1.5 py-0.5 font-medium text-white">{when}</span>
-                    <ArrowRight aria-hidden className="size-3" strokeWidth={2.5} />
-                    {next}
-                  </span>
-                ))}
-              </span>
-            ) : null}
-          </li>
-        ))}
-      </ol>
-    </figure>
   );
 }
