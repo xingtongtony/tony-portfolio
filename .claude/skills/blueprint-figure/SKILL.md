@@ -25,6 +25,7 @@ sent back, and the rule each became:
 | "The colours are too busy" | **Per figure: one hue owns the area, two neutrals, two accents.** Green is for plants and "on", blue for glass. Never a colour per part. |
 | "Now it's monotonous" | **Every figure has its own palette** (`THEMES`). Same roles, same recipe, different hue. |
 | "The interface is too small, and the padding round the screen is uneven" | **A screen fills its body up to one even bezel.** Size the body to the screen, not the other way round: body = screen + 2 × bezel on both axes (the screen keeps the image's aspect ratio), and screen corner radius = body radius − bezel so the corners are concentric. Keep the bezel thin; the interface is the subject. |
+| "Don't model casually — look at the 3D model as a graphic; the visual UI has to be beautiful" | **Lay out every print and pattern like a page**: one centred grid, even margins and gaps, a clear hierarchy, one matte `print` finish. Order repeated things (by column, on a grid), keep symmetric things symmetric, and give feet and fittings the object's own tone — a small dark part reads as a hole. Review every object close up at full resolution. |
 | "Some figures sit low" | Nothing to do per figure: the camera centres on each figure's extent on screen. But keep floating things (clouds, hearts) inside a sensible height — they move the centre. |
 | "The shadows are too hard / too real" | Compare the shared studio lighting across a pale, saturated and monochrome model. Keep contact edges grounded and the shadows beyond them soft. |
 

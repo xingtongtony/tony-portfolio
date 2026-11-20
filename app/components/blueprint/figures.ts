@@ -453,14 +453,14 @@ function surround(id: string, label: string, agent: number, color: string, at: V
   return { id, label, agent, color, drawing: false, frame: { pos: at, rot: [0, yaw, 0] }, shapes };
 }
 
-/** A paper takeaway bag standing on `y`, with its order ticket stapled on. */
+/** A paper takeaway bag standing on `y`: its top folded over and sealed, an order label below. */
 function takeawayBag(c: Palette, [x, y, z]: Vec3, [w, h, d]: Vec3): ShapeDef[] {
   return [
     { k: "box", size: [w, h, d], pos: [x, y + h / 2, z], color: c.sand, bevel: 0.012 },
-    // The rolled-over top.
-    { k: "cyl", r: 0.022, h: w * 0.92, pos: [x, y + h - 0.012, z], rot: lying(), color: c.sand, bevel: 0.02 },
-    { k: "slab", size: [w * 0.42, h * 0.5], t: 0.006, r: 0.008, pos: [x + w * 0.16, y + h * 0.46, z + d / 2 + 0.002], color: c.white, finish: "print", map: "proc:receipt" },
-    { k: "cyl", r: 0.026, h: 0.008, pos: [x - w * 0.24, y + h * 0.7, z + d / 2 + 0.003], rot: FACE, color: c.coral },
+    // The folded-over top, a touch proud of the bag, and the sticker that seals it.
+    { k: "box", size: [w + 0.008, 0.07, 0.016], pos: [x, y + h - 0.031, z + d / 2 + 0.004], color: c.sand, bevel: 0.006 },
+    { k: "cyl", r: 0.022, h: 0.008, pos: [x, y + h - 0.031, z + d / 2 + 0.015], rot: FACE, color: c.coral },
+    { k: "slab", size: [w * 0.5, h * 0.22], t: 0.006, r: 0.01, pos: [x, y + h * 0.42, z + d / 2 + 0.002], color: c.white },
   ];
 }
 
@@ -1225,22 +1225,19 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ...[0.06, 0.56, 1.06].map((y): ShapeDef => (
             { k: "box", size: [0.78, 0.045, 0.4], pos: [0, y, 0], bevel: 0.012 })),
           { k: "box", size: [0.9, 0.05, 0.46], pos: [0, 1.515, 0], bevel: 0.016 },
-          // Shelf tags along the front edges.
-          ...[0.06, 0.56, 1.06].map((y): ShapeDef => (
-            { k: "slab", size: [0.12, 0.05], t: 0.006, r: 0.012, pos: [0.24, y, 0.202], color: c.yellow })),
-          ...takeawayBag(c, [-0.17, 0.0825, 0], [0.26, 0.34, 0.18]),
-          ...takeawayBag(c, [0.17, 0.0825, 0.01], [0.22, 0.28, 0.16]),
-          // Two takeaway boxes, the lower one with its lid line.
-          { k: "box", size: [0.3, 0.12, 0.22], pos: [-0.16, 0.6425, 0], color: c.cream, bevel: 0.014 },
-          { k: "box", size: [0.31, 0.016, 0.23], pos: [-0.16, 0.67, 0], color: c.cream, bevel: 0.006 },
-          { k: "box", size: [0.27, 0.1, 0.2], pos: [-0.16, 0.7525, 0], color: c.mist, bevel: 0.014 },
-          ...takeawayBag(c, [0.18, 0.5825, 0], [0.22, 0.3, 0.16]),
-          ...takeawayBag(c, [-0.14, 1.0825, 0], [0.24, 0.32, 0.17]),
-          // A drink with its lid, sleeve and straw.
-          { k: "cyl", r: 0.068, h: 0.19, pos: [0.2, 1.1775, 0], color: c.cream, bevel: 0.01 },
-          { k: "cyl", r: 0.073, h: 0.06, pos: [0.2, 1.175, 0], color: c.coral, bevel: 0.006 },
-          { k: "cyl", r: 0.073, h: 0.024, pos: [0.2, 1.2805, 0], color: c.mist, bevel: 0.008 },
-          { k: "cyl", r: 0.009, h: 0.14, pos: [0.215, 1.335, 0.01], color: c.plum, bevel: 0.009 },
+          // Bottom: two orders waiting, side by side, evenly spaced.
+          ...takeawayBag(c, [-0.17, 0.0825, 0], [0.28, 0.34, 0.18]),
+          ...takeawayBag(c, [0.17, 0.0825, 0], [0.28, 0.34, 0.18]),
+          // Middle: a stack of takeaway boxes, centred.
+          { k: "box", size: [0.36, 0.12, 0.24], pos: [0, 0.6425, 0], color: c.cream, bevel: 0.014 },
+          { k: "box", size: [0.37, 0.016, 0.25], pos: [0, 0.67, 0], color: c.cream, bevel: 0.006 },
+          { k: "box", size: [0.32, 0.11, 0.22], pos: [0, 0.7575, 0], color: c.mist, bevel: 0.014 },
+          // Top: one order and its drink.
+          ...takeawayBag(c, [0.13, 1.0825, 0], [0.26, 0.32, 0.17]),
+          { k: "cyl", r: 0.07, h: 0.2, pos: [-0.17, 1.1825, 0], color: c.cream, bevel: 0.01 },
+          { k: "cyl", r: 0.075, h: 0.06, pos: [-0.17, 1.18, 0], color: c.coral, bevel: 0.006 },
+          { k: "cyl", r: 0.075, h: 0.024, pos: [-0.17, 1.2905, 0], color: c.mist, bevel: 0.008 },
+          { k: "cyl", r: 0.009, h: 0.14, pos: [-0.155, 1.34, 0.01], color: c.plum, bevel: 0.009 },
         ]),
       ],
       callouts: [
@@ -1431,11 +1428,13 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "ball", r: 0.013, pos: [-0.256, 0.017, 0.37], color: c.inky },
           ]),
           // A floor lamp: an evening on the sofa, which is where the iPad gets used.
-          surround("lamp", "Floor lamp", 1, c.plum, [1.85, 0, -1.35], 0, [
-            { k: "cyl", r: 0.24, h: 0.05, pos: [0, 0.025, 0], bevel: 0.02 },
-            { k: "cyl", r: 0.032, h: 1.8, pos: [0, 0.945, 0], bevel: 0.014 },
-            { k: "box", size: [0.08, 0.1, 0.08], pos: [0, 1.0, 0], color: c.inky, bevel: 0.02 },
-            { k: "cyl", r: 0.27, h: 0.34, pos: [0, 1.95, 0], color: c.cream, bevel: 0.03 },
+          surround("lamp", "Floor lamp", 1, c.plum, [1.78, 0, -1.3], 0, [
+            { k: "cyl", r: 0.22, h: 0.04, pos: [0, 0.02, 0], bevel: 0.018 },
+            { k: "cyl", r: 0.03, h: 1.8, pos: [0, 0.935, 0], bevel: 0.014 },
+            { k: "cyl", r: 0.27, h: 0.34, pos: [0, 1.95, 0], color: c.cream, bevel: 0.02 },
+            // The shade's wire rims.
+            { k: "torus", R: 0.268, tube: 0.012, pos: [0, 1.79, 0], rot: flat() },
+            { k: "torus", R: 0.268, tube: 0.012, pos: [0, 2.11, 0], rot: flat() },
           ]),
         ],
         callouts: [
@@ -1699,11 +1698,12 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ...[[-0.26, -0.14], [0.26, -0.14], [-0.26, 0.14], [0.26, 0.14]].map(([x, z]): ShapeDef => (
             { k: "cyl", r: 0.025, h: 0.03, pos: [x, 0.015, z], color: c.inky, bevel: 0.01 })),
           { k: "box", size: [0.62, 0.9, 0.36], pos: [0, 0.47, 0], bevel: 0.02 },
-          ...[0.12, 0.29, 0.46, 0.63, 0.8].flatMap((y, level) => [-0.2, 0, 0.2].flatMap((x, side): ShapeDef[] => [
-            { k: "box", size: [0.17, 0.15, 0.03], pos: [x, y, 0.191], color: c.cream, bevel: 0.01 },
-            { k: "slab", size: [0.08, 0.05], t: 0.008, r: 0.012, pos: [x, y + 0.02, 0.208],
-              color: [c.coral, c.yellow, c.lilac, c.blue, c.green][(level * 3 + side) % 5] },
-            { k: "box", size: [0.06, 0.016, 0.02], pos: [x, y - 0.045, 0.212], color: c.plum, bevel: 0.006 },
+          // Three columns by four rows on one grid: even margins, even gaps. Each
+          // column holds one colour, like a token scale, so the face reads as order.
+          ...[0.1494, 0.3631, 0.5769, 0.7906].flatMap((y) => [-0.1917, 0, 0.1917].flatMap((x, column): ShapeDef[] => [
+            { k: "box", size: [0.1667, 0.1888, 0.03], pos: [x, y, 0.191], color: c.cream, bevel: 0.01 },
+            { k: "slab", size: [0.08, 0.05], t: 0.008, r: 0.012, pos: [x, y + 0.025, 0.208], color: [c.plum, c.blue, c.coral][column] },
+            { k: "box", size: [0.06, 0.016, 0.02], pos: [x, y - 0.055, 0.212], color: c.plum, bevel: 0.006 },
           ])),
         ]),
       ],
@@ -2054,14 +2054,15 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "cyl", r: 0.038, h: 0.03, pos: [x, 0.038, z], rot: lying(), color: c.inky, bevel: 0.01 },
             { k: "box", size: [0.07, 0.06, 0.07], pos: [x, 0.085, z], color: c.plum, bevel: 0.015 },
           ]),
-          ...[-0.18, -0.06, 0.06].map((x): ShapeDef => (
+          // Ribs centred on the front; the tag hangs on the side, out of their way.
+          ...[-0.15, 0, 0.15].map((x): ShapeDef => (
             { k: "slab", size: [0.035, 0.74], t: 0.02, r: 0.017, pos: [x, 0.51, 0.156], bevel: 0.008 })),
           ...[-0.15, 0.15].map((x): ShapeDef => (
             { k: "cyl", r: 0.015, h: 0.52, pos: [x, 1.19, -0.09], color: c.inky, bevel: 0.006 })),
           { k: "box", size: [0.36, 0.05, 0.06], pos: [0, 1.46, -0.09], color: c.plum, bevel: 0.02 },
           { k: "box", size: [0.2, 0.035, 0.05], pos: [0, 0.955, 0.05], color: c.plum, bevel: 0.015 },
-          { k: "slab", size: [0.11, 0.15], t: 0.012, r: 0.02, pos: [0.19, 0.78, 0.154], color: c.coral },
-          { k: "slab", size: [0.07, 0.05], t: 0.006, r: 0.01, pos: [0.19, 0.8, 0.162], color: c.white },
+          { k: "slab", size: [0.11, 0.15], t: 0.012, r: 0.02, pos: [0.304, 0.74, 0], rot: [0, Math.PI / 2, 0], color: c.coral },
+          { k: "slab", size: [0.07, 0.05], t: 0.006, r: 0.01, pos: [0.312, 0.76, 0], rot: [0, Math.PI / 2, 0], color: c.white },
         ]),
         surround("carry-on", "Carry-on", 0, c.sand, [-1.97, 0, 0.22], 0.15, [
           { k: "box", size: [0.44, 0.6, 0.24], pos: [0, 0.37, 0], bevel: 0.045 },
@@ -2234,18 +2235,24 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         // A roll-up banner: the campaign, promoted.
-        surround("banner", "Roll-up banner", 1, c.cream, [2.03, 0, -0.55], 0.12, [
-          ...[-0.36, 0.36].map((x): ShapeDef => (
-            { k: "box", size: [0.06, 0.03, 0.34], pos: [x, 0.015, 0], color: c.plum, bevel: 0.01 })),
-          { k: "box", size: [0.86, 0.1, 0.2], pos: [0, 0.075, 0], color: c.lilac, bevel: 0.035 },
-          { k: "slab", size: [0.8, 1.84], t: 0.014, r: 0.012, pos: [0, 1.035, 0], bevel: 0.005 },
-          { k: "cyl", r: 0.014, h: 1.84, pos: [0, 1.03, -0.04], color: c.plum, bevel: 0.006 },
-          { k: "cyl", r: 0.022, h: 0.84, pos: [0, 1.955, 0], rot: lying(), color: c.lilac, bevel: 0.022 },
-          { k: "poly", pts: [[-0.2, 0], [0.2, 0], [0.2, 0.23], [0, 0.39], [-0.2, 0.23]], t: 0.018, r: 0.022, pos: [0, 1.2, 0.012], color: c.lilac, bevel: 0.006 },
-          { k: "slab", size: [0.08, 0.13], t: 0.008, r: 0.014, pos: [0, 1.265, 0.023], color: c.plum },
-          ...[[-0.14, 0.16], [0, 0.27], [0.14, 0.4]].map(([x, h]): ShapeDef => (
-            { k: "box", size: [0.09, h, 0.018], pos: [x, 0.66 + h / 2, 0.012], color: c.coral, bevel: 0.007 })),
-          { k: "slab", size: [0.62, 0.11], t: 0.006, r: 0.022, pos: [0, 1.77, 0.009], finish: "print", map: `label:Host campaign|${c.plum}|${c.white}|5.6` },
+        surround("banner", "Roll-up banner", 2, c.cream, [2.03, 0, -0.55], 0.12, [
+          ...[-0.34, 0.34].map((x): ShapeDef => (
+            { k: "box", size: [0.06, 0.024, 0.3], pos: [x, 0.012, 0], color: c.lilac, bevel: 0.01 })),
+          { k: "box", size: [0.86, 0.1, 0.2], pos: [0, 0.072, 0], color: c.lilac, bevel: 0.035 },
+          { k: "slab", size: [0.8, 1.6], t: 0.014, r: 0.012, pos: [0, 0.912, 0], bevel: 0.005 },
+          { k: "cyl", r: 0.014, h: 1.6, pos: [0, 0.912, -0.04], color: c.plum, bevel: 0.006 },
+          { k: "cyl", r: 0.022, h: 0.84, pos: [0, 1.712, 0], rot: lying(), color: c.lilac, bevel: 0.022 },
+          // The print, all one matte finish, on a centred grid with even gaps: the
+          // title printed on its band, the listing's house in a tile, its exposure
+          // rising on a baseline, and a footer band.
+          { k: "slab", size: [0.78, 0.17], t: 0.006, r: 0.008, pos: [0, 1.617, 0.009], finish: "print", map: `label:Host campaign|${c.plum}|${c.white}|4.6` },
+          { k: "slab", size: [0.48, 0.48], t: 0.006, r: 0.075, pos: [0, 1.145, 0.009], color: c.sand, finish: "print" },
+          { k: "poly", pts: [[-0.14, 0], [0.14, 0], [0.14, 0.16], [0, 0.27], [-0.14, 0.16]], t: 0.012, r: 0.016, pos: [0, 1.01, 0.016], color: c.plum, finish: "print", bevel: 0.004 },
+          { k: "slab", size: [0.065, 0.1], t: 0.006, r: 0.013, pos: [0, 1.064, 0.024], color: c.sand, finish: "print" },
+          { k: "slab", size: [0.36, 0.012], t: 0.006, r: 0.006, pos: [0, 0.452, 0.009], color: c.lilac, finish: "print" },
+          ...[[-0.125, 0.13, c.coral], [0, 0.21, c.coral], [0.125, 0.3, c.plum]].map(([x, h, color]): ShapeDef => (
+            { k: "box", size: [0.085, (h as number) + 0.004, 0.012], pos: [x as number, 0.454 + ((h as number) + 0.004) / 2, 0.012], color: color as string, finish: "print", bevel: 0.004 })),
+          { k: "slab", size: [0.78, 0.16], t: 0.006, r: 0.008, pos: [0, 0.219, 0.009], color: c.lilac, finish: "print" },
         ]),
       ],
       callouts: [
@@ -2398,17 +2405,20 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         surround("pinboard", "Pinboard", 1, c.lilac, [-2.0, 0, -0.4], 0.45, [
           ...[-0.3, 0.3].flatMap((x): ShapeDef[] => [
             { k: "box", size: [0.06, 1.66, 0.06], pos: [x, 0.85, 0], bevel: 0.016 },
-            { k: "box", size: [0.07, 0.05, 0.36], pos: [x, 0.025, 0], color: c.plum, bevel: 0.016 },
+            { k: "box", size: [0.07, 0.05, 0.36], pos: [x, 0.025, 0], bevel: 0.016 },
           ]),
           { k: "slab", size: [0.7, 0.8], t: 0.05, r: 0.04, pos: [0, 1.23, 0.051], bevel: 0.014 },
           { k: "slab", size: [0.62, 0.72], t: 0.012, r: 0.03, pos: [0, 1.23, 0.08], color: c.sand },
-          ...([[-0.15, 1.36, 0, c.white], [0.12, 1.4, 0.06, c.cream], [-0.02, 1.06, -0.05, c.white]] as const).flatMap(([x, y, turn, paper]): ShapeDef[] => [
-            { k: "slab", size: [0.18, 0.22], t: 0.006, r: 0.012, pos: [x, y, 0.0875], rot: [0, 0, turn], color: paper },
-            { k: "slab", size: [0.12, 0.018], t: 0.008, r: 0.009, pos: [x, y + 0.03, 0.092], rot: [0, 0, turn], color: c.lilac },
-            { k: "slab", size: [0.09, 0.018], t: 0.008, r: 0.009, pos: [x, y - 0.02, 0.092], rot: [0, 0, turn], color: c.lilac },
-            { k: "ball", r: 0.02, pos: [x, y + 0.09, 0.1], color: c.coral },
+          // A two-by-two grid with even margins: three listing cards and a note.
+          ...([[-0.14, 1.393, c.white], [0.14, 1.393, c.cream], [-0.14, 1.067, c.white]] as const).flatMap(([x, y, paper]): ShapeDef[] => [
+            { k: "slab", size: [0.22, 0.26], t: 0.006, r: 0.014, pos: [x, y, 0.088], color: paper },
+            { k: "slab", size: [0.17, 0.09], t: 0.008, r: 0.01, pos: [x, y + 0.055, 0.094], color: c.lilac },
+            { k: "slab", size: [0.17, 0.018], t: 0.008, r: 0.009, pos: [x, y - 0.035, 0.094], color: c.lilac },
+            { k: "slab", size: [0.11, 0.018], t: 0.008, r: 0.009, pos: [x - 0.03, y - 0.07, 0.094], color: c.lilac },
+            { k: "ball", r: 0.02, pos: [x, y + 0.115, 0.1], color: c.coral },
           ]),
-          { k: "slab", size: [0.12, 0.12], t: 0.006, r: 0.01, pos: [0.17, 1.03, 0.0875], color: c.yellow },
+          { k: "slab", size: [0.18, 0.18], t: 0.006, r: 0.012, pos: [0.14, 1.067, 0.088], color: c.yellow },
+          { k: "ball", r: 0.02, pos: [0.14, 1.137, 0.1], color: c.coral },
         ]),
       ],
       callouts: [
