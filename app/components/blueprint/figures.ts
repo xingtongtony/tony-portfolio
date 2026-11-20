@@ -442,6 +442,28 @@ function plinth(c: Palette, [width, depth]: [number, number] = [2.8, 1.9], top =
   ];
 }
 
+/**
+ * A supporting object in the exhibit's surroundings — the TV's focus
+ * surrounds, a pickup shelf, a ring light. It belongs to the project's
+ * story, stands on the floor or the deck the way the real thing would, and
+ * is built as a solid with no patent ink (it is not part of the drawing).
+ * Authored upright in its own frame, turned about the vertical only.
+ */
+function surround(id: string, label: string, agent: number, color: string, at: Vec3, yaw: number, shapes: ShapeDef[]): PartDef {
+  return { id, label, agent, color, drawing: false, frame: { pos: at, rot: [0, yaw, 0] }, shapes };
+}
+
+/** A paper takeaway bag standing on `y`, with its order ticket stapled on. */
+function takeawayBag(c: Palette, [x, y, z]: Vec3, [w, h, d]: Vec3): ShapeDef[] {
+  return [
+    { k: "box", size: [w, h, d], pos: [x, y + h / 2, z], color: c.sand, bevel: 0.012 },
+    // The rolled-over top.
+    { k: "cyl", r: 0.022, h: w * 0.92, pos: [x, y + h - 0.012, z], rot: lying(), color: c.sand, bevel: 0.02 },
+    { k: "slab", size: [w * 0.42, h * 0.5], t: 0.006, r: 0.008, pos: [x + w * 0.16, y + h * 0.46, z + d / 2 + 0.002], color: c.white, finish: "print", map: "proc:receipt" },
+    { k: "cyl", r: 0.026, h: 0.008, pos: [x - w * 0.24, y + h * 0.7, z + d / 2 + 0.003], rot: FACE, color: c.coral },
+  ];
+}
+
 /** A framed square relief of the case study's three Code Eyes and dot pattern. */
 function tikCodeRelief(c: Palette, [x, y, z]: Vec3, pitch: number): ShapeDef[] {
   const eyeSpan = 2.2;
@@ -1195,6 +1217,31 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             },
           ],
         },
+        // A pickup shelf beside the counter: the orders the app is running,
+        // bagged and waiting to be collected.
+        surround("pickup", "Pickup shelf", 2, c.lilac, [2.0, 0, -0.62], 0.1, [
+          ...[-0.405, 0.405].map((x): ShapeDef => (
+            { k: "box", size: [0.05, 1.5, 0.42], pos: [x, 0.75, 0], bevel: 0.016 })),
+          ...[0.06, 0.56, 1.06].map((y): ShapeDef => (
+            { k: "box", size: [0.78, 0.045, 0.4], pos: [0, y, 0], bevel: 0.012 })),
+          { k: "box", size: [0.9, 0.05, 0.46], pos: [0, 1.515, 0], bevel: 0.016 },
+          // Shelf tags along the front edges.
+          ...[0.06, 0.56, 1.06].map((y): ShapeDef => (
+            { k: "slab", size: [0.12, 0.05], t: 0.006, r: 0.012, pos: [0.24, y, 0.202], color: c.yellow })),
+          ...takeawayBag(c, [-0.17, 0.0825, 0], [0.26, 0.34, 0.18]),
+          ...takeawayBag(c, [0.17, 0.0825, 0.01], [0.22, 0.28, 0.16]),
+          // Two takeaway boxes, the lower one with its lid line.
+          { k: "box", size: [0.3, 0.12, 0.22], pos: [-0.16, 0.6425, 0], color: c.cream, bevel: 0.014 },
+          { k: "box", size: [0.31, 0.016, 0.23], pos: [-0.16, 0.67, 0], color: c.cream, bevel: 0.006 },
+          { k: "box", size: [0.27, 0.1, 0.2], pos: [-0.16, 0.7525, 0], color: c.mist, bevel: 0.014 },
+          ...takeawayBag(c, [0.18, 0.5825, 0], [0.22, 0.3, 0.16]),
+          ...takeawayBag(c, [-0.14, 1.0825, 0], [0.24, 0.32, 0.17]),
+          // A drink with its lid, sleeve and straw.
+          { k: "cyl", r: 0.068, h: 0.19, pos: [0.2, 1.1775, 0], color: c.cream, bevel: 0.01 },
+          { k: "cyl", r: 0.073, h: 0.06, pos: [0.2, 1.175, 0], color: c.coral, bevel: 0.006 },
+          { k: "cyl", r: 0.073, h: 0.024, pos: [0.2, 1.2805, 0], color: c.mist, bevel: 0.008 },
+          { k: "cyl", r: 0.009, h: 0.14, pos: [0.215, 1.335, 0.01], color: c.plum, bevel: 0.009 },
+        ]),
       ],
       callouts: [
         { n: "202", at: [-0.62, 1.56, -0.14], to: [-1.5, 2.0, -0.2] },
@@ -1268,6 +1315,29 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "slab", size: [0.23, 0.31], t: 0.01, r: 0.05, pos: [0.69, 0.183, 0.51], rot: flat(-0.18), color: c.coral },
           ],
         },
+        // An index-card cabinet: the "discoverable index" the restructure
+        // builds, as the real thing. One drawer is out, its cards on show.
+        surround("index", "Index cabinet", 0, c.plum, [-2.05, 0, -0.38], 0.35, [
+          ...[[-0.26, -0.2], [0.26, -0.2], [-0.26, 0.2], [0.26, 0.2]].map(([x, z]): ShapeDef => (
+            { k: "cyl", r: 0.028, h: 0.08, pos: [x, 0.04, z], color: c.inky, bevel: 0.01 })),
+          { k: "box", size: [0.62, 1.06, 0.52], pos: [0, 0.6, 0], bevel: 0.02 },
+          { k: "slab", size: [0.68, 0.58], t: 0.04, r: 0.04, pos: [0, 1.145, 0], rot: flat(), bevel: 0.012 },
+          ...[0.27, 0.6, 0.93].flatMap((y, level) => [-0.15, 0.15].flatMap((x, side): ShapeDef[] => {
+            const out = level === 2 && side === 1 ? 0.2 : 0;
+            const z = 0.275 + out;
+            return [
+              { k: "box", size: [0.27, 0.29, 0.04], pos: [x, y, z], color: c.sand, bevel: 0.012 },
+              { k: "slab", size: [0.1, 0.055], t: 0.006, r: 0.008, pos: [x, y + 0.06, z + 0.022], color: c.cream },
+              { k: "cyl", r: 0.016, h: 0.1, pos: [x, y - 0.05, z + 0.03], rot: lying(), color: c.inky, bevel: 0.016 },
+            ];
+          })),
+          // The open drawer's tray, and its cards standing on edge.
+          { k: "box", size: [0.25, 0.2, 0.34], pos: [0.15, 0.91, 0.285], color: c.sand, bevel: 0.01 },
+          ...[0.3, 0.325, 0.35, 0.375, 0.4, 0.425].map((z): ShapeDef => (
+            { k: "slab", size: [0.21, 0.16], t: 0.006, r: 0.012, pos: [0.15, 1.03, z], color: c.cream })),
+          { k: "slab", size: [0.05, 0.035], t: 0.014, r: 0.01, pos: [0.1, 1.118, 0.35], color: c.coral },
+          { k: "slab", size: [0.05, 0.035], t: 0.014, r: 0.01, pos: [0.21, 1.118, 0.425], color: c.yellow },
+        ]),
       ],
       callouts: [
         { n: "302", at: [-1.27, 1.82, -0.42], to: [-1.85, 2.14, -0.35] },
@@ -1349,6 +1419,24 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
               { k: "box", size: [0.18, 0.25, 0.17], pos: [0, 0.117, -0.174], rot: [-0.23, 0, 0], color: c.sand },
             ],
           },
+          // The keyboard and pencil that come with the iPad, in front of it.
+          surround("keyboard", "Keyboard", 3, c.lilac, [0.34, 0.107, 0.5], 0, [
+            { k: "slab", size: [1.2, 0.42], t: 0.034, r: 0.05, pos: [0, 0.014, 0], rot: flat(), bevel: 0.01 },
+            ...[-0.13, -0.045, 0.04].flatMap((z) => row(10, [0.1, 0, 0], {
+              k: "slab", size: [0.085, 0.07], t: 0.014, r: 0.014, pos: [-0.45, 0.035, z], rot: flat(), color: c.cream, bevel: 0.004 })),
+            ...row(2, [0.1, 0, 0], { k: "slab", size: [0.085, 0.07], t: 0.014, r: 0.014, pos: [-0.45, 0.035, 0.125], rot: flat(), color: c.cream, bevel: 0.004 }),
+            { k: "slab", size: [0.48, 0.07], t: 0.014, r: 0.02, pos: [0, 0.035, 0.125], rot: flat(), color: c.cream, bevel: 0.004 },
+            ...row(2, [0.1, 0, 0], { k: "slab", size: [0.085, 0.07], t: 0.014, r: 0.014, pos: [0.35, 0.035, 0.125], rot: flat(), color: c.cream, bevel: 0.004 }),
+            { k: "cyl", r: 0.02, h: 0.6, pos: [0.05, 0.017, 0.37], rot: lying(), color: c.white, bevel: 0.02 },
+            { k: "ball", r: 0.013, pos: [-0.256, 0.017, 0.37], color: c.inky },
+          ]),
+          // A floor lamp: an evening on the sofa, which is where the iPad gets used.
+          surround("lamp", "Floor lamp", 4, c.plum, [1.85, 0, -1.35], 0, [
+            { k: "cyl", r: 0.24, h: 0.05, pos: [0, 0.025, 0], bevel: 0.02 },
+            { k: "cyl", r: 0.032, h: 1.8, pos: [0, 0.945, 0], bevel: 0.014 },
+            { k: "box", size: [0.08, 0.1, 0.08], pos: [0, 1.0, 0], color: c.inky, bevel: 0.02 },
+            { k: "cyl", r: 0.27, h: 0.34, pos: [0, 1.95, 0], color: c.cream, bevel: 0.03 },
+          ]),
         ],
         callouts: [
           { n: "402", at: [-0.97, 1.42, -0.21], to: [-1.64, 1.81, -0.24] },
@@ -1605,10 +1693,23 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             },
           ],
         },
+        // A small-parts organiser beside the tray: the system's components,
+        // one drawer each.
+        surround("organiser", "Parts organiser", 1, c.lilac, [2.05, 0, -0.35], 0.25, [
+          ...[[-0.26, -0.14], [0.26, -0.14], [-0.26, 0.14], [0.26, 0.14]].map(([x, z]): ShapeDef => (
+            { k: "cyl", r: 0.025, h: 0.03, pos: [x, 0.015, z], color: c.inky, bevel: 0.01 })),
+          { k: "box", size: [0.62, 0.9, 0.36], pos: [0, 0.47, 0], bevel: 0.02 },
+          ...[0.12, 0.29, 0.46, 0.63, 0.8].flatMap((y, level) => [-0.2, 0, 0.2].flatMap((x, side): ShapeDef[] => [
+            { k: "box", size: [0.17, 0.15, 0.03], pos: [x, y, 0.191], color: c.cream, bevel: 0.01 },
+            { k: "slab", size: [0.08, 0.05], t: 0.008, r: 0.012, pos: [x, y + 0.02, 0.208],
+              color: [c.coral, c.yellow, c.lilac, c.blue, c.green][(level * 3 + side) % 5] },
+            { k: "box", size: [0.06, 0.016, 0.02], pos: [x, y - 0.045, 0.212], color: c.plum, bevel: 0.006 },
+          ])),
+        ]),
       ],
       callouts: [
         { n: "502", at: [-1.21, 0.25, 0.16], to: [-1.91, 0.38, 0.5] },
-        { n: "504", at: [1.27, 0.22, -0.5], to: [2.0, 0.75, -0.6] },
+        { n: "504", at: [1.27, 0.22, -0.5], to: [1.2, 0.9, -1.35] },
         { n: "506", at: [-0.2, 0.24, -0.84], to: [-0.1, 0.95, -1.2] },
       ],
     }),
@@ -1688,6 +1789,15 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             }),
           ],
         },
+        // A poster stand with a printed TikCode: where the code meets the world.
+        surround("poster", "Poster stand", 3, c.lilac, [1.95, 0, -0.75], 0.1, [
+          { k: "cyl", r: 0.28, h: 0.05, pos: [0, 0.025, 0], color: c.plum, bevel: 0.02 },
+          { k: "cyl", r: 0.035, h: 0.98, pos: [0, 0.535, 0], color: c.plum, bevel: 0.015 },
+          { k: "slab", size: [0.78, 1.0], t: 0.05, r: 0.06, pos: [0, 1.5, 0], bevel: 0.016 },
+          { k: "slab", size: [0.7, 0.92], t: 0.01, r: 0.04, pos: [0, 1.5, 0.028], color: c.cream },
+          ...tikCodeRelief(c, [0, 1.6, 0.03], 0.052),
+          { k: "slab", size: [0.4, 0.09], t: 0.006, r: 0.022, pos: [0, 1.17, 0.035], finish: "print", map: `label:TikCode|${c.plum}|${c.white}|4.55` },
+        ]),
       ],
       callouts: [
         { n: "602", at: [-0.94, 1.48, -0.04], to: [-1.66, 1.83, 0.03] },
@@ -1937,9 +2047,35 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "ball", r: 0.055, pos: [0.43, 0.16, 0.85], color: LILAC },
           ],
         },
+        // Packed and waiting: the trip the shortlist is deciding.
+        surround("suitcase", "Suitcase", 0, c.lilac, [-2.0, 0, -0.5], 0.3, [
+          { k: "box", size: [0.6, 0.86, 0.3], pos: [0, 0.51, 0], bevel: 0.05 },
+          ...[[-0.22, -0.1], [0.22, -0.1], [-0.22, 0.1], [0.22, 0.1]].flatMap(([x, z]): ShapeDef[] => [
+            { k: "cyl", r: 0.038, h: 0.03, pos: [x, 0.038, z], rot: lying(), color: c.inky, bevel: 0.01 },
+            { k: "box", size: [0.07, 0.06, 0.07], pos: [x, 0.085, z], color: c.plum, bevel: 0.015 },
+          ]),
+          ...[-0.18, -0.06, 0.06].map((x): ShapeDef => (
+            { k: "slab", size: [0.035, 0.74], t: 0.02, r: 0.017, pos: [x, 0.51, 0.156], bevel: 0.008 })),
+          ...[-0.15, 0.15].map((x): ShapeDef => (
+            { k: "cyl", r: 0.015, h: 0.52, pos: [x, 1.19, -0.09], color: c.inky, bevel: 0.006 })),
+          { k: "box", size: [0.36, 0.05, 0.06], pos: [0, 1.46, -0.09], color: c.plum, bevel: 0.02 },
+          { k: "box", size: [0.2, 0.035, 0.05], pos: [0, 0.955, 0.05], color: c.plum, bevel: 0.015 },
+          { k: "slab", size: [0.11, 0.15], t: 0.012, r: 0.02, pos: [0.19, 0.78, 0.154], color: c.coral },
+          { k: "slab", size: [0.07, 0.05], t: 0.006, r: 0.01, pos: [0.19, 0.8, 0.162], color: c.white },
+        ]),
+        surround("carry-on", "Carry-on", 4, c.sand, [-1.97, 0, 0.22], 0.15, [
+          { k: "box", size: [0.44, 0.6, 0.24], pos: [0, 0.37, 0], bevel: 0.045 },
+          ...[[-0.16, -0.08], [0.16, -0.08], [-0.16, 0.08], [0.16, 0.08]].flatMap(([x, z]): ShapeDef[] => [
+            { k: "cyl", r: 0.032, h: 0.026, pos: [x, 0.032, z], rot: lying(), color: c.inky, bevel: 0.008 },
+            { k: "box", size: [0.06, 0.05, 0.06], pos: [x, 0.07, z], color: c.plum, bevel: 0.012 },
+          ]),
+          ...[-0.08, 0.08].map((x): ShapeDef => (
+            { k: "slab", size: [0.03, 0.5], t: 0.016, r: 0.014, pos: [x, 0.37, 0.125], bevel: 0.006 })),
+          { k: "box", size: [0.16, 0.03, 0.045], pos: [0, 0.68, 0], color: c.plum, bevel: 0.012 },
+        ]),
       ],
       callouts: [
-        { n: "702", at: [-1.05, 0.98, 0.24], to: [-1.7, 1.46, 0.26] },
+        { n: "702", at: [-1.05, 0.98, 0.24], to: [-0.75, 2.0, -0.35] },
         { n: "704", at: [1.02, 0.86, -0.54], to: [1.77, 1.3, -0.36] },
         { n: "706", at: [0.7, 0.45, 0.59], to: [1.66, 0.5, 0.94] },
       ],
@@ -2011,9 +2147,23 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
               { k: "poly", pts: sparkle(0.077), t: 0.039, bevel: 0.01, pos: [-0.947, 1.354, -0.12], rot: [0, 0.28, 0], color: c.yellow },
             ],
           },
+          // A ring light on its tripod, beside the phone: how creators
+          // light the face an effect goes on.
+          surround("ring-light", "Ring light", 3, c.lilac, [-1.95, 0, -0.42], 0.55, [
+            { k: "cyl", r: 0.022, h: 0.528, pos: [0, 0.21, 0.16], rot: [-0.651, 0, 0], bevel: 0.01 },
+            { k: "cyl", r: 0.022, h: 0.528, pos: [0.1386, 0.21, -0.08], rot: [0.364, 0, 0.553], bevel: 0.01 },
+            { k: "cyl", r: 0.022, h: 0.528, pos: [-0.1386, 0.21, -0.08], rot: [0.364, 0, -0.553], bevel: 0.01 },
+            ...[[0, 0.32], [0.277, -0.16], [-0.277, -0.16]].map(([x, z]): ShapeDef => (
+              { k: "ball", r: 0.03, pos: [x, 0.028, z], color: c.plum })),
+            { k: "cyl", r: 0.05, h: 0.1, pos: [0, 0.42, 0], color: c.plum, bevel: 0.02 },
+            { k: "cyl", r: 0.03, h: 1.02, pos: [0, 0.9, 0], bevel: 0.014 },
+            { k: "box", size: [0.08, 0.12, 0.07], pos: [0, 1.43, 0], color: c.plum, bevel: 0.02 },
+            { k: "torus", R: 0.36, tube: 0.06, pos: [0, 1.84, 0] },
+            { k: "torus", R: 0.36, tube: 0.04, pos: [0, 1.84, 0.03], color: c.cream, finish: "led" },
+          ]),
         ],
         callouts: [
-          { n: "802", at: [-0.76, 1.62, -0.24], to: [-1.55, 1.88, -0.18] },
+          { n: "802", at: [-0.76, 1.62, -0.24], to: [-0.35, 2.35, -0.5] },
           { n: "804", at: [1.08, 0.27, 0.61], to: [1.81, 0.49, 0.99] },
           { n: "806", at: [0.43, 1.31, -0.06], to: [1.22, 1.56, 0.07] },
         ],
@@ -2083,9 +2233,23 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             ...row(3, [0.208, 0, -0.074], { k: "poly", pts: [[-0.069, -0.064], [0.03, 0], [-0.069, 0.064], [-0.027, 0]], t: 0.024, r: 0.009, pos: [0.455, 0.162, 0.7], rot: flat(0.34) }),
           ],
         },
+        // A roll-up banner: the campaign, promoted.
+        surround("banner", "Roll-up banner", 2, c.cream, [2.03, 0, -0.55], 0.12, [
+          ...[-0.36, 0.36].map((x): ShapeDef => (
+            { k: "box", size: [0.06, 0.03, 0.34], pos: [x, 0.015, 0], color: c.plum, bevel: 0.01 })),
+          { k: "box", size: [0.86, 0.1, 0.2], pos: [0, 0.075, 0], color: c.lilac, bevel: 0.035 },
+          { k: "slab", size: [0.8, 1.84], t: 0.014, r: 0.012, pos: [0, 1.035, 0], bevel: 0.005 },
+          { k: "cyl", r: 0.014, h: 1.84, pos: [0, 1.03, -0.04], color: c.plum, bevel: 0.006 },
+          { k: "cyl", r: 0.022, h: 0.84, pos: [0, 1.955, 0], rot: lying(), color: c.lilac, bevel: 0.022 },
+          { k: "poly", pts: [[-0.2, 0], [0.2, 0], [0.2, 0.23], [0, 0.39], [-0.2, 0.23]], t: 0.018, r: 0.022, pos: [0, 1.2, 0.012], color: c.lilac, bevel: 0.006 },
+          { k: "slab", size: [0.08, 0.13], t: 0.008, r: 0.014, pos: [0, 1.265, 0.023], color: c.plum },
+          ...[[-0.14, 0.16], [0, 0.27], [0.14, 0.4]].map(([x, h]): ShapeDef => (
+            { k: "box", size: [0.09, h, 0.018], pos: [x, 0.66 + h / 2, 0.012], color: c.coral, bevel: 0.007 })),
+          { k: "slab", size: [0.62, 0.11], t: 0.006, r: 0.022, pos: [0, 1.77, 0.009], finish: "print", map: `label:Host campaign|${c.plum}|${c.white}|5.6` },
+        ]),
       ],
       callouts: [
-        { n: "902", at: [1.08, 0.92, -0.31], to: [1.81, 1.25, -0.13] },
+        { n: "902", at: [1.08, 0.92, -0.31], to: [0.3, 1.55, -0.5] },
         { n: "904", at: [-0.79, 0.66, -0.28], to: [-1.6, 1.06, -0.12] },
         { n: "906", at: [-0.3, 0.52, 0.46], to: [0.18, 0.36, 1.17] },
       ],
@@ -2147,10 +2311,18 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "slab", size: [0.37, 0.041], t: 0.011, r: 0.019, pos: [0.698, 0.148, 0.55], rot: flat(), color: c.plum },
           ],
         },
+        // Two type blocks: the library's Latin and Chinese type.
+        surround("type-blocks", "Type blocks", 2, c.sand, [2.0, 0, 0.15], 0.2, [
+          { k: "box", size: [0.62, 0.62, 0.62], pos: [0, 0.31, 0], bevel: 0.04 },
+          { k: "slab", size: [0.48, 0.48], t: 0.008, r: 0.034, pos: [0, 0.31, 0.312], finish: "print", map: `label:文|${c.cream}|${c.inky}|1` },
+          { k: "slab", size: [0.48, 0.48], t: 0.008, r: 0.034, pos: [0.312, 0.31, 0], rot: [0, Math.PI / 2, 0], finish: "print", map: `label:字|${c.cream}|${c.inky}|1` },
+          { k: "box", size: [0.48, 0.48, 0.48], pos: [-0.03, 0.857, 0], rot: [0, 0.4, 0], color: c.lilac, bevel: 0.034 },
+          { k: "slab", size: [0.36, 0.36], t: 0.008, r: 0.026, pos: [-0.03 + 0.242 * Math.sin(0.4), 0.857, 0.242 * Math.cos(0.4)], rot: [0, 0.4, 0], finish: "print", map: `label:Aa|${c.cream}|${c.inky}|1` },
+        ]),
       ],
       callouts: [
         { n: "1002", at: [1.0, 1.41, -0.38], to: [1.8, 1.72, -0.28] },
-        { n: "1004", at: [0.87, 0.18, 0.68], to: [1.65, 0.47, 1.03] },
+        { n: "1004", at: [0.87, 0.18, 0.68], to: [1.3, 0.3, 1.25] },
         { n: "1006", at: [-1.02, 0.9, -0.34], to: [-1.77, 1.18, -0.21] },
       ],
     }),
@@ -2222,11 +2394,27 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "slab", size: [0.38, 0.08], t: 0.012, r: 0.029, pos: [-0.774, 0.16, 0.386], rot: flat(0.13), color: c.coral },
           ],
         },
+        // A pinboard: listings being tracked by hand beside the dashboard.
+        surround("pinboard", "Pinboard", 4, c.lilac, [-2.0, 0, -0.4], 0.45, [
+          ...[-0.3, 0.3].flatMap((x): ShapeDef[] => [
+            { k: "box", size: [0.06, 1.66, 0.06], pos: [x, 0.85, 0], bevel: 0.016 },
+            { k: "box", size: [0.07, 0.05, 0.36], pos: [x, 0.025, 0], color: c.plum, bevel: 0.016 },
+          ]),
+          { k: "slab", size: [0.7, 0.8], t: 0.05, r: 0.04, pos: [0, 1.23, 0.051], bevel: 0.014 },
+          { k: "slab", size: [0.62, 0.72], t: 0.012, r: 0.03, pos: [0, 1.23, 0.08], color: c.sand },
+          ...([[-0.15, 1.36, 0, c.white], [0.12, 1.4, 0.06, c.cream], [-0.02, 1.06, -0.05, c.white]] as const).flatMap(([x, y, turn, paper]): ShapeDef[] => [
+            { k: "slab", size: [0.18, 0.22], t: 0.006, r: 0.012, pos: [x, y, 0.0875], rot: [0, 0, turn], color: paper },
+            { k: "slab", size: [0.12, 0.018], t: 0.008, r: 0.009, pos: [x, y + 0.03, 0.092], rot: [0, 0, turn], color: c.lilac },
+            { k: "slab", size: [0.09, 0.018], t: 0.008, r: 0.009, pos: [x, y - 0.02, 0.092], rot: [0, 0, turn], color: c.lilac },
+            { k: "ball", r: 0.02, pos: [x, y + 0.09, 0.1], color: c.coral },
+          ]),
+          { k: "slab", size: [0.12, 0.12], t: 0.006, r: 0.01, pos: [0.17, 1.03, 0.0875], color: c.yellow },
+        ]),
       ],
       callouts: [
         { n: "1102", at: [0.99, 1.49, -0.36], to: [1.78, 1.79, -0.23] },
         { n: "1104", at: [0.94, 0.21, 0.67], to: [1.72, 0.43, 0.96] },
-        { n: "1106", at: [-1.06, 1.15, -0.36], to: [-1.83, 1.39, -0.21] },
+        { n: "1106", at: [-1.06, 1.15, -0.36], to: [-0.6, 2.25, -0.75] },
       ],
     }),
   ],

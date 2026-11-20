@@ -68,6 +68,11 @@ Two more that are his decisions, not style:
 - **Two or three supporting objects** that tell the story around it.
 - **Small things** — at least six.
 - **One or two toy accents** — a ball, a ring, an arch, a cloud.
+- **Surroundings** — one or two objects from the project's world, beside the
+  base rather than behind it, so the figure fills its frame like the TV with
+  its surrounds (`surround()`; see "Every exhibit has surroundings" in
+  `rules/BLUEPRINT_STAGE.md`). Real objects, standing the way they would;
+  fronts turned to the camera; sturdy, in the mid tones.
 
 Split it into 5–8 **parts**. A part is what one agent builds and one line of
 the log names ("Console", "Order ticket"), so name them like objects.

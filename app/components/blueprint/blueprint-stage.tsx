@@ -26,8 +26,8 @@ type LogLine = { partId: string; agent: number; label: string; done: boolean };
 
 const SERIF = { fontFamily: "var(--font-serif), Georgia, serif" };
 
-const TRAVEL = 0.5; // seconds an agent takes to reach its part
-const STAGGER = 0.25; // seconds between consecutive parts setting off
+const TRAVEL = 0.4; // seconds an agent takes to reach its part
+const STAGGER = 0.18; // seconds between consecutive parts setting off
 const REWIND = 0.9; // seconds a finished figure takes to run back to its drawing
 
 /** Who builds which part of a figure, and when: the schedule a build plays and a rewind plays backwards. */
@@ -40,9 +40,10 @@ function planBuild(figId: string, instant: boolean): BuildItem[] {
     const gesture = figId === "tv" ? TV_CONSTRUCTION_TIMING[part.id] : undefined;
     const tDraw = gesture ? (instant ? 0 : tGo + TRAVEL) : undefined;
     const tStart = instant ? 0 : gesture ? tDraw! + gesture.draw : tGo + TRAVEL;
-    // Taller parts take a little longer to fill.
-    const tEnd = instant ? 0 : tStart + (gesture ? gesture.fill : 0.55 + Math.min(0.5, (rt.maxY - rt.minY) * 0.35));
-    agentFree[part.agent] = tEnd + (gesture ? 0.16 : 0.05);
+    // Taller parts take a little longer to fill. (Tony, 2026-11-20: the
+    // drawing took a little too long; every step is about a quarter shorter.)
+    const tEnd = instant ? 0 : tStart + (gesture ? gesture.fill : 0.42 + Math.min(0.38, (rt.maxY - rt.minY) * 0.27));
+    agentFree[part.agent] = tEnd + (gesture ? 0.12 : 0.04);
     return { figId, partId: part.id, label: part.label, agent: part.agent, tGo, tDraw, tStart, tEnd, started: false, ended: false };
   });
 }
