@@ -78,7 +78,7 @@ export function Board({
       type="button"
       onClick={() => open?.(src)}
       aria-label={`Enlarge: ${alt}`}
-      className={`group relative block w-full rounded-[1.5rem] text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#c13d22] ${className}`}
+      className={`group relative block w-full rounded-[1.5rem] text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--cs-heading)] ${className}`}
     >
       <Image
         src={src}

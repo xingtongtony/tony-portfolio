@@ -36,7 +36,7 @@ export function HoverVideo({
   };
 
   return (
-    <div className="group/hv relative overflow-hidden rounded-[1.5rem] border border-[var(--cs-border)]">
+    <div className="group/hv relative overflow-hidden rounded-[1.5rem]">
       {/* `#t=0.001` makes iOS Safari paint the first frame; with
           preload="metadata" alone it shows an empty box until played. */}
       <video

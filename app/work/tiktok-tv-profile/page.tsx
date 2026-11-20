@@ -3,28 +3,19 @@ import Link from "next/link";
 import { PortfolioShell } from "../../components/portfolio-shell";
 import { Reveal, StaggerGrid, StaggerItem } from "../../components/motion";
 import { NextSectionButton } from "../../components/next-section-button";
-import {
-  CaseSection,
-  SubHeading,
-  MediaCaption,
-  ImageFrame,
-  VideoFrame,
-  CaseStudyFooter,
-} from "../../components/case-study";
+import { Board, BoardGallery, type BoardImage } from "../../components/board-viewer";
+import { CaseHeader, CaseStudyFooter, Chapter, MediaCaption, SubPair, VideoFrame } from "../../components/case-study";
 import { HoverVideo } from "../../components/hover-video";
 import { ScrollRevealText } from "../../components/scroll-reveal-text";
-import {
-  eyebrowSection,
-  eyebrowMeta,
-  surfaceQuiet,
-  surfaceDefault,
-  bodyMd,
-  bodySm,
-  emphasis,
-  cardHoverDark,
-} from "../../lib/tokens";
+import { TT_ACCENT, TV_CANVAS } from "../../lib/tiktok-tv";
+import { eyebrowSection, surfaceQuiet, surfaceDefault, bodyMd, bodySm, emphasis, cardHoverDark } from "../../lib/tokens";
 
 const A = "/portfolio/tiktok-tv-profile";
+
+const B = {
+  mine: { src: `${A}/pf-03.png`, alt: "My Profile — original 2020 MVP layout", width: 1280, height: 720 },
+  others: { src: `${A}/pf-04.png`, alt: "Others Profile — original 2020 MVP layout", width: 1164, height: 670 },
+} satisfies Record<string, BoardImage>;
 
 const projectStats = [
   ["Role", "Lead Product Designer"],
@@ -104,331 +95,248 @@ const relatedCases = [
 
 export default function TikTokTvProfilePage() {
   return (
-    <PortfolioShell
-      sidebarTheme="tiktok-tv"
-      mainClassName="bg-[#161616] text-white"
-      rootBg="#161616"
-      contentClassName="min-w-0 bg-[#161616] text-white"
-    >
-      <article className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 sm:pt-10 xl:px-14 lg:pb-24 lg:pt-14">
-        {/* HERO */}
-        <figure className="overflow-hidden rounded-[1.75rem]">
-          <Image
-            src={`${A}/pf-01.jpg`}
-            alt="TikTok TV profile redesign in a living room TV interface"
-            width={2700}
-            height={1605}
-            priority
-            className="h-auto w-full"
-          />
-        </figure>
-
-        {/* TITLE + OVERVIEW */}
-        <section className="pb-12 pt-14 lg:pb-16 lg:pt-20">
-          <p className={eyebrowMeta}>Apr 2024 — Oct 2024</p>
-
-          <h1 className="mt-6 max-w-[18ch] text-[clamp(2rem,3.4vw,3rem)] font-medium leading-[1] tracking-[-0.03em] text-white text-balance">
-            TikTok TV Profile
-          </h1>
-
-          <div className="mt-12">
-            <p className={eyebrowSection}>Overview</p>
-            <p className="mt-6 max-w-3xl text-lg leading-[1.5] tracking-[-0.01em] text-white/72">
-              We are optimizing the &apos;My Profile&apos; and &apos;Other&apos;s
-              Profile&apos; features to deliver enhanced value to TikTok TV
-              users. The updated profiles will allow users to effortlessly access
-              their curated content assets and quickly build relationships
-              through other creators&apos; profiles.
-            </p>
-          </div>
-
-          <dl
-            className={`mt-10 grid overflow-hidden rounded-[1.25rem] sm:grid-cols-2 lg:grid-cols-4 ${surfaceQuiet}`}
-          >
-            {projectStats.map(([label, value], i) => (
-              <div
-                key={label}
-                className={`px-6 py-5 ${
-                  i > 0 ? "border-t border-white/[0.05] sm:border-t-0" : ""
-                } ${i % 2 === 1 ? "sm:border-l sm:border-white/[0.05]" : ""} ${
-                  i >= 2
-                    ? "sm:border-t sm:border-white/[0.05] lg:border-t-0 lg:border-l lg:border-white/[0.05]"
-                    : ""
-                } ${i === 1 ? "lg:border-l lg:border-white/[0.05]" : ""} ${
-                  i === 3 ? "lg:border-l lg:border-white/[0.05]" : ""
-                }`}
-              >
-                <dt className={eyebrowMeta}>{label}</dt>
-                <dd className="mt-3 text-[15px] font-medium leading-6 text-white/82">
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
-          {/* Patent card */}
-          <article className={`mt-5 rounded-[1.25rem] px-6 py-6 ${surfaceQuiet}`}>
+    <PortfolioShell {...TV_CANVAS.shell}>
+      <BoardGallery boards={Object.values(B)}>
+        <article data-cs-theme={TV_CANVAS.theme} className="mx-auto max-w-[1280px] px-6 pb-14 pt-6 sm:px-10 sm:pt-10 xl:px-14 lg:pb-24 lg:pt-14">
+          {/* HERO */}
+          <figure className="overflow-hidden rounded-[1.75rem]">
             <Image
-              src={`${A}/pf-02.png`}
-              alt=""
-              width={72}
-              height={72}
-              className="block size-[22px] opacity-65 grayscale"
+              src={`${A}/pf-01.jpg`}
+              alt="TikTok TV profile redesign in a living room TV interface"
+              width={2700}
+              height={1605}
+              priority
+              className="h-auto w-full"
             />
-            <h2 className="mt-5 text-[1.25rem] font-semibold leading-[1.2] tracking-[-0.02em] text-white">
-              1 Design Patent
-            </h2>
-            <ul className="mt-3 flex flex-col gap-1 text-[15px] font-medium leading-6 text-white/56">
-              <li>Video related interactive patent</li>
-              <li>Design inventions</li>
-              <li>Apr 2024 — Oct 2024</li>
-            </ul>
-          </article>
-        </section>
+          </figure>
 
-        {/* SECTION FLOW */}
-        <div className="mt-24 flex flex-col gap-24 sm:mt-32 sm:gap-32 lg:mt-40 lg:gap-40">
-          {/* PROBLEMS */}
-          <CaseSection eyebrow="Problems" title="What's the difference?">
-            <Reveal className={`mt-8 max-w-3xl flex flex-col gap-7 ${bodyMd}`}>
-              <p>
-                The initial profile pages were built in 2020. It&apos;s an MVP
-                version for users to view the creator&apos;s details.
-              </p>
-              <p>
-                We found out that interactions vary between &apos;My
-                Profile&apos; and &apos;Others Profile&apos;: focus on Liked and
-                Favorited video consumption in &apos;My Profile&apos;, with no
-                social features. In &apos;Others Profiles&apos;, prioritize
-                social attributes, placing user info at the top visual area.
-              </p>
-            </Reveal>
+          <CaseHeader
+            date="Apr 2024 — Oct 2024"
+            title="TikTok TV Profile"
+            overview="We are optimizing the 'My Profile' and 'Other's Profile' features to deliver enhanced value to TikTok TV users. The updated profiles will allow users to effortlessly access their curated content assets and quickly build relationships through other creators' profiles."
+            facts={projectStats}
+          >
+            <article className={`mt-14 rounded-[1.25rem] px-6 py-6 ${surfaceQuiet}`}>
+              <Image src={`${A}/pf-02.png`} alt="" width={72} height={72} className="block size-[22px] opacity-65 grayscale" />
+              <h2 className="mt-5 text-[1.25rem] font-semibold leading-[1.2] tracking-[-0.02em] text-[var(--cs-heading)]">1 Design Patent</h2>
+              <ul className="mt-3 flex flex-col gap-1 text-[15px] font-medium leading-6 text-[var(--cs-body-sm)]">
+                <li>Video related interactive patent</li>
+                <li>Design inventions</li>
+                <li>Apr 2024 — Oct 2024</li>
+              </ul>
+            </article>
+          </CaseHeader>
 
-            <StaggerGrid className="mt-10 grid gap-x-12 gap-y-5 sm:grid-cols-2">
-              {[
-                { src: `${A}/pf-03.png`, label: "My Profile" },
-                { src: `${A}/pf-04.png`, label: "Others Profile" },
-              ].map((it, i) => (
-                <StaggerItem key={it.label} index={i}>
-                  <ImageFrame
-                    src={it.src}
-                    alt={`${it.label} — original 2020 MVP layout`}
-                    width={1600}
-                    height={1000}
-                  />
-                  <p className={`mt-5 ${bodySm}`}>
-                    <span className="font-semibold text-white">{it.label}</span>
+          <div className="mt-28 flex flex-col gap-28 sm:gap-36 lg:mt-36 lg:gap-44">
+            <Chapter
+              id="difference"
+              n="01"
+              eyebrow="Problems"
+              title="What's the difference?"
+              accent={TT_ACCENT}
+              intro={
+                <div className={`flex flex-col gap-6 ${bodyMd}`}>
+                  <p>
+                    The initial profile pages were built in 2020. It&apos;s an MVP version for users to view the
+                    creator&apos;s details.
                   </p>
-                </StaggerItem>
-              ))}
-            </StaggerGrid>
-          </CaseSection>
+                  <p>
+                    We found out that interactions vary between &apos;My Profile&apos; and &apos;Others Profile&apos;:
+                    focus on Liked and Favorited video consumption in &apos;My Profile&apos;, with no social features. In
+                    &apos;Others Profiles&apos;, prioritize social attributes, placing user info at the top visual area.
+                  </p>
+                </div>
+              }
+            >
+              <StaggerGrid className="mt-14 grid gap-x-12 gap-y-10 sm:grid-cols-2">
+                {[
+                  { board: B.mine, label: "My Profile" },
+                  { board: B.others, label: "Others Profile" },
+                ].map(({ board, label }, i) => (
+                  <StaggerItem key={label} index={i}>
+                    <Board {...board} />
+                    <p className={`mt-5 ${bodySm}`}>
+                      <span className="font-semibold text-[var(--cs-heading)]">{label}</span>
+                    </p>
+                  </StaggerItem>
+                ))}
+              </StaggerGrid>
+            </Chapter>
 
-          {/* THE FACT — ONE paragraph, ONE size. Scroll-driven highlight:
-              grey base fills to white word-by-word as it scrolls through view
-              (the source's two-layer effect). Emphasis is weight only. */}
-          <section data-case-section>
-            <Reveal>
-              <p className={eyebrowSection}>The fact</p>
-            </Reveal>
-            <ScrollRevealText
-              className="mt-6 max-w-4xl text-[clamp(1.5rem,2.4vw,2rem)] font-medium leading-[1.4] tracking-[-0.015em]"
-              segments={[
-                { text: "On TV, around" },
-                { text: "20% of logged-in users", bold: true },
-                {
-                  text: "access their profile daily, averaging 2.6 visits per day. Among them,",
-                },
-                {
-                  text: "73% consume videos from “My Videos” and “Liked Videos,”",
-                  bold: true,
-                },
-                { text: "while" },
-                {
-                  text: "32% visit other profiles via “Following” and “Followers.”",
-                  bold: true,
-                },
-                {
-                  text: "My profile, the place for logged-in users to consume videos,",
-                },
-                {
-                  text: "shouldn’t have the same structure",
-                  bold: true,
-                },
-                { text: "as other’s profile." },
-              ]}
+            {/* THE FACT — one paragraph, one size, scroll-driven highlight (the
+                source's two-layer effect). A statement, not a titled chapter. */}
+            <section data-case-section>
+              <Reveal>
+                <p className={eyebrowSection}>
+                  <span className={TT_ACCENT}>02</span>
+                  <span aria-hidden className="mx-2 opacity-50">/</span>
+                  The fact
+                </p>
+              </Reveal>
+              <ScrollRevealText
+                className="mt-6 max-w-4xl text-[clamp(1.5rem,2.4vw,2rem)] font-medium leading-[1.4] tracking-[-0.015em]"
+                segments={[
+                  { text: "On TV, around" },
+                  { text: "20% of logged-in users", bold: true },
+                  { text: "access their profile daily, averaging 2.6 visits per day. Among them," },
+                  { text: "73% consume videos from “My Videos” and “Liked Videos,”", bold: true },
+                  { text: "while" },
+                  { text: "32% visit other profiles via “Following” and “Followers.”", bold: true },
+                  { text: "My profile, the place for logged-in users to consume videos," },
+                  { text: "shouldn’t have the same structure", bold: true },
+                  { text: "as other’s profile." },
+                ]}
+              />
+            </section>
+
+            <Chapter id="wireframing" n="03" eyebrow="Possibility" title="Wireframing" accent={TT_ACCENT}>
+              <StaggerGrid className="mt-12 grid gap-x-12 gap-y-12 sm:grid-cols-2">
+                {wireframes.map((w, i) => (
+                  <StaggerItem key={w.title} index={i}>
+                    <HoverVideo src={w.src} />
+                    <MediaCaption className="mt-5">{w.title}</MediaCaption>
+                    <ul className="mt-3 flex flex-col gap-1 text-sm leading-[1.4] text-[var(--cs-body-sm)]">
+                      {w.points.map((p) => (
+                        <li key={p}>{p}</li>
+                      ))}
+                    </ul>
+                  </StaggerItem>
+                ))}
+              </StaggerGrid>
+            </Chapter>
+
+            <Chapter id="conclusion" n="04" eyebrow="Conclusion" title="Waterfall, left & right" accent={TT_ACCENT}>
+              <StaggerGrid className="mt-12 grid auto-rows-fr gap-5 sm:grid-cols-2">
+                {[
+                  {
+                    src: `${A}/pf-09.png`,
+                    title: "Waterfall Format",
+                    body: (
+                      <>
+                        The waterfall format allows users to search certain content, but the rows format will enable users
+                        to consume content continuously. In the case of the profile page,{" "}
+                        <strong className={emphasis}>the waterfall format is the best solution.</strong>
+                      </>
+                    ),
+                  },
+                  {
+                    src: `${A}/pf-10.png`,
+                    title: "Left & Right",
+                    body: (
+                      <>
+                        To <strong className={emphasis}>improve the capacity</strong> of the screen but not too
+                        overwhelming, we are using left &amp; right structures for both my profile &amp; other&apos;s
+                        profiles. The right side of the content area can show <strong className={emphasis}>8-12 videos</strong>{" "}
+                        at a maximum.
+                      </>
+                    ),
+                  },
+                ].map((c, i) => (
+                  <StaggerItem key={c.title} index={i} className="h-full">
+                    <div className={`h-full rounded-[1.25rem] px-6 py-6 ${surfaceDefault}`}>
+                      <Image src={c.src} alt="" width={256} height={256} className="block size-12 opacity-80" />
+                      <MediaCaption className="mt-5">{c.title}</MediaCaption>
+                      <p className={`mt-3 ${bodyMd}`}>{c.body}</p>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerGrid>
+            </Chapter>
+
+            <Chapter
+              id="differentiated"
+              n="05"
+              eyebrow="New experience"
+              title="Differentiated profile"
+              accent={TT_ACCENT}
+              intro={
+                <p className={bodyMd}>
+                  In &apos;my profile&apos;, users are already somewhat familiar with the content they have previously
+                  viewed. In this scenario, they are more concerned with{" "}
+                  <strong className={emphasis}>searching for videos rather than consuming them.</strong>
+                </p>
+              }
+            >
+              <SubPair title="My profile" className="mt-20">
+                <p>
+                  To allow users to access their collected videos more quickly, the user{" "}
+                  <strong className={emphasis}>bio is no longer emphasized</strong> on TV. Instead,{" "}
+                  <strong className={emphasis}>navigation is prioritized</strong> to help users find the right content.
+                </p>
+              </SubPair>
+              <Reveal className="mt-10">
+                <VideoFrame src={`${A}/pf-11.mp4`} className="border-0" />
+              </Reveal>
+
+              <SubPair title="Others profile" className="mt-20">
+                <p>
+                  Keep the social genes as the core content on other&apos;s profiles. Users can press &apos;left&apos; for
+                  at most <strong className={emphasis}>5 steps</strong> to follow the creators no matter how many videos
+                  they browsed.
+                </p>
+              </SubPair>
+              <Reveal className="mt-10">
+                <VideoFrame src={`${A}/pf-12.mp4`} className="border-0" />
+              </Reveal>
+            </Chapter>
+
+            <Chapter id="inner-flow" n="06" eyebrow="Prototype" title="Inner flow" accent={TT_ACCENT}>
+              <StaggerGrid className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2">
+                {[
+                  { src: `${A}/pf-13.mp4`, label: "My profile" },
+                  { src: `${A}/pf-14.mp4`, label: "Others profile" },
+                ].map((it, i) => (
+                  <StaggerItem key={it.label} index={i}>
+                    <VideoFrame src={it.src} className="border-0" />
+                    <p className={`mt-5 ${bodySm}`}>
+                      <span className="font-semibold text-[var(--cs-heading)]">{it.label}</span>
+                    </p>
+                  </StaggerItem>
+                ))}
+              </StaggerGrid>
+            </Chapter>
+
+            <Chapter
+              id="result"
+              n="07"
+              eyebrow="Impact"
+              title="The Result"
+              accent={TT_ACCENT}
+              intro={<p className={bodyMd}>To be continued…</p>}
             />
-          </section>
 
-          {/* POSSIBILITY — four wireframe directions (hover to play) */}
-          <CaseSection eyebrow="Possibility" title="Wireframing">
-            <StaggerGrid className="mt-10 grid gap-x-12 gap-y-12 sm:grid-cols-2">
-              {wireframes.map((w, i) => (
-                <StaggerItem key={w.title} index={i}>
-                  <HoverVideo src={w.src} />
-                  <MediaCaption className="mt-5">{w.title}</MediaCaption>
-                  <ul className="mt-3 flex flex-col gap-1 text-sm leading-[1.4] text-white/56">
-                    {w.points.map((p) => (
-                      <li key={p}>{p}</li>
-                    ))}
-                  </ul>
-                </StaggerItem>
-              ))}
-            </StaggerGrid>
-          </CaseSection>
-
-          {/* CONCLUSION */}
-          <CaseSection eyebrow="Conclusion" title="Waterfall, left & right">
-            <StaggerGrid className="mt-10 grid gap-x-12 gap-y-5 sm:grid-cols-2">
-              {[
-                {
-                  src: `${A}/pf-09.png`,
-                  title: "Waterfall Format",
-                  body: (
-                    <>
-                      The waterfall format allows users to search certain
-                      content, but the rows format will enable users to consume
-                      content continuously. In the case of the profile page,{" "}
-                      <strong className={emphasis}>
-                        the waterfall format is the best solution.
-                      </strong>
-                    </>
-                  ),
-                },
-                {
-                  src: `${A}/pf-10.png`,
-                  title: "Left & Right",
-                  body: (
-                    <>
-                      To{" "}
-                      <strong className={emphasis}>improve the capacity</strong>{" "}
-                      of the screen but not too overwhelming, we are using left &
-                      right structures for both my profile & other&apos;s
-                      profiles. The right side of the content area can show{" "}
-                      <strong className={emphasis}>8-12 videos</strong> at a
-                      maximum.
-                    </>
-                  ),
-                },
-              ].map((c, i) => (
-                <StaggerItem key={c.title} index={i}>
-                  <div
-                    className={`h-full rounded-[1.25rem] px-6 py-6 ${surfaceDefault}`}
-                  >
-                    <Image
-                      src={c.src}
-                      alt=""
-                      width={256}
-                      height={256}
-                      className="block size-12 opacity-80"
-                    />
-                    <MediaCaption className="mt-5">{c.title}</MediaCaption>
-                    <p className={`mt-3 ${bodyMd}`}>{c.body}</p>
-                  </div>
-                </StaggerItem>
-              ))}
-            </StaggerGrid>
-          </CaseSection>
-
-          {/* NEW EXPERIENCE */}
-          <CaseSection eyebrow="New experience" title="Differentiated profile">
-            <Reveal>
-              <p className={`mt-8 max-w-3xl ${bodyMd}`}>
-                In &apos;my profile&apos;, users are already somewhat familiar
-                with the content they have previously viewed. In this scenario,
-                they are more concerned with{" "}
-                <strong className={emphasis}>
-                  searching for videos rather than consuming them.
-                </strong>
-              </p>
-            </Reveal>
-
-            <Reveal className="mt-16">
-              <SubHeading>My profile</SubHeading>
-              <p className={`mt-4 max-w-3xl ${bodyMd}`}>
-                To allow users to access their collected videos more quickly, the
-                user <strong className={emphasis}>bio is no longer emphasized</strong>{" "}
-                on TV. Instead,{" "}
-                <strong className={emphasis}>navigation is prioritized</strong>{" "}
-                to help users find the right content.
-              </p>
-            </Reveal>
-            <Reveal className="mt-8">
-              <VideoFrame src={`${A}/pf-11.mp4`} />
-            </Reveal>
-
-            <Reveal className="mt-16">
-              <SubHeading>Others profile</SubHeading>
-              <p className={`mt-4 max-w-3xl ${bodyMd}`}>
-                Keep the social genes as the core content on other&apos;s
-                profiles. Users can press &apos;left&apos; for at most{" "}
-                <strong className={emphasis}>5 steps</strong> to follow the
-                creators no matter how many videos they browsed.
-              </p>
-            </Reveal>
-            <Reveal className="mt-8">
-              <VideoFrame src={`${A}/pf-12.mp4`} />
-            </Reveal>
-          </CaseSection>
-
-          {/* PROTOTYPE */}
-          <CaseSection eyebrow="Prototype" title="Inner flow">
-            <StaggerGrid className="mt-10 grid gap-x-12 gap-y-10 sm:grid-cols-2">
-              {[
-                { src: `${A}/pf-13.mp4`, label: "My profile" },
-                { src: `${A}/pf-14.mp4`, label: "Others profile" },
-              ].map((it, i) => (
-                <StaggerItem key={it.label} index={i}>
-                  <VideoFrame src={it.src} />
-                  <p className={`mt-5 ${bodySm}`}>
-                    <span className="font-semibold text-white">{it.label}</span>
-                  </p>
-                </StaggerItem>
-              ))}
-            </StaggerGrid>
-          </CaseSection>
-
-          {/* RESULT */}
-          <CaseSection eyebrow="Impact" title="The Result">
-            <Reveal>
-              <p className={`mt-8 max-w-3xl ${bodyMd}`}>To be continued…</p>
-            </Reveal>
-          </CaseSection>
-
-          {/* RELATED */}
-          <CaseSection eyebrow="Features" title="Continue exploring">
-            <StaggerGrid className="mt-8 grid gap-5 sm:grid-cols-3">
-              {relatedCases.map((c, i) => (
-                <StaggerItem key={c.title} index={i} className="h-full">
-                  <Link
-                    href={c.href}
-                    data-cursor="view"
-                    className={`group flex h-full flex-col overflow-hidden rounded-[1.25rem] ${surfaceDefault} ${cardHoverDark}`}
-                  >
-                    <div className="overflow-hidden">
-                      <Image
-                        src={c.image}
-                        alt={`${c.title} case study preview`}
-                        width={1600}
-                        height={1200}
-                        className="h-auto w-full transition duration-700 ease-out group-hover:scale-[1.04]"
-                      />
-                    </div>
-                    <div className="p-5">
-                      <h3 className="text-lg font-semibold leading-[1.25] tracking-[-0.02em] text-white">
-                        {c.title}
-                      </h3>
-                      <p className={`mt-2 ${bodySm}`}>{c.body}</p>
-                    </div>
-                  </Link>
-                </StaggerItem>
-              ))}
-            </StaggerGrid>
-          </CaseSection>
-        </div>
-        <CaseStudyFooter />
-      </article>
-      <NextSectionButton />
+            <Chapter id="continue" n="08" eyebrow="Features" title="Continue exploring" accent={TT_ACCENT}>
+              <StaggerGrid className="mt-12 grid auto-rows-fr gap-5 sm:grid-cols-3">
+                {relatedCases.map((c, i) => (
+                  <StaggerItem key={c.title} index={i} className="h-full">
+                    <Link
+                      href={c.href}
+                      data-cursor="view"
+                      className={`group flex h-full flex-col overflow-hidden rounded-[1.25rem] ${surfaceDefault} ${cardHoverDark}`}
+                    >
+                      <div className="overflow-hidden">
+                        <Image
+                          src={c.image}
+                          alt={`${c.title} case study preview`}
+                          width={1600}
+                          height={1200}
+                          className="h-auto w-full transition duration-700 ease-out group-hover:scale-[1.04]"
+                        />
+                      </div>
+                      <div className="p-5">
+                        <h3 className="text-lg font-semibold leading-[1.25] tracking-[-0.02em] text-[var(--cs-heading)]">{c.title}</h3>
+                        <p className={`mt-2 ${bodySm}`}>{c.body}</p>
+                      </div>
+                    </Link>
+                  </StaggerItem>
+                ))}
+              </StaggerGrid>
+            </Chapter>
+          </div>
+          <CaseStudyFooter />
+        </article>
+      </BoardGallery>
+      <NextSectionButton theme={TV_CANVAS.theme === "light" ? "light" : "dark"} />
     </PortfolioShell>
   );
 }
