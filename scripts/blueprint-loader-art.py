@@ -101,6 +101,9 @@ def fillet(poly, r_out, r_in, n_out=4, n_in=2):
             continue
         convex = turn > 0
         r = r_out if convex else r_in
+        if r <= 1e-6:
+            out.append(p1)
+            continue
         t = min(r * math.tan(ang / 2), l1 * 0.5, l2 * 0.5)
         r = t / math.tan(ang / 2)
         a = (p1[0] - d1[0] * t, p1[1] - d1[1] * t)
@@ -275,11 +278,12 @@ def logo_outline():
 
 
 # ── the object ──
-# The block: the logo, 1.95 wide and 0.42 deep, every corner rounded a little
-# (the stroke's outer corners more than its inner ones, as a bent bar would be)
-# and its front and back edges bevelled.
+# The block: the logo, 1.95 wide and 0.42 deep, square like the mark itself:
+# its outer corners only just softened, its inner ones sharp, and a tight bevel
+# on the front edge to catch a line of light. (Tony, 2026-11-20: rounder
+# corners — 0.07 outside, 0.03 inside — made the logo look odd.)
 WIDTH, DEPTH = 1.95, 0.42
-R_OUT, R_IN, BEVEL = 0.07, 0.03, 0.034
+R_OUT, R_IN, BEVEL = 0.022, 0.0, 0.026
 # The stage's plinth (plinth() in figures.ts): a lilac tier under a deck with
 # an even setback, both rounded, the deck's top edge bevelled — a little
 # thicker than on the stage, because the loader shows it at half the size. The

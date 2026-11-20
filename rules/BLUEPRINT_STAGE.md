@@ -266,8 +266,11 @@ the same scale, about to close in.
   edit the output by hand.
 - It is modelled by the stage's rules, so it reads as one of the figures (Tony,
   2026-11-20: "based on the current model … a bit more detail, a bit rounder"):
-  the logo's corners are rounded (outer ones more than inner, like a bent bar)
-  and its front edge bevelled; every face is lit by its normal from the key
+  the logo stays square like the mark — its outer corners only just softened,
+  its inner ones sharp — with a tight bevel on its front edge (rounder corners,
+  0.07 outside and 0.03 inside, made it look odd: Tony, 2026-11-20; the
+  roundness belongs to the plinth and the props, not the logo); every face is
+  lit by its normal from the key
   light, so tops, fronts and sides take the stage's three tones and the bevels
   catch the soft box; the plinth is the stage's `plinth()` (a lilac tier under
   a deck, even setback, rounded) a little thicker for the smaller scale, with
