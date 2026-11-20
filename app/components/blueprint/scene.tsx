@@ -12,8 +12,8 @@ import { CONTACT_SHADOWS, installSoftShadows } from "./soft-shadows";
 import { createStudioAtmosphere, displayRgb, paperCss, STUDIO_ATMOSPHERE, type StudioAtmosphere } from "./studio-atmosphere";
 import { createReferenceIrradiance } from "./reference-irradiance";
 import { createReferenceGround } from "./reference-ground";
-import { createTVConstruction } from "./tv-construction";
-import { createTVConstructionOverlay, type ProjectedConstruction } from "./tv-construction-overlay";
+import { createConstruction } from "./construction";
+import { createConstructionOverlay, type ProjectedConstruction } from "./construction-overlay";
 
 installSoftShadows();
 
@@ -351,8 +351,8 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
   const ground = useMemo(() => createReferenceGround(atmosphere, figs[0].indirect!), [atmosphere, figs]);
   const groundRef = useRef(ground);
   useEffect(() => () => ground.material.dispose(), [ground]);
-  const constructionPlans = useMemo(() => createTVConstruction(figs[0]), [figs]);
-  const constructionRef = useRef<ReturnType<typeof createTVConstructionOverlay> | null>(null);
+  const constructionPlans = useMemo(() => new Map(figs.map((fig) => [fig.def.id, createConstruction(fig)] as const)), [figs]);
+  const constructionRef = useRef<ReturnType<typeof createConstructionOverlay> | null>(null);
   const positions = useMemo(() => FIGURES.map((_, i) => slotPosition(i)), []);
   const swayRefs = useRef<(THREE.Group | null)[]>([]);
   const calloutRefs = useRef<(THREE.Group | null)[]>([]);
@@ -418,7 +418,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
   useEffect(() => {
     const host = stageCanvas.closest<HTMLElement>("#stage");
     if (!host) return;
-    const overlay = createTVConstructionOverlay(host);
+    const overlay = createConstructionOverlay(host);
     constructionRef.current = overlay;
     return () => { constructionRef.current = null; overlay.dispose(); };
   }, [stageCanvas]);
@@ -791,24 +791,27 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     // ── Agents: each cursor goes to the part it is building, else waits in the dock ──
     const buildTime = build ? (build.paused ? build.pausedAt : time) - build.t0 : 0;
     const v = new THREE.Vector3();
+    // The figure being built, and its construction gestures (every figure has them).
+    const buildFig = build ? figs[FIGURES.findIndex((f) => f.id === build.figId)] : undefined;
+    const plans = build ? constructionPlans.get(build.figId) : undefined;
     const projected = (point: THREE.Vector3): [number, number] => {
-      v.copy(point).applyMatrix4(figs[0].group.matrixWorld).project(cam);
+      v.copy(point).applyMatrix4((buildFig ?? figs[0]).group.matrixWorld).project(cam);
       return [((v.x + 1) / 2) * canvasW - inset, ((1 - v.y) / 2) * h];
     };
     const constructionTasks: ProjectedConstruction[] = [];
-    const tvConstructing = build?.figId === "tv" && !reduced;
-    if (tvConstructing) {
-      figs[0].group.updateWorldMatrix(true, false);
+    const constructing = !!build && !!buildFig && !!plans?.size && !reduced;
+    if (constructing) {
+      buildFig.group.updateWorldMatrix(true, false);
       for (const item of build.items) {
         if (item.tDraw === undefined || buildTime < item.tDraw || buildTime > item.tEnd) continue;
-        const plan = constructionPlans.get(item.partId);
+        const plan = plans.get(item.partId);
         if (!plan) continue;
-        const rt = eng.parts[`tv/${item.partId}`];
+        const rt = eng.parts[`${item.figId}/${item.partId}`];
         const drawProgress = clamp01((buildTime - item.tDraw) / Math.max(0.001, item.tStart - item.tDraw));
         const fillProgress = clamp01((buildTime - item.tStart) / Math.max(0.001, item.tEnd - item.tStart));
         // The fill shader clips in WORLD Y. Follow that exact plane rather
         // than the outline's range (a cabinet path omits its feet and plant).
-        const fillPoint = plan.paths[0][0].clone().applyMatrix4(figs[0].group.matrixWorld);
+        const fillPoint = plan.paths[0][0].clone().applyMatrix4(buildFig.group.matrixWorld);
         fillPoint.y = Math.max(rt.minY, Math.min(rt.maxY, rt.h.value));
         fillPoint.project(cam);
         constructionTasks.push({
@@ -836,8 +839,8 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       if (build && !eng.build?.paused) {
         const item = build.items.find((it) => it.agent === i && !it.ended);
         if (item && buildTime >= item.tGo) {
-          if (tvConstructing) {
-            const plan = constructionPlans.get(item.partId);
+          if (constructing) {
+            const plan = plans?.get(item.partId);
             const pose = toolPoses?.get(i);
             if (plan) {
               if (pos.task !== item.partId) {
@@ -878,7 +881,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
         // Paused: hold wherever the agent is.
         tx = agentPos.current[i].x;
         ty = agentPos.current[i].y;
-        if (tvConstructing) {
+        if (constructing) {
           const pose = toolPoses?.get(i);
           if (pose) { tx = pose.x; ty = pose.y; tool = pose.tool; press = pose.press; toolControlled = true; docked = false; }
         }

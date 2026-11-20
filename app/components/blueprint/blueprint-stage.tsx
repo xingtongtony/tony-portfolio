@@ -10,7 +10,7 @@ import { AGENTS, FIGURES } from "./figures";
 import { LOADER_ART } from "./loader-art";
 import { getGreeting } from "../hero-intro";
 import { PROJECTS } from "../../lib/projects";
-import { TV_CONSTRUCTION_TIMING } from "./tv-construction-timing";
+import { constructionTiming } from "./construction-timing";
 
 // The navigation panel is this stage's index, from its own short list (it
 // must not pull the figures' geometry into every page): same ids, same order.
@@ -26,7 +26,7 @@ type LogLine = { partId: string; agent: number; label: string; done: boolean };
 
 const SERIF = { fontFamily: "var(--font-serif), Georgia, serif" };
 
-const TRAVEL = 0.4; // seconds an agent takes to reach its part
+const TRAVEL = 0.45; // seconds an agent takes to reach its part
 const STAGGER = 0.18; // seconds between consecutive parts setting off
 const REWIND = 0.9; // seconds a finished figure takes to run back to its drawing
 
@@ -37,13 +37,13 @@ function planBuild(figId: string, instant: boolean): BuildItem[] {
   return def.parts.map((part, i) => {
     const rt = engine.parts[`${figId}/${part.id}`];
     const tGo = instant ? 0 : Math.max(agentFree[part.agent], i * STAGGER);
-    const gesture = figId === "tv" ? TV_CONSTRUCTION_TIMING[part.id] : undefined;
+    const gesture = constructionTiming(figId, part, rt.maxY - rt.minY);
     const tDraw = gesture ? (instant ? 0 : tGo + TRAVEL) : undefined;
     const tStart = instant ? 0 : gesture ? tDraw! + gesture.draw : tGo + TRAVEL;
     // Taller parts take a little longer to fill. (Tony, 2026-11-20: the
     // drawing took a little too long; every step is about a quarter shorter.)
     const tEnd = instant ? 0 : tStart + (gesture ? gesture.fill : 0.42 + Math.min(0.38, (rt.maxY - rt.minY) * 0.27));
-    agentFree[part.agent] = tEnd + (gesture ? 0.12 : 0.04);
+    agentFree[part.agent] = tEnd + (gesture ? (figId === "tv" ? 0.12 : 0.06) : 0.04);
     return { figId, partId: part.id, label: part.label, agent: part.agent, tGo, tDraw, tStart, tEnd, started: false, ended: false };
   });
 }

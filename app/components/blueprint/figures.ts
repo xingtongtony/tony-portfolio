@@ -1219,7 +1219,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
         // A pickup shelf beside the counter: the orders the app is running,
         // bagged and waiting to be collected.
-        surround("pickup", "Pickup shelf", 2, c.lilac, [2.0, 0, -0.62], 0.1, [
+        surround("pickup", "Pickup shelf", 4, c.lilac, [2.0, 0, -0.62], 0.1, [
           ...[-0.405, 0.405].map((x): ShapeDef => (
             { k: "box", size: [0.05, 1.5, 0.42], pos: [x, 0.75, 0], bevel: 0.016 })),
           ...[0.06, 0.56, 1.06].map((y): ShapeDef => (
@@ -1317,7 +1317,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
         // An index-card cabinet: the "discoverable index" the restructure
         // builds, as the real thing. One drawer is out, its cards on show.
-        surround("index", "Index cabinet", 0, c.plum, [-2.05, 0, -0.38], 0.35, [
+        surround("index", "Index cabinet", 1, c.plum, [-2.05, 0, -0.38], 0.35, [
           ...[[-0.26, -0.2], [0.26, -0.2], [-0.26, 0.2], [0.26, 0.2]].map(([x, z]): ShapeDef => (
             { k: "cyl", r: 0.028, h: 0.08, pos: [x, 0.04, z], color: c.inky, bevel: 0.01 })),
           { k: "box", size: [0.62, 1.06, 0.52], pos: [0, 0.6, 0], bevel: 0.02 },
@@ -1420,7 +1420,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             ],
           },
           // The keyboard and pencil that come with the iPad, in front of it.
-          surround("keyboard", "Keyboard", 3, c.lilac, [0.34, 0.107, 0.5], 0, [
+          surround("keyboard", "Keyboard", 4, c.lilac, [0.34, 0.107, 0.5], 0, [
             { k: "slab", size: [1.2, 0.42], t: 0.034, r: 0.05, pos: [0, 0.014, 0], rot: flat(), bevel: 0.01 },
             ...[-0.13, -0.045, 0.04].flatMap((z) => row(10, [0.1, 0, 0], {
               k: "slab", size: [0.085, 0.07], t: 0.014, r: 0.014, pos: [-0.45, 0.035, z], rot: flat(), color: c.cream, bevel: 0.004 })),
@@ -1431,7 +1431,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
             { k: "ball", r: 0.013, pos: [-0.256, 0.017, 0.37], color: c.inky },
           ]),
           // A floor lamp: an evening on the sofa, which is where the iPad gets used.
-          surround("lamp", "Floor lamp", 4, c.plum, [1.85, 0, -1.35], 0, [
+          surround("lamp", "Floor lamp", 1, c.plum, [1.85, 0, -1.35], 0, [
             { k: "cyl", r: 0.24, h: 0.05, pos: [0, 0.025, 0], bevel: 0.02 },
             { k: "cyl", r: 0.032, h: 1.8, pos: [0, 0.945, 0], bevel: 0.014 },
             { k: "box", size: [0.08, 0.1, 0.08], pos: [0, 1.0, 0], color: c.inky, bevel: 0.02 },
@@ -1790,7 +1790,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         // A poster stand with a printed TikCode: where the code meets the world.
-        surround("poster", "Poster stand", 3, c.lilac, [1.95, 0, -0.75], 0.1, [
+        surround("poster", "Poster stand", 1, c.lilac, [1.95, 0, -0.75], 0.1, [
           { k: "cyl", r: 0.28, h: 0.05, pos: [0, 0.025, 0], color: c.plum, bevel: 0.02 },
           { k: "cyl", r: 0.035, h: 0.98, pos: [0, 0.535, 0], color: c.plum, bevel: 0.015 },
           { k: "slab", size: [0.78, 1.0], t: 0.05, r: 0.06, pos: [0, 1.5, 0], bevel: 0.016 },
@@ -2048,7 +2048,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         // Packed and waiting: the trip the shortlist is deciding.
-        surround("suitcase", "Suitcase", 0, c.lilac, [-2.0, 0, -0.5], 0.3, [
+        surround("suitcase", "Suitcase", 1, c.lilac, [-2.0, 0, -0.5], 0.3, [
           { k: "box", size: [0.6, 0.86, 0.3], pos: [0, 0.51, 0], bevel: 0.05 },
           ...[[-0.22, -0.1], [0.22, -0.1], [-0.22, 0.1], [0.22, 0.1]].flatMap(([x, z]): ShapeDef[] => [
             { k: "cyl", r: 0.038, h: 0.03, pos: [x, 0.038, z], rot: lying(), color: c.inky, bevel: 0.01 },
@@ -2063,7 +2063,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           { k: "slab", size: [0.11, 0.15], t: 0.012, r: 0.02, pos: [0.19, 0.78, 0.154], color: c.coral },
           { k: "slab", size: [0.07, 0.05], t: 0.006, r: 0.01, pos: [0.19, 0.8, 0.162], color: c.white },
         ]),
-        surround("carry-on", "Carry-on", 4, c.sand, [-1.97, 0, 0.22], 0.15, [
+        surround("carry-on", "Carry-on", 0, c.sand, [-1.97, 0, 0.22], 0.15, [
           { k: "box", size: [0.44, 0.6, 0.24], pos: [0, 0.37, 0], bevel: 0.045 },
           ...[[-0.16, -0.08], [0.16, -0.08], [-0.16, 0.08], [0.16, 0.08]].flatMap(([x, z]): ShapeDef[] => [
             { k: "cyl", r: 0.032, h: 0.026, pos: [x, 0.032, z], rot: lying(), color: c.inky, bevel: 0.008 },
@@ -2149,7 +2149,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           },
           // A ring light on its tripod, beside the phone: how creators
           // light the face an effect goes on.
-          surround("ring-light", "Ring light", 3, c.lilac, [-1.95, 0, -0.42], 0.55, [
+          surround("ring-light", "Ring light", 1, c.lilac, [-1.95, 0, -0.42], 0.55, [
             { k: "cyl", r: 0.022, h: 0.528, pos: [0, 0.21, 0.16], rot: [-0.651, 0, 0], bevel: 0.01 },
             { k: "cyl", r: 0.022, h: 0.528, pos: [0.1386, 0.21, -0.08], rot: [0.364, 0, 0.553], bevel: 0.01 },
             { k: "cyl", r: 0.022, h: 0.528, pos: [-0.1386, 0.21, -0.08], rot: [0.364, 0, -0.553], bevel: 0.01 },
@@ -2234,7 +2234,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         // A roll-up banner: the campaign, promoted.
-        surround("banner", "Roll-up banner", 2, c.cream, [2.03, 0, -0.55], 0.12, [
+        surround("banner", "Roll-up banner", 1, c.cream, [2.03, 0, -0.55], 0.12, [
           ...[-0.36, 0.36].map((x): ShapeDef => (
             { k: "box", size: [0.06, 0.03, 0.34], pos: [x, 0.015, 0], color: c.plum, bevel: 0.01 })),
           { k: "box", size: [0.86, 0.1, 0.2], pos: [0, 0.075, 0], color: c.lilac, bevel: 0.035 },
@@ -2312,7 +2312,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         // Two type blocks: the library's Latin and Chinese type.
-        surround("type-blocks", "Type blocks", 2, c.sand, [2.0, 0, 0.15], 0.2, [
+        surround("type-blocks", "Type blocks", 1, c.sand, [2.0, 0, 0.15], 0.2, [
           { k: "box", size: [0.62, 0.62, 0.62], pos: [0, 0.31, 0], bevel: 0.04 },
           { k: "slab", size: [0.48, 0.48], t: 0.008, r: 0.034, pos: [0, 0.31, 0.312], finish: "print", map: `label:文|${c.cream}|${c.inky}|1` },
           { k: "slab", size: [0.48, 0.48], t: 0.008, r: 0.034, pos: [0.312, 0.31, 0], rot: [0, Math.PI / 2, 0], finish: "print", map: `label:字|${c.cream}|${c.inky}|1` },
@@ -2395,7 +2395,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ],
         },
         // A pinboard: listings being tracked by hand beside the dashboard.
-        surround("pinboard", "Pinboard", 4, c.lilac, [-2.0, 0, -0.4], 0.45, [
+        surround("pinboard", "Pinboard", 1, c.lilac, [-2.0, 0, -0.4], 0.45, [
           ...[-0.3, 0.3].flatMap((x): ShapeDef[] => [
             { k: "box", size: [0.06, 1.66, 0.06], pos: [x, 0.85, 0], bevel: 0.016 },
             { k: "box", size: [0.07, 0.05, 0.36], pos: [x, 0.025, 0], color: c.plum, bevel: 0.016 },

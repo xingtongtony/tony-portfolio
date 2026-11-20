@@ -2,8 +2,12 @@
  * Construction-tool choreography inspired by MIT-licensed swarm-page-builder
  * (Copyright (c) 2026 程序员阿鑫). This is a new 3D surface-path adapter, not a
  * copy of DrawingEngine. All returned points stay in FIGURE LOCAL space.
+ *
+ * Every figure has it (Tony, 2026-11-20). The TV's paths are tuned part by
+ * part; the others follow constructionChoice() in construction-timing.ts.
  */
 import { Euler, Matrix4, Quaternion, Vector3 } from "three";
+import { constructionChoice, labelText, shapeArea as area } from "./construction-timing";
 import type { BuiltFigure } from "./figure-builder";
 import type { PartDef, ShapeDef, Vec3 } from "./figures";
 
@@ -136,16 +140,6 @@ function surface(shape: ShapeDef): SurfacePath {
   return { outline: points };
 }
 
-function area(shape: ShapeDef) {
-  if (shape.k === "slab" || shape.k === "box") return shape.size[0] * shape.size[1];
-  if (shape.k === "cyl") return 2 * shape.r * shape.h;
-  if (shape.k === "ball") return Math.PI * shape.r ** 2;
-  if (shape.k === "torus") return Math.PI * (shape.R + shape.tube) ** 2;
-  if (shape.k === "arch") return shape.span * shape.rise;
-  const xs = shape.pts.map(p => p[0]), ys = shape.pts.map(p => p[1]);
-  return (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
-}
-
 function mainShape(part: PartDef) {
   if (part.id === "rug") {
     return part.shapes.filter(s => s.k === "slab").sort((a, b) => {
@@ -156,10 +150,45 @@ function mainShape(part: PartDef) {
   return [...part.shapes].sort((a, b) => area(b) - area(a) || b.pos[1] - a.pos[1])[0];
 }
 
+/** Any figure but the TV: the gesture constructionChoice picks, traced on the real surfaces. */
+function genericPlan(part: PartDef): ConstructionPlan | undefined {
+  const choice = constructionChoice(part);
+  if (!choice) return undefined;
+  const trace = (shape: ShapeDef) => {
+    // A cylinder taller than it is wide (a pole, a lamp shade, a cup) is
+    // drawn by its side silhouette, which is what the eye knows it by; its
+    // end rim alone reads as a dot.
+    const face = shape.k === "cyl" && shape.h > shape.r * 1.2
+      ? { outline: rectangle(shape.r * 2, shape.h, Math.min(shape.bevel ?? 0.02, shape.r), 0), corners: undefined }
+      : surface(shape);
+    const m = matrix(part, shape);
+    return { outline: face.outline.map(p => p.applyMatrix4(m)), corners: face.corners?.map(p => p.applyMatrix4(m)) };
+  };
+  if (choice.kind === "type") {
+    const face = trace(choice.label!);
+    return { partId: part.id, kind: "type", text: labelText(choice.label!), paths: [face.outline], corners: face.corners };
+  }
+  if (choice.kind === "duplicate") {
+    return { partId: part.id, kind: "duplicate", paths: choice.copies!.slice(0, 3).map(shape => trace(shape).outline) };
+  }
+  const face = trace(choice.main);
+  const plan: ConstructionPlan = { partId: part.id, kind: choice.kind, paths: [face.outline], corners: face.corners };
+  // Then the next largest solid: two paths at most, so the pen keeps a calm pace.
+  [...part.shapes].filter(shape => shape !== choice.main).sort((a, b) => area(b) - area(a)).slice(0, 1)
+    .forEach(shape => plan.paths.push(trace(shape).outline));
+  return plan;
+}
+
 /** Geometry only. The caller applies group.localToWorld and camera projection. */
-export function createTVConstruction(fig: BuiltFigure): Map<string, ConstructionPlan> {
+export function createConstruction(fig: BuiltFigure): Map<string, ConstructionPlan> {
   const plans = new Map<string, ConstructionPlan>();
-  if (fig.def.id !== "tv") return plans;
+  if (fig.def.id !== "tv") {
+    for (const part of fig.def.parts) {
+      const plan = genericPlan(part);
+      if (plan?.paths.length) plans.set(part.id, plan);
+    }
+    return plans;
+  }
   for (const part of fig.def.parts) {
     const main = mainShape(part);
     if (!main) continue;

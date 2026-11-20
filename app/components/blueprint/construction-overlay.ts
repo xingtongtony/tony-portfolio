@@ -76,14 +76,14 @@ function startNear(points: Point[], corner: Point): Point[] {
  * or random offset is owned here: a paused task is an identical SVG frame.
  * Duplicate tasks use paths[0] as source and paths[1..] as destinations.
  */
-export function createTVConstructionOverlay(host: HTMLElement) {
+export function createConstructionOverlay(host: HTMLElement) {
   const doc = host.ownerDocument;
   const element = <K extends keyof SVGElementTagNameMap>(tag: K, attributes: Record<string, string | number> = {}) => {
     const node = doc.createElementNS(NS, tag);
     for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
     return node;
   };
-  const svg = element("svg", { "aria-hidden": "true", focusable: "false", "data-tv-construction-overlay": "" });
+  const svg = element("svg", { "aria-hidden": "true", focusable: "false", "data-construction-overlay": "" });
   Object.assign(svg.style, { position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: "15", overflow: "hidden" });
   host.appendChild(svg);
   let disposed = false;
