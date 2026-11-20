@@ -1,8 +1,8 @@
 // The Work cards: Tony's hand-made card for each project (the title and the
-// one-line description are part of the artwork). One list for the two places
-// that show them — the grid phones and tablets scroll through, in this order,
-// and the desktop homepage's cards view, in the order of the index
-// (app/lib/projects.ts). `id` is the project's id there.
+// one-line description are part of the artwork). Shown by WorkGrid
+// (app/components/home-cards.tsx) — on the phone and tablet homepage and in
+// the desktop cards view — always in the order of the index
+// (app/lib/projects.ts), whatever the order here. `id` is the project's id there.
 
 export type WorkCard = {
   id: string;

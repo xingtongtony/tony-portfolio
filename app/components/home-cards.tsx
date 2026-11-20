@@ -11,21 +11,25 @@ import { WORK_CARDS, type WorkCard } from "../lib/work-cards";
 import { point, usePointed } from "../lib/home-view";
 
 /**
- * The cards view of the desktop homepage (see app/lib/home-view.ts): Tony's
- * hand-made cards, all eleven at once — the whole sheet of figures, where the
- * stage shows one at a time.
+ * Tony's hand-made cards, all eleven at once — the whole sheet of figures,
+ * where the stage shows one at a time. The same cards at every width:
  *
- * - The statement at the top is the stage's, word for word and in the same
- *   place, so switching views changes what is under it and nothing else.
- * - The cards stand in a waterfall: every other column starts lower. They are
- *   in the order of the index, and each is captioned with its figure number,
- *   as the drawings on the stage are; one whose case study is not written yet
- *   says "Soon" from the start, not only under the pointer.
- * - A card is an object: it leans towards the pointer and catches the light.
- *   One that opens a case study also lifts.
- * - The navigation panel's index and the cards point at each other. Resting on
- *   a row lights its card, dims the rest and scrolls it into sight; the card
- *   under the pointer marks its row.
+ * - `HomeCards` — the cards view of the desktop homepage (app/lib/home-view.ts),
+ *   under the stage's statement, word for word and in the same place, so
+ *   switching views changes what is under it and nothing else.
+ * - `WorkGrid` alone — the Work section of the phone and tablet homepage,
+ *   under the sticker hero.
+ *
+ * - The cards stand in a waterfall: one column on a phone; from two columns,
+ *   every other column starts lower. They are in the order of the index, and
+ *   each is captioned with its figure number, as the drawings on the stage
+ *   are; one whose case study is not written yet says "Soon" from the start.
+ * - A card is an object: under a mouse it leans towards the pointer and
+ *   catches the light, and one that opens a case study also lifts. Under a
+ *   finger it presses in, and the ↗ that a mouse brings out is always there.
+ * - On the desktop the navigation panel's index and the cards point at each
+ *   other (`linked`). Resting on a row lights its card, dims the rest and
+ *   scrolls it into sight; the card under the pointer marks its row.
  */
 
 const SERIF = { fontFamily: "var(--font-serif), Georgia, serif" };
@@ -66,29 +70,10 @@ export function HomeCards() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const pointed = usePointed();
-  // Crossing the gap between two cards is not leaving the cards.
-  const away = useRef(0);
-  const enter = (id: string) => {
-    window.clearTimeout(away.current);
-    point({ id, from: "card" });
-  };
-  const leave = () => {
-    window.clearTimeout(away.current);
-    away.current = window.setTimeout(() => point(null), 140);
-  };
-  useEffect(
-    () => () => {
-      window.clearTimeout(away.current);
-      point(null);
-    },
-    [],
-  );
-
   return (
     // The stage's statement starts 32px down the page; so does this one (the
     // page column brings 12px of that).
-    <div className="cards-sheet mx-auto w-full max-w-[1280px] pb-24 pt-5">
+    <div className="mx-auto w-full max-w-[1280px] pb-24 pt-5">
       <header style={{ mixBlendMode: "multiply" }}>
         <p className={LABEL}>
           {greeting} — I&apos;m Tony<span className="mx-2.5 text-black/20">/</span>
@@ -109,24 +94,59 @@ export function HomeCards() {
         </p>
       </header>
 
-      <div data-pointing={pointed?.from} className="mt-14">
-        <StaggerGrid className="cards-grid">
-          {CARDS.map(({ project, card, n }, i) => (
-            <StaggerItem key={project.id} index={i}>
-              <Card
-                project={project}
-                card={card}
-                n={n}
-                eager={warm}
-                on={pointed?.id === project.id}
-                from={pointed?.id === project.id ? pointed.from : null}
-                onEnter={enter}
-                onLeave={leave}
-              />
-            </StaggerItem>
-          ))}
-        </StaggerGrid>
-      </div>
+      <WorkGrid linked eager={warm} className="mt-14" />
+    </div>
+  );
+}
+
+/**
+ * The eleven cards in their waterfall. Its columns follow its own width
+ * (container queries in globals.css), so it is the same grid in the desktop
+ * cards view and in the phone page.
+ */
+export function WorkGrid({ linked = false, eager = false, className = "" }: { linked?: boolean; eager?: boolean; className?: string }) {
+  const shared = usePointed();
+  // Only the desktop grid answers the index (there is no index beside the
+  // phone one).
+  const pointed = linked ? shared : null;
+  // Crossing the gap between two cards is not leaving the cards.
+  const away = useRef(0);
+  const enter = (id: string) => {
+    if (!linked) return;
+    window.clearTimeout(away.current);
+    point({ id, from: "card" });
+  };
+  const leave = () => {
+    if (!linked) return;
+    window.clearTimeout(away.current);
+    away.current = window.setTimeout(() => point(null), 140);
+  };
+  useEffect(() => {
+    if (!linked) return;
+    return () => {
+      window.clearTimeout(away.current);
+      point(null);
+    };
+  }, [linked]);
+
+  return (
+    <div data-pointing={pointed?.from} className={`cards-room ${className}`}>
+      <StaggerGrid className="cards-grid">
+        {CARDS.map(({ project, card, n }, i) => (
+          <StaggerItem key={project.id} index={i}>
+            <Card
+              project={project}
+              card={card}
+              n={n}
+              eager={eager}
+              on={pointed?.id === project.id}
+              from={pointed?.id === project.id ? pointed.from : null}
+              onEnter={enter}
+              onLeave={leave}
+            />
+          </StaggerItem>
+        ))}
+      </StaggerGrid>
     </div>
   );
 }
@@ -198,8 +218,9 @@ function Card({
           width={1600}
           height={1880}
           loading={eager ? "eager" : "lazy"}
-          // Four columns from a 1652px window, three from 1160px, two below.
-          sizes="(min-width: 1652px) 302px, (min-width: 1160px) 24vw, 34vw"
+          // Desktop: four columns from a 1652px window, three from 1160px,
+          // two below. Phone and tablet: two columns from 600px, one below.
+          sizes="(min-width: 1652px) 302px, (min-width: 1160px) 24vw, (min-width: 1024px) 34vw, (min-width: 600px) 46vw, 100vw"
           className="h-full w-full object-cover object-top"
         />
         <div className="work-card-light" aria-hidden="true" />
@@ -214,7 +235,11 @@ function Card({
       data-open={project.href ? "" : undefined}
       style={style}
       className="work-card group"
-      onPointerEnter={() => onEnter(project.id)}
+      // A finger on a card is a tap on its way, not pointing: it neither
+      // marks the index nor leans the card.
+      onPointerEnter={(e) => {
+        if (e.pointerType !== "touch") onEnter(project.id);
+      }}
       onPointerMove={lean}
       onPointerLeave={settle}
     >
