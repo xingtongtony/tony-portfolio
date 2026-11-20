@@ -138,6 +138,17 @@ One gesture turns it once, however long a trackpad keeps coasting; the next
 turn needs a pause or a fresh push. This only happens while the page cannot
 scroll (`scrollHeight` ≤ the window's height): on a window too short for the
 stage's minimum height the wheel scrolls the page as usual.
+
+**The stage can be hidden.** The homepage has a second view, Tony's cards
+(2026-11-20; `PORTFOLIO_WORKING_RULES.md`, Structure Reference). While the
+cards show, the stage's wrapper is `display: none` and the stage stays
+mounted, so that coming back is immediate and the figure is as it was left. So
+the stage must keep working with no size: the keyboard handler already steps
+aside when `#stage` has no `offsetParent`; the scene measures its inset every
+frame and redraws when it comes back; nothing may assume a non-zero canvas or
+divide by the stage's width without a guard. A visit that reloads in the cards
+view has not mounted the stage at all (`HomeStage`, `useStageWanted`): the
+first switch to it plays the loader, like a first visit.
 The row is a loop: each figure stands at whichever copy of its slot is nearest
 the camera (`shifts`), so the last figure is the first one's left neighbour and
 going past either end just carries on. The page opens far enough out to show

@@ -5,106 +5,10 @@ import { PortfolioShell } from "./components/portfolio-shell";
 import { StaggerGrid, StaggerItem } from "./components/motion";
 import { HeroIntro } from "./components/hero-intro";
 import { NextSectionButton } from "./components/next-section-button";
-import { BlueprintStage } from "./components/blueprint/blueprint-stage";
+import { HomeStage } from "./components/home-stage";
+import { HomeCards } from "./components/home-cards";
 import { ContactSection, ExperienceSection } from "./components/home-sections";
-
-const work = [
-  {
-    title: "TikTok TV Visual",
-    company: "TikTok",
-    period: "Case Study",
-    href: "/work/tiktok-tv-visual",
-    image: "/portfolio/tony-work-04.jpg",
-    hoverColor: "#151515",
-    glowColor: "rgba(0, 0, 0, 0.22)",
-  },
-  {
-    title: "CloudKitchens",
-    company: "CloudKitchens",
-    period: "Case Study",
-    href: "/work/cloudkitchens",
-    image: "/portfolio/tony-work-06.jpg",
-    hoverColor: "#dfeaf4",
-    glowColor: "rgba(92, 142, 183, 0.24)",
-  },
-  {
-    title: "TikTok Web Restructure",
-    company: "TikTok",
-    period: "Case Study",
-    href: "/work/tiktok-restructure",
-    image: "/portfolio/tony-work-21.jpg",
-    hoverColor: "#151515",
-    glowColor: "rgba(0, 0, 0, 0.22)",
-  },
-  {
-    title: "TikTok Multi-Platform",
-    company: "TikTok",
-    period: "Case Study",
-    href: "/work/tiktok-multi-platform",
-    image: "/portfolio/tony-work-08.jpg",
-    hoverColor: "#e7e7e5",
-    glowColor: "rgba(0, 0, 0, 0.12)",
-  },
-  {
-    title: "TikTok Design System",
-    company: "TikTok",
-    period: "Case Study",
-    href: "/work/tiktok-design-system",
-    image: "/portfolio/tony-work-09.jpg",
-    hoverColor: "#161616",
-    glowColor: "rgba(0, 0, 0, 0.22)",
-  },
-  {
-    title: "TikCode Redesign",
-    company: "TikTok",
-    period: "Case Study",
-    href: "/work/tiktok-tikcode",
-    image: "/portfolio/tony-work-10.jpg",
-    hoverColor: "#2367d4",
-    glowColor: "rgba(35, 103, 212, 0.22)",
-  },
-  {
-    title: "TikTok Effect House",
-    company: "TikTok",
-    period: "Coming Soon",
-    image: "/portfolio/tony-work-11.jpg",
-    hoverColor: "#111111",
-    glowColor: "rgba(0, 0, 0, 0.24)",
-  },
-  {
-    title: "Airbnb Wishlist",
-    company: "Airbnb",
-    period: "Case Study",
-    href: "/work/airbnb-wishlist",
-    image: "/portfolio/tony-work-12.jpg",
-    hoverColor: "#eaffab",
-    glowColor: "rgba(127, 180, 70, 0.18)",
-  },
-  {
-    title: "Airbnb Host Promotion",
-    company: "Airbnb",
-    period: "Coming Soon",
-    image: "/portfolio/tony-work-13.jpg",
-    hoverColor: "#ff5a7a",
-    glowColor: "rgba(255, 90, 122, 0.22)",
-  },
-  {
-    title: "Airbnb DLS19 for China",
-    company: "Airbnb",
-    period: "Coming Soon",
-    image: "/portfolio/tony-work-14.jpg",
-    hoverColor: "#1e1e1e",
-    glowColor: "rgba(0, 0, 0, 0.2)",
-  },
-  {
-    title: "Airbnb Supply Tool",
-    company: "Airbnb",
-    period: "Coming Soon",
-    image: "/portfolio/tony-work-15.jpg",
-    hoverColor: "#ffc37b",
-    glowColor: "rgba(255, 145, 54, 0.2)",
-  },
-];
+import { WORK_CARDS as work } from "./lib/work-cards";
 
 const companies = [
   "TikTok",
@@ -126,17 +30,31 @@ export default function Home() {
     // pixels taller than the screen, and scroll.
     <PortfolioShell
       sidebarTheme="stage"
-      // From lg the stage paints the page its studio's paper colour.
-      mainClassName="bg-[var(--studio-paper,#ffffff)] text-[#171717]"
+      // From lg the stage paints the page its studio's paper colour; in the
+      // cards view `home-page` makes it a plain sheet (globals.css).
+      mainClassName="home-page bg-[var(--studio-paper,#ffffff)] text-[#171717]"
       contentClassName="min-w-0 px-6 pb-5 pt-2 sm:px-10 xl:px-14 lg:pb-0 lg:pt-3 2xl:px-16"
     >
-      {/* From lg the page is this and nothing else: the blueprint stage —
-          patent drawings that the sticker agents build into objects — filling
-          one screen, with no page to scroll. Below lg: the sticker hero, the
+      {/* From lg the page has two views of the same eleven projects, and shows
+          one (app/lib/home-view.ts; the switch is in the navigation panel, on
+          the index's "Work" line):
+
+          - the stage — patent drawings that the sticker agents build into
+            objects, one at a time, filling one screen with no page to scroll;
+          - the cards — Tony's hand-made cards, all at once, in a page that
+            scrolls.
+
+          Both are in the page and CSS shows one, by `<html data-home-view>`,
+          which a script in the root layout sets before anything is painted —
+          so a visit that reloads in the cards view does not see the stage's
+          loader first. Below lg there are no views: the sticker hero, the
           cards, experience and contact in one scroll (the 3D stage is neither
           shown nor downloaded there). */}
-      <div className="hidden lg:block">
-        <BlueprintStage />
+      <div data-home="stage" className="hidden lg:block">
+        <HomeStage />
+      </div>
+      <div data-home="cards" className="hidden lg:block">
+        <HomeCards />
       </div>
       <div className="mx-auto w-full max-w-[1280px]">
         <div className="marquee-viewport -mx-6 hidden overflow-hidden py-1 sm:-mx-10 sm:block lg:hidden">
@@ -177,8 +95,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Phones and tablets only. From lg up every case study is a figure on
-            the 3D stage above, so the card grid would only repeat it. */}
+        {/* Phones and tablets only. From lg up the cards are the homepage's
+            second view (HomeCards above), in their own layout. */}
         <section id="work" data-case-section className="scroll-mt-8 py-10 lg:hidden">
           <div className="mb-9 max-w-2xl">
             <div>

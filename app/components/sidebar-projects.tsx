@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Box, LayoutGrid } from "lucide-react";
 import { engine } from "./blueprint/engine";
 import { PROJECTS, type Project } from "../lib/projects";
+import { getHomeView, point, switchHomeView, useHomeView, usePointed, type HomeView } from "../lib/home-view";
 
 /**
  * The project list of the navigation: the panel beside every page from lg,
@@ -17,6 +18,11 @@ import { PROJECTS, type Project } from "../lib/projects";
  *   its figure on stage; clicking opens the case study. (A project whose case
  *   study is not written yet says "Soon", and clicking it only shows the
  *   figure.) The stage has no index of its own.
+ * - The homepage has a second view, Tony's cards (app/lib/home-view.ts), and
+ *   the switch between the two sits on the index's own "Work" line — the one
+ *   place that is on screen, and in the same spot, in both. In the cards view
+ *   the index points instead of driving: resting on a row lights its card and
+ *   scrolls it into sight, and the card under the pointer marks its row.
  * - On a case study it marks the case study being read, and under that row
  *   lists the case study's own sections, the one on screen marked — the same
  *   "where am I", one level down, since there is no stage to point at. Only
@@ -88,6 +94,39 @@ const subscribeFocus = (listener: () => void) => {
   };
 };
 
+const VIEWS: { id: HomeView; label: string; Icon: typeof Box }[] = [
+  { id: "stage", label: "Stage view", Icon: Box },
+  { id: "cards", label: "Cards view", Icon: LayoutGrid },
+];
+
+/**
+ * Stage or cards. Two icons and a thumb, on the index's "Work" line and no
+ * taller than it. Which side is lit comes from `<html data-home-view>` in CSS
+ * (globals.css), like the views themselves, so it is right before React is.
+ */
+function ViewSwitch() {
+  const view = useHomeView();
+  return (
+    <div role="group" aria-label="Show the work as" className="view-switch relative -my-[5px] -mr-1 flex rounded-full bg-black/[0.055] p-0.5">
+      <span aria-hidden="true" className="view-switch-thumb pointer-events-none absolute left-0.5 top-0.5 h-5 w-7 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.14)]" />
+      {VIEWS.map(({ id, label, Icon }) => (
+        <button
+          key={id}
+          type="button"
+          data-view={id}
+          aria-pressed={view === id}
+          aria-label={label}
+          title={label}
+          onClick={() => switchHomeView(id)}
+          className="relative flex h-5 w-7 items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-1"
+        >
+          <Icon className="size-3" strokeWidth={2.2} aria-hidden="true" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function IndexList({ tone }: { tone: Tone }) {
   const pathname = usePathname();
   const home = pathname === "/";
@@ -98,24 +137,45 @@ function IndexList({ tone }: { tone: Tone }) {
     () => engine.focus,
     () => null,
   );
+  // The homepage's other view: the cards. There the index points at a card
+  // rather than bringing a figure on, and the card under the pointer points back.
+  const cards = useHomeView() === "cards" && home;
+  const pointed = usePointed();
+  const list = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    if (!home || pointed?.from !== "card") return;
+    revealInPanel(list.current?.querySelector<HTMLElement>(`[data-project="${pointed.id}"]`) ?? null, true);
+  }, [home, pointed]);
+  // Asked at the moment of acting, not of rendering: the view may have changed
+  // while the pointer was resting.
+  const show = (id: string) => {
+    if (getHomeView() === "cards") point({ id, from: "index" });
+    else engine.select?.(id);
+  };
   // Resting on a row, not brushing past it, brings its figure on.
   const timer = useRef(0);
   const rest = (id: string) => {
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => engine.select?.(id), 160);
+    timer.current = window.setTimeout(() => show(id), 160);
   };
-  const leave = () => window.clearTimeout(timer.current);
+  const leave = () => {
+    window.clearTimeout(timer.current);
+    if (getHomeView() === "cards") point(null);
+  };
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const rows = home ? PROJECTS : PROJECTS.filter((p) => p.href);
   return (
     <div className="hidden pb-7 pt-10 lg:block">
-      <p className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${ink.label}`}>Work</p>
+      <div className="flex items-center justify-between">
+        <p className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${ink.label}`}>Work</p>
+        {home ? <ViewSwitch /> : null}
+      </div>
       {/* Pulled out by the rows' own padding, so the numbers line up with the
           logo and the mark of the current row reaches a little past the text. */}
-      <ol className="-mx-2 mt-2 flex flex-col" onPointerLeave={home ? leave : undefined}>
+      <ol ref={list} className="-mx-2 mt-2 flex flex-col" onPointerLeave={home ? leave : undefined}>
         {rows.map((p) => {
-          const on = home ? (onStage ?? PROJECTS[0].id) === p.id : isActive(p, pathname);
+          const on = cards ? pointed?.id === p.id : home ? (onStage ?? PROJECTS[0].id) === p.id : isActive(p, pathname);
           const row = `group flex w-full items-center gap-3 rounded-xl px-2 py-[7px] text-left text-[13px] tracking-[-0.01em] transition-colors duration-200 focus-visible:outline-2 focus-visible:-outline-offset-2 ${
             on ? ink.on : p.href ? ink.idle : ink.soon
           }`;
@@ -133,15 +193,17 @@ function IndexList({ tone }: { tone: Tone }) {
             </>
           );
           return (
-            <li key={p.id}>
+            <li key={p.id} data-project={p.id}>
               {p.href ? (
                 <Link
                   href={p.href}
                   aria-label={`Open ${p.title} case study`}
-                  aria-current={on ? (home ? "true" : "page") : undefined}
+                  // In the cards view a lit row is only pointed at: nothing is "current".
+                  aria-current={on && !cards ? (home ? "true" : "page") : undefined}
                   data-cursor={home ? "view" : undefined}
                   onPointerEnter={home ? () => rest(p.id) : undefined}
-                  onFocus={home ? () => engine.select?.(p.id) : undefined}
+                  onFocus={home ? () => show(p.id) : undefined}
+                  onBlur={home ? leave : undefined}
                   className={row}
                 >
                   {inner}
@@ -151,8 +213,9 @@ function IndexList({ tone }: { tone: Tone }) {
                   type="button"
                   aria-pressed={on}
                   onPointerEnter={() => rest(p.id)}
-                  onFocus={() => engine.select?.(p.id)}
-                  onClick={() => engine.select?.(p.id)}
+                  onFocus={() => show(p.id)}
+                  onBlur={leave}
+                  onClick={() => show(p.id)}
                   className={row}
                 >
                   {inner}
