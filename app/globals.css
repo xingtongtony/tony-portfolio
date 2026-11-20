@@ -516,12 +516,49 @@ img {
 }
 
 /* Page loader (app/components/blueprint/blueprint-stage.tsx).
-   The drawing is revealed left to right, then the object bottom to top, with
-   plain clip-path animations. The 3D scene is not started until these have
-   finished, so nothing competes with them for the main thread. */
-@keyframes bp-draw {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
+   The drawing draws itself: every outline in it is a path of length 1
+   (pathLength) whose dash is pulled along it, starting at --d and taking --t
+   (both written into the art by scripts/blueprint-loader-art.py). Then the
+   object is revealed bottom to top with a plain clip-path animation, a seam of
+   light riding its edge, and a sweep of light crosses the logo. The 3D scene
+   is not started until all of this has finished, so nothing competes with it
+   for the main thread. */
+/* The pen's round cap would show as a dot where a line is still to start, so
+   the stroke is hidden until its pen sets off (bp-pen-down). */
+.bp-pen {
+  stroke-dasharray: 1 1;
+  animation:
+    bp-pen var(--t) cubic-bezier(0.45, 0, 0.25, 1) var(--d) both,
+    bp-pen-down 1ms linear var(--d) both;
+}
+@keyframes bp-pen {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes bp-pen-down {
+  from { stroke-opacity: 0; }
+  to { stroke-opacity: 1; }
+}
+.bp-ink {
+  animation: bp-fade var(--t) ease-out var(--d) both;
+}
+.bp-seam {
+  animation: bp-seam var(--bp-for) var(--bp-ease) var(--bp-at) both;
+}
+@keyframes bp-seam {
+  from { transform: translateY(0); }
+  to { transform: translateY(var(--bp-rise)); }
+}
+.bp-sheen {
+  animation: bp-sheen var(--bp-sheen-for) cubic-bezier(0.4, 0, 0.2, 1) var(--bp-sheen-at) both;
+}
+@keyframes bp-sheen {
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--bp-sheen)); }
+}
+@keyframes bp-arrive {
+  from { opacity: 0; transform: translate(var(--bp-from-x), var(--bp-from-y)) scale(0.86); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes bp-build {
   from { clip-path: inset(100% 0 0 0); }

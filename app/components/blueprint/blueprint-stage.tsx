@@ -72,13 +72,20 @@ const CURSOR =
 // navigation; a reload starts over.)
 let loaderPlayed = false;
 const EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
-const DRAW = 1000; // the drawing appears, left to right
-const BUILD_AT = 900; // then the object is built from the ground up...
-const BUILD = 1600; // ...over this long
+// For things that arrive: a soft overshoot, so they land instead of stopping.
+const LAND = "cubic-bezier(0.34, 1.36, 0.64, 1)";
+// The drawing is drawn on stroke by stroke (its timings are in the art,
+// LOADER_ART.drawn); as its last lines go down the object is built over it
+// from the ground up...
+const BUILD_AT = 900;
+const BUILD = 1400; // ...over this long
+// ...and once it stands, one sweep of light crosses the logo.
+const SHEEN_AT = BUILD_AT + BUILD - 150;
+const SHEEN = 650;
 // The 3D scene is only started once that has played: assembling it and
 // compiling its shaders ties up the main thread, which would stall the
 // animation half-way. Its code is fetched meanwhile, so little time is lost.
-const ENTRANCE = BUILD_AT + BUILD + 150;
+const ENTRANCE = SHEEN_AT + SHEEN + 50;
 
 const DESKTOP = "(min-width: 1024px)";
 const subscribeDesktop = (onChange: () => void) => {
@@ -338,9 +345,12 @@ export function BlueprintStage() {
           What it shows is FIG. 0: the logo as a clay block on the same plinth
           the projects stand on, drawn with the stage's camera, line weight
           and numerals (loader-art.ts, generated from real geometry). The
-          drawing is wiped in; then two agents carry the build front up it and
-          the object appears from the ground — the stage's own mechanic, so
-          the loader is the first demonstration of the idea, not a spinner.
+          drawing is drawn on, stroke by stroke — the plinth, then the logo
+          in one line; two agents fly in and carry the build front up it, and
+          the object appears from the ground with a seam of light at its edge
+          — the stage's own mechanic, so the loader is the first
+          demonstration of the idea, not a spinner. Built, a sweep of light
+          crosses the logo.
           When the scene is ready it clears, and the row of drawings is there
           at about the same scale, about to close in.
 
@@ -368,15 +378,14 @@ export function BlueprintStage() {
           >
             {/* At its natural size: the art is generated at the size it is shown. */}
             <div className="relative max-w-[80vw]" style={{ width: LOADER_ART.width, aspectRatio: `${LOADER_ART.width} / ${LOADER_ART.height}` }}>
-              {/* The drawing appears left to right... */}
+              {/* The drawing draws itself (each stroke is timed in the art)... */}
               <svg
                 viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
-                className="bp-anim absolute inset-0 block size-full"
-                style={{ animation: `bp-draw ${DRAW}ms ${EASE} both` }}
+                className="absolute inset-0 block size-full"
                 aria-hidden="true"
                 dangerouslySetInnerHTML={{ __html: LOADER_ART.line }}
               />
-              {/* ...and the object is built over it from the ground up. */}
+              {/* ...and the object is built over it from the ground up... */}
               <svg
                 viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
                 className="bp-anim absolute inset-0 block size-full"
@@ -384,8 +393,27 @@ export function BlueprintStage() {
                 aria-hidden="true"
                 dangerouslySetInnerHTML={{ __html: LOADER_ART.colour }}
               />
-              {/* Two agents ride the build front up the block's front edges,
-                  then stay with it, bobbing, until the page is ready. */}
+              {/* ...with a seam of light along its edge, and when it stands, a
+                  sweep of light over the logo. Both run on the colour's clock. */}
+              <svg
+                viewBox={`0 0 ${LOADER_ART.width} ${LOADER_ART.height}`}
+                className="absolute inset-0 block size-full"
+                style={
+                  {
+                    "--bp-ease": EASE,
+                    "--bp-at": `${BUILD_AT}ms`,
+                    "--bp-for": `${BUILD}ms`,
+                    "--bp-rise": `${-LOADER_ART.height}px`,
+                    "--bp-sheen-at": `${SHEEN_AT}ms`,
+                    "--bp-sheen-for": `${SHEEN}ms`,
+                    "--bp-sheen": `${LOADER_ART.sheen}px`,
+                  } as CSSProperties
+                }
+                aria-hidden="true"
+                dangerouslySetInnerHTML={{ __html: LOADER_ART.glint }}
+              />
+              {/* Two agents fly in, ride the build front up the block's front
+                  edges, then stay with it, bobbing, until the page is ready. */}
               {[
                 { agent: AGENTS[2], path: LOADER_ART.left, outward: -1 },
                 { agent: AGENTS[1], path: LOADER_ART.right, outward: 1 },
@@ -405,11 +433,16 @@ export function BlueprintStage() {
                 >
                   <div
                     className="bp-anim absolute"
-                    style={{
-                      left: `${(path.x * 100).toFixed(2)}%`,
-                      top: `${(path.from * 100).toFixed(2)}%`,
-                      animation: `bp-fade 300ms ease-out ${BUILD_AT - 300 + i * 120}ms both`,
-                    }}
+                    style={
+                      {
+                        left: `${(path.x * 100).toFixed(2)}%`,
+                        top: `${(path.from * 100).toFixed(2)}%`,
+                        // From outside, low, on their own side of the block.
+                        "--bp-from-x": `${outward * 46}px`,
+                        "--bp-from-y": "30px",
+                        animation: `bp-arrive 560ms ${LAND} ${BUILD_AT - 520 + i * 90}ms both`,
+                      } as CSSProperties
+                    }
                   >
                     <div className="bp-anim" style={{ animation: `bp-bob 2600ms ease-in-out ${BUILD_AT + BUILD + i * 400}ms infinite` }}>
                       <div
@@ -452,9 +485,9 @@ export function BlueprintStage() {
               </span>
               <span className="mt-2 block text-[10px] font-semibold uppercase leading-none tracking-[0.16em] text-black/45">Tony Xing — Portfolio</span>
               {/* Real milestones, not a made-up percentage: the drawing is up, the scene is assembled, its first frame is drawn. */}
-              <span className="mx-auto mt-4 block h-px w-16 overflow-hidden bg-black/10">
+              <span className="mx-auto mt-4 block h-[2px] w-16 overflow-hidden rounded-full bg-black/10">
                 <span
-                  className="block h-px origin-left bg-[#151515] transition-transform duration-700 ease-out"
+                  className="block h-full origin-left rounded-full bg-[#151515] transition-transform duration-700 ease-out"
                   style={{ transform: `scaleX(${painted ? 1 : ready ? 0.75 : sceneOn ? 0.45 : 0.15})` }}
                 />
               </span>
