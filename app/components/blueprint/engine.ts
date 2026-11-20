@@ -12,6 +12,8 @@ export type BuildItem = {
   agent: number;
   /** Seconds from the build's start: agent sets off, fill starts, fill ends. */
   tGo: number;
+  /** TV tools draw their outline between arrival and the material reveal. */
+  tDraw?: number;
   tStart: number;
   tEnd: number;
   started: boolean;

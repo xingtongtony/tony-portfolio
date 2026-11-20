@@ -410,7 +410,7 @@ function tvFocusFrame(width: number, height: number, stroke: number, radius: num
   points.push([-half + radius, height - stroke]);
   arc(-half + radius, height - radius, radius - stroke, Math.PI / 2, Math.PI);
   points.push([-half + stroke, 0]);
-  return { k: "poly", pts: points, t: 0.11, bevel: 0.026, pos: [0, 0.026, 0] };
+  return { k: "poly", pts: points, t: 0.20, bevel: 0.026, pos: [0, 0.026, 0] };
 }
 
 /** Two centered tiers with an even setback, sized to fit each figure's props. */
@@ -882,8 +882,8 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           agent: 2,
           color: TV_FOCUS.coral,
           drawing: false,
-          frame: { pos: [-0.37, 0, -1.07], rot: [0, 0.319, 0] },
-          shapes: [tvFocusFrame(3.72, 2.505, 0.15, 0.33)],
+          frame: { pos: [-0.394, 0, -1.096], rot: [0, 0.287, 0] },
+          shapes: [tvFocusFrame(3.745, 2.479, 0.15, 0.33)],
         },
         {
           id: "focus-inner",
@@ -891,8 +891,8 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           agent: 3,
           color: TV_FOCUS.yellow,
           drawing: false,
-          frame: { pos: [-0.36, 0, -0.92], rot: [0, 0.319, 0] },
-          shapes: [tvFocusFrame(3.08, 2.175, 0.14, 0.29)],
+          frame: { pos: [-0.422, 0, -1.082], rot: [0, 0.287, 0] },
+          shapes: [tvFocusFrame(3.03, 2.066, 0.14, 0.29)],
         },
         {
           id: "focus-plaque",
@@ -901,8 +901,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           color: c.coral,
           drawing: false,
           shapes: [
-            { k: "slab", size: [0.42, 0.18], t: 0.055, r: 0.025, bevel: 0.009, pos: [-1.01, 0.095, 1.04] },
-            { k: "slab", size: [0.36, 0.13], t: 0.004, r: 0.012, pos: [-1.01, 0.095, 1.0715], finish: "print", map: `label:Focus|${c.coral}|${c.white}|2.77` },
+            { k: "slab", size: [0.42, 0.18], t: 0.055, r: 0.025, bevel: 0.009, pos: [-1.01, 0.095, 1.04], map: `label:Focus|${c.coral}|${c.white}|2.3333333333` },
           ],
         },
       ],

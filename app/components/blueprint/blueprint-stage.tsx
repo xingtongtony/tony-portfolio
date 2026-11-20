@@ -10,6 +10,7 @@ import { AGENTS, FIGURES } from "./figures";
 import { LOADER_ART } from "./loader-art";
 import { getGreeting } from "../hero-intro";
 import { PROJECTS } from "../../lib/projects";
+import { TV_CONSTRUCTION_TIMING } from "./tv-construction-timing";
 
 // The navigation panel is this stage's index, from its own short list (it
 // must not pull the figures' geometry into every page): same ids, same order.
@@ -36,11 +37,13 @@ function planBuild(figId: string, instant: boolean): BuildItem[] {
   return def.parts.map((part, i) => {
     const rt = engine.parts[`${figId}/${part.id}`];
     const tGo = instant ? 0 : Math.max(agentFree[part.agent], i * STAGGER);
-    const tStart = instant ? 0 : tGo + TRAVEL;
+    const gesture = figId === "tv" ? TV_CONSTRUCTION_TIMING[part.id] : undefined;
+    const tDraw = gesture ? (instant ? 0 : tGo + TRAVEL) : undefined;
+    const tStart = instant ? 0 : gesture ? tDraw! + gesture.draw : tGo + TRAVEL;
     // Taller parts take a little longer to fill.
-    const tEnd = instant ? 0 : tStart + 0.55 + Math.min(0.5, (rt.maxY - rt.minY) * 0.35);
-    agentFree[part.agent] = tEnd + 0.05;
-    return { figId, partId: part.id, label: part.label, agent: part.agent, tGo, tStart, tEnd, started: false, ended: false };
+    const tEnd = instant ? 0 : tStart + (gesture ? gesture.fill : 0.55 + Math.min(0.5, (rt.maxY - rt.minY) * 0.35));
+    agentFree[part.agent] = tEnd + (gesture ? 0.16 : 0.05);
+    return { figId, partId: part.id, label: part.label, agent: part.agent, tGo, tDraw, tStart, tEnd, started: false, ended: false };
   });
 }
 
@@ -552,7 +555,7 @@ export function BlueprintStage() {
 
       {/* Top left: the hero statement, at headline size. The figure sits to
           the right of and below it. */}
-      <div className="pointer-events-none absolute left-[3.25rem] top-8 z-10 xl:left-[4.25rem]">
+      <div className="pointer-events-none absolute left-[3.25rem] top-8 z-10 xl:left-[4.25rem]" style={{ mixBlendMode: "multiply" }}>
         <p className={LABEL}>
           {/* On a narrow stage the controls need the room: keep the role, drop the greeting. */}
           <span className="hidden @4xl:inline">
@@ -566,14 +569,15 @@ export function BlueprintStage() {
             millions at TikTok, Airbnb, CloudKitchens & DiDi").
 
             The details that make it sit right:
-            - The seam between overlapping letters is the page's own colour
-              and scales with the type (0.045em), so it stays a hairline at
-              every size instead of eating into small letters.
+            - White letter outlines separate the overlapping glyphs inside
+              this group. Multiplying the complete group over the live canvas
+              makes those seams show the real model/background underneath,
+              rather than painting a flat paper-colour halo over the scene.
             - The line is pulled left by the S's side bearing, so its edge
               lines up with the two small lines by eye, not by the box. */}
         <h1
           className="-ml-[0.05em] mt-5 text-[clamp(1.9rem,3.6vw,3.4rem)] font-black uppercase leading-[0.92] tracking-[-0.065em] text-[#151515]"
-          style={{ WebkitTextStroke: "0.045em var(--studio-paper, #ffffff)", paintOrder: "stroke" }}
+          style={{ WebkitTextStroke: "0.045em #ffffff", paintOrder: "stroke" }}
         >
           Shaping interfaces<I>for</I> millions
         </h1>
@@ -676,6 +680,7 @@ export function BlueprintStage() {
           >
             <svg width="22" height="22" viewBox="0 0 22 22" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.22)]">
               <path
+                data-cursor-shape="true"
                 d={CURSOR}
                 fill={agent.stroke}
                 stroke="#ffffff"
@@ -683,6 +688,9 @@ export function BlueprintStage() {
                 strokeLinejoin="round"
               />
             </svg>
+            <span data-cursor-label="true" className="absolute left-[15px] top-[19px] whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-medium leading-none text-white" style={{ display: "none", background: agent.stroke }}>
+              {agent.short}
+            </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={agent.src}

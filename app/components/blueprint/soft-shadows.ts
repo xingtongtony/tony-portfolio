@@ -22,8 +22,10 @@
 // Use with <Canvas shadows="basic">. Call before the first material compiles.
 
 import * as THREE from "three";
+export const CONTACT_SHADOWS = { value: 0 };
 
 const HELPERS = /* glsl */ `
+  uniform float uContactShadow;
 	float pcssAngle( vec2 p ) {
 		return 6.2831853 * fract( 52.9829189 * fract( dot( p, vec2( 0.06711056, 0.00583715 ) ) ) );
 	}
@@ -34,7 +36,7 @@ const HELPERS = /* glsl */ `
 		return r * vec2( cos( a ), sin( a ) );
 	}
 
-	float pcssShadow( sampler2D shadowMap, float light, vec3 coord ) {
+	float pcssShadow( sampler2D shadowMap, float light, vec3 coord, vec2 mapSize ) {
 		// The whole part of the light's size is the number of the frame being
 		// accumulated; it turns the sample pattern, so the frames differ and
 		// their average has no grain.
@@ -67,7 +69,8 @@ const HELPERS = /* glsl */ `
 		}
 		if ( blockers < 0.5 ) return 1.0;
 
-		float radius = clamp( ( coord.z - blockerDepth / blockers ) * lightSize, 0.0012, search );
+		float minimumRadius = mix(0.0012, 0.5 / max(mapSize.x, mapSize.y), uContactShadow);
+		float radius = clamp( ( coord.z - blockerDepth / blockers ) * lightSize, minimumRadius, search );
 		float lit = 0.0;
 		for ( int i = 0; i < tapCount; i ++ ) {
 			vec2 o = pcssDisc( i, tapCount, phi + 1.7 ) * radius;
@@ -99,6 +102,6 @@ export function installSoftShadows() {
     chunk.slice(0, at) +
     HELPERS +
     chunk.slice(at, test.index) +
-    "shadow = pcssShadow( shadowMap, shadowRadius, shadowCoord.xyz );" +
+    "shadow = pcssShadow( shadowMap, shadowRadius, shadowCoord.xyz, shadowMapSize );" +
     chunk.slice(test.index + test[0].length);
 }

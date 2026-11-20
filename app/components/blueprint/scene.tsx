@@ -8,9 +8,12 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { engine, now, rewindTime, type BuildItem } from "./engine";
 import { createFigure, HULL_U, measureFigure, type BuiltFigure } from "./figure-builder";
 import { AGENTS, FIGURES, INK, type CalloutDef, type Vec3 } from "./figures";
-import { installSoftShadows } from "./soft-shadows";
+import { CONTACT_SHADOWS, installSoftShadows } from "./soft-shadows";
 import { createStudioAtmosphere, displayRgb, paperCss, STUDIO_ATMOSPHERE, type StudioAtmosphere } from "./studio-atmosphere";
 import { createReferenceIrradiance } from "./reference-irradiance";
+import { createReferenceGround } from "./reference-ground";
+import { createTVConstruction } from "./tv-construction";
+import { createTVConstructionOverlay, type ProjectedConstruction } from "./tv-construction-overlay";
 
 installSoftShadows();
 
@@ -50,7 +53,7 @@ function slotPosition(i: number): THREE.Vector3 {
 
 // The key light's place relative to what the camera looks at.
 const KEY_OFFSET = new THREE.Vector3(-5, 14, 7);
-const REFERENCE_KEY_DELTA = new THREE.Vector3(0, -5, 2);
+const REFERENCE_KEY_DELTA = new THREE.Vector3(0, 1, -1);
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
@@ -226,7 +229,6 @@ export type SceneProps = {
 export default function Scene(props: SceneProps) {
   const atmosphere = useMemo(() => createStudioAtmosphere(), []);
   const bounceRef = useRef<THREE.HemisphereLight>(null);
-  const floorShadowRef = useRef<THREE.ShadowMaterial>(null);
   const mapsRef = useRef<StudioMaps | null>(null);
   return (
     <Canvas
@@ -240,8 +242,8 @@ export default function Scene(props: SceneProps) {
       // sticker colours true instead of washing them out like a filmic curve.
       gl={{ antialias: true, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1 }}
     >
-      <Studio atmosphere={atmosphere} bounceRef={bounceRef} mapsRef={mapsRef} floorShadowRef={floorShadowRef} />
-      <Stage {...props} atmosphere={atmosphere} bounceRef={bounceRef} mapsRef={mapsRef} floorShadowRef={floorShadowRef} />
+      <Studio atmosphere={atmosphere} bounceRef={bounceRef} mapsRef={mapsRef} />
+      <Stage {...props} atmosphere={atmosphere} bounceRef={bounceRef} mapsRef={mapsRef} />
     </Canvas>
   );
 }
@@ -265,10 +267,9 @@ type StudioProps = {
   atmosphere: StudioAtmosphere;
   bounceRef: RefObject<THREE.HemisphereLight | null>;
   mapsRef: RefObject<StudioMaps | null>;
-  floorShadowRef: RefObject<THREE.ShadowMaterial | null>;
 };
 
-function Studio({ atmosphere, bounceRef, mapsRef, floorShadowRef }: StudioProps) {
+function Studio({ atmosphere, bounceRef, mapsRef }: StudioProps) {
   const gl = useThree((state) => state.gl);
   const environment = useMemo(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
@@ -341,23 +342,23 @@ function Studio({ atmosphere, bounceRef, mapsRef, floorShadowRef }: StudioProps)
         {/* Deep enough for the light to lean a long way over (see SKY_SPREAD). */}
         <orthographicCamera attach="shadow-camera" args={[-9, 9, 9, -9, 8, 32]} />
       </directionalLight>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
-        {/* Long enough for the whole row. */}
-        <planeGeometry args={[400, 400]} />
-        <shadowMaterial ref={floorShadowRef} transparent color="#584f67" opacity={0.40} />
-      </mesh>
     </>
   );
 }
 
-function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt, atmosphere, bounceRef, mapsRef, floorShadowRef }: SceneProps & StudioProps) {
+function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt, atmosphere, bounceRef, mapsRef }: SceneProps & StudioProps) {
   const figs = useMemo<BuiltFigure[]>(() => FIGURES.map((figure) => createFigure(figure, atmosphere)), [atmosphere]);
+  const ground = useMemo(() => createReferenceGround(atmosphere, figs[0].indirect!), [atmosphere, figs]);
+  const groundRef = useRef(ground);
+  useEffect(() => () => ground.material.dispose(), [ground]);
+  const constructionPlans = useMemo(() => createTVConstruction(figs[0]), [figs]);
+  const constructionRef = useRef<ReturnType<typeof createTVConstructionOverlay> | null>(null);
   const positions = useMemo(() => FIGURES.map((_, i) => slotPosition(i)), []);
   const swayRefs = useRef<(THREE.Group | null)[]>([]);
   const calloutRefs = useRef<(THREE.Group | null)[]>([]);
   const fades = useRef(FIGURES.map(() => 0));
   const camTarget = useRef<THREE.Vector3 | null>(null);
-  const agentPos = useRef(AGENTS.map(() => ({ x: 0, y: 0, placed: false })));
+  const agentPos = useRef(AGENTS.map(() => ({ x: 0, y: 0, placed: false, task: "", fromX: 0, fromY: 0 })));
   const swayStart = useRef(FIGURES.map(() => -1));
   // Where the camera aims for each figure: the middle of what it looks like
   // on screen, so a flat figure and a tall one both sit centred.
@@ -410,11 +411,17 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
   const indirectRef = useRef<ReturnType<typeof createReferenceIrradiance> | null>(null);
   const indirectStateRef = useRef({ captured: false, started: false, mix: 0 });
   useEffect(() => () => indirectRef.current?.dispose(), []);
-
   // The page the stage is on, to paint it the studio's paper colour.
   const page = useRef<HTMLElement | null>(null);
   const paperShown = useRef("");
   const stageCanvas = useThree((state) => state.gl.domElement);
+  useEffect(() => {
+    const host = stageCanvas.closest<HTMLElement>("#stage");
+    if (!host) return;
+    const overlay = createTVConstructionOverlay(host);
+    constructionRef.current = overlay;
+    return () => { constructionRef.current = null; overlay.dispose(); };
+  }, [stageCanvas]);
   useEffect(() => {
     const el = stageCanvas.closest("main");
     page.current = el;
@@ -689,13 +696,14 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     const currentStudio = studioThemes[currentIndex];
     const nextStudio = studioThemes[nextIndex];
     const referenceWeight = mix(currentIndex === 0 ? 1 : 0, nextIndex === 0 ? 1 : 0, blend);
-    if (floorShadowRef.current) floorShadowRef.current.opacity = mix(0.4, 0.62, referenceWeight);
+    groundRef.current.reference.value = referenceWeight;
+    CONTACT_SHADOWS.value = referenceWeight;
     if (mapsRef.current) {
       state.scene.environment = referenceWeight > 0.5 ? mapsRef.current.reference : mapsRef.current.standard;
       state.scene.environmentIntensity = mix(0.22, 0.5, referenceWeight);
     }
     if (shadowLights[0]) {
-      shadowLights[0].intensity = mix(1.35, 1.9, referenceWeight);
+      shadowLights[0].intensity = mix(1.35, 1.6, referenceWeight);
       shadowLights[0].shadow.normalBias = mix(0.012, 0.002, referenceWeight);
       shadowLights[0].shadow.bias = mix(-0.0006, -0.00015, referenceWeight);
       shadowLights[0].shadow.radius = mix(0.22, 0.28, referenceWeight);
@@ -764,7 +772,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
       let allDone = true;
       for (const item of build.items) {
         const p = showPart(item, t);
-        if (p > 0 && !item.started) {
+        if ((item.tDraw !== undefined ? t >= item.tDraw : p > 0) && !item.started) {
           item.started = true;
           live.current.onPartEvent("start", item);
         }
@@ -783,15 +791,76 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     // ── Agents: each cursor goes to the part it is building, else waits in the dock ──
     const buildTime = build ? (build.paused ? build.pausedAt : time) - build.t0 : 0;
     const v = new THREE.Vector3();
+    const projected = (point: THREE.Vector3): [number, number] => {
+      v.copy(point).applyMatrix4(figs[0].group.matrixWorld).project(cam);
+      return [((v.x + 1) / 2) * canvasW - inset, ((1 - v.y) / 2) * h];
+    };
+    const constructionTasks: ProjectedConstruction[] = [];
+    const tvConstructing = build?.figId === "tv" && !reduced;
+    if (tvConstructing) {
+      figs[0].group.updateWorldMatrix(true, false);
+      for (const item of build.items) {
+        if (item.tDraw === undefined || buildTime < item.tDraw || buildTime > item.tEnd) continue;
+        const plan = constructionPlans.get(item.partId);
+        if (!plan) continue;
+        const rt = eng.parts[`tv/${item.partId}`];
+        const drawProgress = clamp01((buildTime - item.tDraw) / Math.max(0.001, item.tStart - item.tDraw));
+        const fillProgress = clamp01((buildTime - item.tStart) / Math.max(0.001, item.tEnd - item.tStart));
+        // The fill shader clips in WORLD Y. Follow that exact plane rather
+        // than the outline's range (a cabinet path omits its feet and plant).
+        const fillPoint = plan.paths[0][0].clone().applyMatrix4(figs[0].group.matrixWorld);
+        fillPoint.y = Math.max(rt.minY, Math.min(rt.maxY, rt.h.value));
+        fillPoint.project(cam);
+        constructionTasks.push({
+          id: item.partId, agent: item.agent, color: AGENTS[item.agent].stroke,
+          kind: plan.kind, paths: plan.paths.map(path => path.map(projected)),
+          corners: plan.corners?.map(projected), text: plan.text,
+          drawProgress, fillProgress,
+          fillPoint: [((fillPoint.x + 1) / 2) * canvasW - inset, ((1 - fillPoint.y) / 2) * h], opacity: 1,
+        });
+        // Keep the real part's existing height sweep; the drawing tool precedes it.
+        if (rt.progress > 0) dirty = true;
+      }
+    }
+    const toolPoses = constructionRef.current?.update(constructionTasks, w, h);
     for (let i = 0; i < AGENTS.length; i++) {
       const el = eng.agentEls[i];
       if (!el) continue;
       let [tx, ty] = dock(i, w, h);
       let working = false;
       let docked = true;
+      let tool: "arrow" | "cross" | "pen" | "duplicate" | "type" = "arrow";
+      let press = 0;
+      let toolControlled = false;
+      const pos = agentPos.current[i];
       if (build && !eng.build?.paused) {
         const item = build.items.find((it) => it.agent === i && !it.ended);
         if (item && buildTime >= item.tGo) {
+          if (tvConstructing) {
+            const plan = constructionPlans.get(item.partId);
+            const pose = toolPoses?.get(i);
+            if (plan) {
+              if (pos.task !== item.partId) {
+                pos.task = item.partId;
+                pos.fromX = pos.placed ? pos.x : tx;
+                pos.fromY = pos.placed ? pos.y : ty;
+              }
+              const start = projected(plan.paths[0][0]);
+              const approach = clamp01((buildTime - item.tGo) / Math.max(0.001, (item.tDraw ?? item.tStart) - item.tGo));
+              const p = 1 - Math.pow(1 - approach, 3);
+              const dx = start[0] - pos.fromX, dy = start[1] - pos.fromY;
+              const arc = Math.sin(p * Math.PI) * 0.08 * (i % 2 ? -1 : 1);
+              tx = pos.fromX + dx * p - dy * arc;
+              ty = pos.fromY + dy * p + dx * arc;
+              if (pose && buildTime >= (item.tDraw ?? item.tStart)) {
+                tx = pose.x; ty = pose.y; tool = pose.tool; press = pose.press;
+              }
+              working = buildTime >= (item.tDraw ?? item.tStart);
+              docked = false;
+              toolControlled = true;
+            }
+          }
+          if (!toolControlled) {
           const rt = eng.parts[`${item.figId}/${item.partId}`];
           const figureIndex = FIGURES.findIndex((f) => f.id === item.figId);
           const outer = outerRefs.current[figureIndex];
@@ -803,13 +872,18 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
           ty = ((1 - v.y) / 2) * h + (i % 2) * 24 - 6;
           working = item.started;
           docked = false;
+          }
         }
       } else if (build?.paused) {
         // Paused: hold wherever the agent is.
         tx = agentPos.current[i].x;
         ty = agentPos.current[i].y;
+        if (tvConstructing) {
+          const pose = toolPoses?.get(i);
+          if (pose) { tx = pose.x; ty = pose.y; tool = pose.tool; press = pose.press; toolControlled = true; docked = false; }
+        }
       }
-      if (!reduced) {
+      if (!reduced && !toolControlled) {
         if (working) {
           // A small scribble while the part fills in.
           tx += Math.cos(time * 13 + i) * 5;
@@ -818,8 +892,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
           ty += Math.sin(time * 1.6 + i * 1.3) * 3;
         }
       }
-      const pos = agentPos.current[i];
-      if (!pos.placed || reduced) {
+      if (!pos.placed || reduced || toolControlled) {
         pos.x = tx;
         pos.y = ty;
         pos.placed = true;
@@ -827,10 +900,31 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
         pos.x = damp(pos.x, tx, 7, dt);
         pos.y = damp(pos.y, ty, 7, dt);
       }
-      el.style.transform = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
+      const shapes = {
+        arrow: { d: "M4.2 3.4 18.6 9.1c.5.2.5.9 0 1.1l-5.6 2.1c-.3.1-.5.3-.6.6l-2.2 5.6c-.2.5-.9.5-1.1 0L3.4 4.2c-.2-.5.3-1 .8-.8Z", x: 4.2, y: 3.4 },
+        cross: { d: "M11 2V20M2 11H20M8 8H14V14H8Z", x: 11, y: 11 },
+        pen: { d: "M3 19 7 7 16 3 20 7 15 16 3 19ZM3 19 10 12M7 7 15 16", x: 3, y: 19 },
+        duplicate: { d: "M4 3 18 9 12 12 9 18 4 3ZM17 13V21M13 17H21", x: 4, y: 3 },
+        type: { d: "M7 2H15M11 2V20M7 20H15", x: 11, y: 11 },
+      };
+      const shape = shapes[tool];
+      if (el.getAttribute("data-tool") !== tool) {
+        el.setAttribute("data-tool", tool);
+        const path = el.querySelector<SVGPathElement>("[data-cursor-shape]");
+        path?.setAttribute("d", shape.d);
+        path?.setAttribute("fill", tool === "arrow" || tool === "duplicate" ? AGENTS[i].stroke : "none");
+        path?.setAttribute("stroke", tool === "arrow" || tool === "duplicate" ? "#ffffff" : AGENTS[i].stroke);
+        path?.setAttribute("stroke-linecap", "round");
+      }
+      const icon = el.firstElementChild as SVGElement | null;
+      if (icon) { icon.style.transformOrigin = `${shape.x}px ${shape.y}px`; icon.style.transform = `scale(${1 - press * 0.12})`; }
+      el.style.transform = `translate3d(${(pos.x - (toolControlled ? shape.x : 0)).toFixed(1)}px, ${(pos.y - (toolControlled ? shape.y : 0)).toFixed(1)}px, 0)`;
       el.style.opacity = build ? "1" : "0.50";
       const tag = el.lastElementChild as HTMLElement | null;
-      if (tag) tag.style.opacity = docked && !wide ? "0" : "1";
+      if (tag) tag.style.opacity = toolControlled || (docked && !wide) ? "0" : "1";
+      const compact = el.querySelector<HTMLElement>("[data-cursor-label]");
+      if (compact) compact.style.display = toolControlled ? "block" : "none";
+      if (!build) pos.task = "";
     }
 
     // ── Labels: captions and numerals are DOM elements pinned to 3D points ──
@@ -1010,6 +1104,10 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
 
   return (
     <>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
+        <planeGeometry args={[400, 400]} />
+        <primitive object={ground.material} attach="material" />
+      </mesh>
       {figs.map((fig, i) => (
         <group
           key={fig.def.id}

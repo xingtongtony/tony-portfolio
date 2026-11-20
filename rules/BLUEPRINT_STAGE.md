@@ -46,7 +46,7 @@ that looks rough.
 | Two accents | Inside a world, its own hue (ground, mist, mid, deep) owns most of the area, cream and sand are the neutrals, and only two accents are strong — small, and no others. Green is for plants and "on", blue for glass; both are muted. A figure that uses every colour at equal weight looks busy however nice each colour is. |
 | Light is the room | The background is one seamless floor with **no wall and no line anywhere**: bright where the figure on stage stands and dimmer with distance in every direction (`studioPaper()`). The distance is measured along the floor — a step away from the viewer is shorter on screen than a step sideways — so the pool of light lies on a plane, and that plane is the space the figure stands in (Tony, 2026-11-17: "as if the model were set on a platform, or on the ground"). Away from the light the page is one flat tone (`STUDIO_PAPER` of the wall colour), which is also the header's colour and so the headline's seam. Tried and dropped, do not bring back: a back wall behind the figure (it had to fade out again before the header and read as "a smear across the middle"), a wall running to the top (a horizon cut the page in two), and a drafting grid on the floor (a layer of lines competing with the neighbours' drawings). Tony chose light alone, 2026-11-18. |
 | Shared studio | The figures share a seamless studio sweep. The wall, floor, and reflected light interpolate between the palettes of adjacent exhibits as the carousel moves. Draft fills and faded ink sample the same background at their screen position. |
-| One sheet of paper | The page is the studio's paper, not white with a coloured patch on it (Tony, 2026-11-17: a tinted stage over a white index band read as cut in two). The backdrop fades into a flat paper colour — `STUDIO_PAPER` of the wall colour, the rest white — at the header, the copy column and the foot, and the scene hands that colour to CSS as `--studio-paper` on `<main>` every time it changes. The sidebar's column, the headline's seam between overlapping words and anything else outside or over the canvas use it, so nothing on the homepage has a background of its own: no white bands, no boxed strips. The canvas is wider than the stage: it runs on to the left edge of the window, under the navigation panel (`-left-[268px] xl:-left-[312px]` on its wrapper; the scene measures the overhang as `stageInset` and lays everything out in the stage's own pixels, and `uStudioFrame` tells the backdrop where the stage starts). So a neighbour leaving to the left passes beneath the panel instead of being cut off at its edge, and it goes out of focus on the way: three sheets of backdrop blur over the stage's left, each stronger and narrower than the last and fading out to the right, make a blur that grows towards the panel (Tony, 2026-11-17: "more blur on the left, less on the right"). The sidebar is a sheet of frosted glass on it (`sidebarTheme="stage"`: a little white, a lighter edge, a backdrop blur, the tint and the passing figure showing through) — the grey card sat against the colour, and no card at all dissolved the navigation into the page (Tony tried both, 2026-11-17). The header band is pure paper (the backdrop's top fade ends below it), which is what lets the headline's seam, a flat colour, disappear. Below `lg` and before the scene runs the variable is unset and the page is white. |
+| One sheet of paper | The page is the studio's paper, not white with a coloured patch on it (Tony, 2026-11-17: a tinted stage over a white index band read as cut in two). The backdrop fades into a flat paper colour — `STUDIO_PAPER` of the wall colour, the rest white — at the header, the copy column and the foot, and the scene hands that colour to CSS as `--studio-paper` on `<main>` every time it changes. The sidebar's column and other flat surfaces outside or over the canvas use it, so nothing on the homepage has a background of its own: no white bands, no boxed strips. The canvas is wider than the stage: it runs on to the left edge of the window, under the navigation panel (`-left-[268px] xl:-left-[312px]` on its wrapper; the scene measures the overhang as `stageInset` and lays everything out in the stage's own pixels, and `uStudioFrame` tells the backdrop where the stage starts). So a neighbour leaving to the left passes beneath the panel instead of being cut off at its edge, and it goes out of focus on the way: three sheets of backdrop blur over the stage's left, each stronger and narrower than the last and fading out to the right, make a blur that grows towards the panel (Tony, 2026-11-17: "more blur on the left, less on the right"). The sidebar is a sheet of frosted glass on it (`sidebarTheme="stage"`: a little white, a lighter edge, a backdrop blur, the tint and the passing figure showing through) — the grey card sat against the colour, and no card at all dissolved the navigation into the page (Tony tried both, 2026-11-17). The header band is pure paper (the backdrop's top fade ends below it). The hero text group uses `mix-blend-mode: multiply` with white glyph outlines: the white separates overlapping letters within the group, then blends away over the actual model or paper instead of covering it with a fixed paper-colour halo. Below `lg` and before the scene runs the variable is unset and the page is white. |
 | Built like the thing | A roof is boards with thickness that overhang the walls, not a prism with stripes; a window is a frame standing proud with the glass set back, not a disc on the wall. If a part would look stuck on in real life, model how it is actually made. |
 | Matte clay | Default finish is `clay`. `soft` for small pressable things, `print` for paper, `screen` / `led` for things that glow. No metal, no gloss. |
 | Approved TV reference | FIG. 1 has a scoped smooth satin-resin recipe, broad softbox reflections, and orange/yellow focus surrounds sampled from Tony's approved image. Preserve its planar faces and continuous bevel normals. Compare an actual WebGL screenshot at the reference viewport before claiming a match or extending the treatment to other figures. |
@@ -66,9 +66,13 @@ that looks rough.
 | `figures.ts` | Data: `THEMES` (one palette per figure), `AGENTS`, and `FIGURES` — each figure is parts, each part is a list of solids (`box`, `slab`, `cyl`, `ball`, `torus`, `arch`, `poly`). |
 | `figure-builder.ts` | Turns that data into meshes, ink lines and silhouette hulls; the build shader; finishes and clay grain. |
 | `studio-atmosphere.ts` | Display-space wall and floor lighting shared by the backdrop and patent drawing shaders. |
-| `soft-shadows.ts` | Replaces three.js's basic shadow lookup with area-light shadows (PCSS). |
+| `soft-shadows.ts` | Replaces three.js's basic shadow lookup with area-light shadows (PCSS); TV contacts can resolve down to half a shadow texel. |
+| `reference-ground.ts` | TV floor shadow catcher compares actual received diffuse energy with the unoccluded room; unshadowed pixels match the studio paper. Other figures retain their legacy shadow blend. |
 | `scene.tsx` | Canvas, the carousel's position and camera, the lights, accumulation, and the frame loop that drives builds, agents and labels. |
 | `engine.ts` | State shared by the scene and the DOM layer. Must stay free of three.js imports, or three lands in every page's first load. |
+| `tv-construction.ts` | TV-only construction plans traced from the actual shape surfaces, in figure-local coordinates. |
+| `tv-construction-timing.ts` | TV-only draw and fill durations consumed by the existing per-agent build schedule. |
+| `tv-construction-overlay.ts` | Projected SVG tool gestures and cursor poses; consumes progress from the scene and owns no animation clock or three.js imports. |
 | `blueprint-stage.tsx` | The DOM layer: page loader, headline, position and arrows, project details and case-study link, agent stickers, keyboard. It publishes the figure on stage through `engine.focus` / `engine.select` for the navigation panel. |
 | `loader-art.ts` | The page loader's two SVG layers. Generated by `scripts/blueprint-loader-art.py`; never edited by hand. |
 | `textures.ts` | Printed surfaces drawn on a canvas (ticket, QR card, TikCode, labels). |
@@ -173,6 +177,42 @@ horizontal shift and padding in `scene.tsx` must agree with those blocks.
 When the main surface needs a higher view (such as FIG. 5's tray), use the
 figure's `presentation` settings. The carousel blends elevation and scale
 between its neighbours while keeping one horizontal axis. ← → switch projects.
+
+### TV construction trial
+
+The construction-tool choreography is a **FIG. 1 / `tv` trial**. Other exhibits
+retain their existing build schedule and agent behaviour. It extends the
+drawing-to-object reveal without changing the homepage layout.
+
+- **Trace the object.** `tv-construction.ts` derives each plan from the actual
+  part and shape definitions: rounded face caps, the rug's top plane, cabinet
+  front and extrusion edges, and the surrounds' closed polygon paths. Apply
+  shape transforms and the part's frame once, leaving points figure-local.
+  `scene.tsx` applies the figure group's current world matrix and camera
+  projection every frame, so tools stay attached through carousel motion.
+- **Use the appropriate tool.** Drag gestures establish a face selection, then
+  trace its contour; pen gestures follow the real paths by arc length. The
+  soundbar duplicates matching grille circles, while the different props are
+  drawn separately with the pen. The plaque types `Focus` along its projected
+  face. Keep construction paths limited to four per part.
+- **Keep the original ink.** The TV starts as its full black patent drawing, including hidden-line removal. Temporary coloured construction tools work over that drawing; do not hide the initial outlines to make the tool trace appear. Environment surrounds remain excluded from the patent drawing.
+- **Draw, then build.** The existing schedule supplies `tGo` (approach),
+  `tDraw` (tool gesture), `tStart` (solid reveal), and `tEnd`. Draw/fill durations
+  live in `TV_CONSTRUCTION_TIMING`. Once drawing finishes, the original eased
+  `rt.h` height sweep reveals the real solid; the overlay fades during that
+  fill. The tool handle follows the same world-Y `rt.h` clipping plane, not the outline's separate height range. Do not replace the sweep with squash, height scaling, or an independent extrusion animation.
+- **Keep the environment in the same model.** Both surrounds remain ordinary
+  `drawing: false` parts under the subject's sway parent. Their temporary pen
+  paths appear only during construction; they never join the patent drawing
+  shown by background previews. They build and rewind through the same height
+  sweep and turn rigidly with the subject, preserving their physical clearance.
+- **One clock and lifecycle.** Tool progress, cursor work, and solid reveal use
+  the existing build clock, including `pausedAt` / resume's `t0` adjustment.
+  The SVG owns no timer, animation loop, or CSS transition. Empty/completed
+  tasks clear its paths and cursor poses; leaving TV clears the construction
+  overlay while the model follows its existing rewind. Unmount disposes the
+  SVG. Reduced motion completes the build immediately, skips construction
+  gestures and the presentation turn, and leaves no tool overlay behind.
 
 ### The page loader
 

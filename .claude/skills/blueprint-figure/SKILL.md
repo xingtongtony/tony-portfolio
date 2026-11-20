@@ -103,6 +103,34 @@ that palette, `(c) => ({ id, fig, title, desc, href, parts, callouts })`. Start
 - **Order**: figures stand in a row in `BUILDERS` order, one on stage at a
   time. Adding one needs no layout work; it just needs the next `FIG.` number.
 
+### TV construction trial (FIG. 1 only)
+
+The current tool choreography is scoped to `tv`; other figures keep their
+existing animation. Its source is `tv-construction.ts`,
+`tv-construction-timing.ts`, and `tv-construction-overlay.ts`.
+
+- Derive paths from actual shape surfaces and their rounded caps. Apply the
+  shape's position/rotation and part frame, including scale, once. Keep output
+  points figure-local; the scene projects them through the live figure group
+  and camera every frame. Limit each plan to four paths.
+- Drag establishes a face selection before tracing. Pen traces real contours;
+  duplicate only matching objects (the soundbar's grille circles), and draw
+  the different props separately. Type `Focus` on the plaque's projected face.
+- Preserve the full initial black patent drawing and hidden-line removal.
+  Coloured tool paths draw over it; keep the surrounds excluded from patent ink.
+- Schedule approach → draw → height sweep with `tGo`, `tDraw`, `tStart`, and
+  `tEnd`. Read durations from `TV_CONSTRUCTION_TIMING`. Keep the existing
+  eased `rt.h` solid reveal and fade the construction overlay during fill;
+  never squash or scale objects to imitate their growth.
+- Keep both surrounds under the same sway parent as the TV. Their temporary
+  construction paths do not become background patent ink: preserve
+  `drawing: false`, the shared build/rewind sweep, and real clearance when the
+  whole figure turns.
+- Pause/Resume uses the same build clock for tools and solids. The SVG must
+  not own another timer or animation loop. Clear completed/absent tasks and
+  cursor poses, clear tools when leaving TV, and dispose the SVG on unmount.
+  Reduced motion builds instantly and skips the tools and presentation turn.
+
 ### 3. Look at it
 
 The stage needs ≥ 1024px and a visible browser pane (a hidden one does not

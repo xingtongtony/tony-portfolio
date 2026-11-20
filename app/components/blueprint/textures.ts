@@ -134,7 +134,20 @@ function label(text: string, background: string, ink: string, aspect: number): H
   g.textBaseline = "middle";
   g.textAlign = "center";
   g.font = `600 ${text.length === 1 ? 74 : 58}px ${MONO}`;
-  g.fillText(text, c.width / 2, c.height * 0.51, c.width * 0.86);
+  if (text === "Focus") {
+    // Centre the actual ink, not the font's em box: the latter makes this
+    // short, mixed-case word sit visibly low on the small physical plaque.
+    g.textBaseline = "alphabetic";
+    const metrics = g.measureText(text);
+    const ascent = metrics.actualBoundingBoxAscent;
+    const descent = metrics.actualBoundingBoxDescent;
+    const baseline = Number.isFinite(ascent) && Number.isFinite(descent) && ascent + descent > 0
+      ? (c.height + ascent - descent) / 2
+      : c.height / 2 + 58 * 0.3;
+    g.fillText(text, c.width / 2, baseline, c.width * 0.86);
+  } else {
+    g.fillText(text, c.width / 2, c.height * 0.51, c.width * 0.86);
+  }
   return c;
 }
 

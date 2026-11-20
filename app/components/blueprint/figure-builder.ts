@@ -28,6 +28,7 @@ import { displayRgb, STUDIO_ATMOSPHERE, type StudioAtmosphere } from "./studio-a
 import { getTexture } from "./textures";
 import { createIndirectUniforms, type ReferenceIndirectUniforms } from "./reference-irradiance";
 import { INDIRECT_FRAGMENT, INDIRECT_LIGHTING, INDIRECT_VERTEX } from "./reference-irradiance-shader";
+import { CONTACT_SHADOWS } from "./soft-shadows";
 
 /** What the build engine reads and writes for one part. */
 export type PartRuntime = {
@@ -70,7 +71,7 @@ const TV_FINISHES: Record<Finish, THREE.MeshPhysicalMaterialParameters> = {
   clay: { roughness: 0.44, metalness: 0, specularIntensity: 0.5, clearcoat: 0.2, clearcoatRoughness: 0.36 },
   soft: { roughness: 0.34, metalness: 0, specularIntensity: 0.5, clearcoat: 0.24, clearcoatRoughness: 0.32 },
   print: { roughness: 0.9, metalness: 0, specularIntensity: 0.2 },
-  screen: { roughness: 0.18, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.2 },
+  screen: { roughness: 0.18, metalness: 0, ior: 1.25, specularIntensity: 0.05, clearcoat: 0.025, clearcoatRoughness: 0.12 },
   led: { roughness: 0.35, metalness: 0 },
 };
 
@@ -167,6 +168,7 @@ function fillMaterial(
     shader.uniforms.uFade = fade;
     shader.uniforms.uGrain = { value: reference ? 0 : GRAIN[finish] };
     shader.uniforms.uOrigin = origin;
+    shader.uniforms.uContactShadow = CONTACT_SHADOWS;
     if (indirect) Object.assign(shader.uniforms, indirect);
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying float vWorldY;\nvarying vec3 vGrainPos;\nvarying vec3 vFig;\nuniform vec3 uOrigin;")
@@ -582,7 +584,7 @@ export function createFigure(def: FigureDef, atmosphere: StudioAtmosphere): Buil
       const fillKey = `${color}|${finish}|${s.map ?? ""}`;
       let fill = fills.get(fillKey);
       if (!fill) {
-        const reflectance = reference ? (part.id === "rug" ? 0.85 : part.id === "tv-body" ? 1.45 : 1) : 1;
+        const reflectance = reference && part.id === "rug" ? 0.85 : 1;
         fill = fillMaterial(color, finish, s.map, rt, fade, origin, atmosphere, reference, drawing, reflectance, indirect);
         fills.set(fillKey, fill);
       }
