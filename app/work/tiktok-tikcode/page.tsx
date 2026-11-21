@@ -6,14 +6,15 @@ import { Reveal, StaggerGrid, StaggerItem } from "../../components/motion";
 import { NextSectionButton } from "../../components/next-section-button";
 import { Board, BoardGallery, type BoardImage } from "../../components/board-viewer";
 import { CaseHeader, CaseStudyFooter, Chapter } from "../../components/case-study";
-import { TT_ACCENT, TT_RED } from "../../lib/tiktok-tv";
+import { TT_ACCENT } from "../../lib/tiktok-tv";
 import { eyebrowMeta, bodyMd, bodySm, emphasis } from "../../lib/tokens";
 
 // White page, the CloudKitchens / TikTok TV chapter layout. The boards carry
 // their own light grey and read as panels by that background: rounded
 // corners, no border, every one opens full screen (BoardGallery). Cards are
-// the light grey used on CloudKitchens. TikTok red: TT_ACCENT for small text,
-// TT_RED for graphics.
+// the light grey used on CloudKitchens. TikTok red (TT_ACCENT) marks the
+// chapter numbers only: the A/B board below the table writes drops in red, so
+// the table's arrows stay in the text colour.
 
 const A = "/portfolio/tiktok-tikcode";
 const CARD = "rounded-[1.25rem] bg-[#f6f6f6]";
@@ -127,7 +128,7 @@ function Change({ value }: { value?: string }) {
       className={`inline-flex items-center justify-end gap-2 whitespace-nowrap ${up ? "text-[var(--cs-heading)]" : "text-[var(--cs-body)]"}`}
     >
       {value}
-      <Icon aria-hidden className="size-5 shrink-0" style={{ color: up ? TT_RED : "currentColor" }} strokeWidth={2.5} />
+      <Icon aria-hidden className="size-5 shrink-0" strokeWidth={2.5} />
     </span>
   );
 }
