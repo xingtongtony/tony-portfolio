@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { ArrowUpRight, Plus } from "lucide-react";
-import { EDUCATION, PATENTS, LANGUAGES, ROLES, type Craft } from "../../lib/about";
+import { EDUCATION, ROLES, type Craft } from "../../lib/about";
 
 /**
  * The About page's middle: a bio whose skills you can press, and a career
@@ -25,6 +25,14 @@ const LOGOS: Record<string, string> = {
   CloudKitchens: "/portfolio/tony-work-18.png",
   Airbnb: "/portfolio/tony-work-17.png",
   DiDi: "/portfolio/tony-work-16.png",
+  // From each company's LinkedIn page (21 Nov 2026).
+  Okou: "/portfolio/about/logos/okou.png",
+  extend: "/portfolio/about/logos/extend.png",
+  Otter: "/portfolio/about/logos/otter.png",
+  GrowingIO: "/portfolio/about/logos/growingio.png",
+  Pond5: "/portfolio/about/logos/pond5.png",
+  "Cranbrook Academy of Art": "/portfolio/about/logos/cranbrook.png",
+  "Beijing Institute of Graphic Communication": "/portfolio/about/logos/bigc.png",
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -148,8 +156,6 @@ export function Career({ now }: { now: string }) {
 
   const matches = (e: Entry) => !craft || e.craft.includes(craft);
   const workCount = entries.filter((e) => e.kind === "work" && matches(e)).length;
-  const since = Number(now.slice(0, 4)) - 2015;
-  const companies = new Set(ROLES.map((r) => r.company)).size;
 
   return (
     <>
@@ -181,23 +187,6 @@ export function Career({ now }: { now: string }) {
           )}
         </p>
 
-        <dl className="mt-14 grid grid-cols-2 gap-x-6 gap-y-8 border-t border-black/10 pt-8 sm:grid-cols-4">
-          {[
-            [String(since), "Years designing"],
-            [String(companies), "Companies"],
-            [String(PATENTS.length), "Patents"],
-            [String(LANGUAGES.length), "Languages"],
-          ].map(([n, label]) => (
-            <div key={label} className="flex flex-col-reverse gap-3">
-              <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-black/40">{label}</dt>
-              <dd className="text-[clamp(2.5rem,5vw,3.75rem)] font-semibold leading-none tracking-[-0.06em] tabular-nums">{n}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="mt-6 text-sm text-black/55">
-          <span className="mr-2 inline-block size-2 rounded-full align-middle" style={{ background: ACCENT }} aria-hidden />
-          Now: Founding Designer at Okou, and Lead Product Designer at extend.
-        </p>
       </section>
 
       {/* CAREER */}
@@ -205,9 +194,13 @@ export function Career({ now }: { now: string }) {
         <p className="section-label">Career</p>
         <h2 className="mt-3 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">Where I&apos;ve designed</h2>
 
-        <Ruler entries={entries} now={toMonth(now) + 1} hot={hot} setHot={setHot} matches={matches} />
+        {/* From md the ruler stays on screen while the rows scroll under it, so a
+            row far down still shows its bar. The white band above it masks the rows. */}
+        <div className="z-20 mt-12 bg-white md:sticky md:top-0 md:-mx-3 md:px-3 md:pb-3 md:pt-3 md:after:pointer-events-none md:after:absolute md:after:inset-x-0 md:after:top-full md:after:h-6 md:after:bg-gradient-to-b md:after:from-white md:after:to-white/0">
+          <Ruler entries={entries} now={toMonth(now) + 1} hot={hot} setHot={setHot} matches={matches} />
+        </div>
 
-        <ol className="mt-10 border-t border-black/10">
+        <ol className="mt-6 border-t border-black/10">
           {entries.map((e, i) => {
             const first = e.kind === "study" && entries[i - 1]?.kind === "work";
             return (
@@ -325,11 +318,26 @@ function Ruler({
   };
 
   const hotEntry = entries.find((e) => e.key === hot);
+  const study = entries.filter((e) => e.kind === "study");
+  const work = entries.filter((e) => e.kind === "work");
+  const workFrom = Math.min(...work.map((e) => e.start));
+  const studyFrom = Math.min(...study.map((e) => e.start));
+  const studyTo = Math.max(...study.map((e) => e.end));
+  const spans = [
+    { label: "Art school", detail: `${(studyTo - studyFrom) / 12} years, two schools`, from: studyFrom, to: studyTo },
+    {
+      label: "Design",
+      detail: `${Math.floor((now - workFrom) / 12)} years, ${new Set(work.map((e) => e.name)).size} companies`,
+      from: workFrom,
+      to: now,
+    },
+  ];
   const marker = scrub ?? null;
   const LANE = 30;
+  const BRACKET = 34;
 
   return (
-    <div className="mt-12 rounded-[1.5rem] bg-[#f6f6f6] px-5 pb-5 pt-12 sm:px-8 sm:pb-6">
+    <div className="rounded-[1.5rem] bg-[#f6f6f6] px-5 pb-4 pt-11 sm:px-8">
       <div
         ref={box}
         role="slider"
@@ -345,16 +353,17 @@ function Ruler({
         onKeyDown={onKey}
         onBlur={() => scrubTo(null)}
         className="relative cursor-crosshair touch-pan-y select-none rounded-md outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-8 focus-visible:ring-offset-[#f6f6f6]"
-        style={{ height: lanes * LANE + 34 }}
+        style={{ height: lanes * LANE + 34 + BRACKET }}
       >
         {/* Year grid */}
         {years.map((y) => (
           <div key={y} aria-hidden className="absolute bottom-0 top-0" style={{ left: `${pct(y * 12)}%` }}>
-            <div className="absolute bottom-6 top-0 w-px bg-black/[0.07]" />
+            <div className="absolute top-0 w-px bg-black/[0.07]" style={{ bottom: 24 + BRACKET }} />
             {/* Every 4th year on a phone, every 2nd from md, all from xl; the ruler's end needs no label. */}
             {y < end / 12 ? (
               <span
-                className={`absolute bottom-0 font-mono text-[10px] tabular-nums text-black/40 ${y === 2009 ? "" : "-translate-x-1/2"} ${
+                style={{ bottom: BRACKET }}
+                className={`absolute font-mono text-[10px] tabular-nums text-black/40 ${y === 2009 ? "" : "-translate-x-1/2"} ${
                   y % 4 === 1 ? "" : y % 2 === 1 ? "hidden md:inline" : "hidden xl:inline"
                 }`}
               >
@@ -401,13 +410,13 @@ function Ruler({
         })}
 
         {/* Now */}
-        <div aria-hidden className="absolute top-[-14px] bottom-6 w-px border-l border-dashed border-black/30" style={{ left: `${pct(now)}%` }}>
+        <div aria-hidden className="absolute top-[-14px] w-px border-l border-dashed border-black/30" style={{ left: `${pct(now)}%`, bottom: 24 + BRACKET }}>
           <span className="absolute -top-1 left-1 -translate-y-full font-mono text-[10px] uppercase tracking-[0.1em] text-black/45">Now</span>
         </div>
 
         {/* Scrub hairline + label */}
         {marker !== null ? (
-          <div aria-hidden className="pointer-events-none absolute bottom-6 top-[-34px]" style={{ left: `${pct(marker + 0.5)}%` }}>
+          <div aria-hidden className="pointer-events-none absolute top-[-34px]" style={{ left: `${pct(marker + 0.5)}%`, bottom: 24 + BRACKET }}>
             <div className="absolute bottom-0 top-6 w-px" style={{ background: BLUE }} />
             <span
               className={`absolute top-0 whitespace-nowrap rounded-full bg-black px-2.5 py-1 text-[11px] font-medium text-white ${
@@ -419,22 +428,22 @@ function Ruler({
             </span>
           </div>
         ) : null}
+
+        {/* What the two spans add up to, read off the ruler itself. */}
+        {spans.map((b) => (
+          <div key={b.label} aria-hidden className="absolute bottom-0" style={{ left: `${pct(b.from)}%`, width: `${pct(b.to) - pct(b.from)}%`, height: BRACKET - 6 }}>
+            <div className="absolute inset-x-0 top-0 h-2 rounded-b-[3px] border-x border-b border-black/25" />
+            <p className="absolute inset-x-0 top-3.5 truncate text-center text-[11px] text-black/50">
+              <span className="font-semibold text-black/75">{b.label}</span>
+              <span className="hidden sm:inline"> · {b.detail}</span>
+            </p>
+          </div>
+        ))}
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-black/45">
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-5 rounded-[3px] bg-[#1b1b1b]" /> Work
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            aria-hidden
-            className="h-2.5 w-5 rounded-[3px]"
-            style={{ background: "repeating-linear-gradient(135deg, rgb(0 0 0 / 0.16) 0 1px, transparent 1px 5px)", boxShadow: "inset 0 0 0 1px rgb(0 0 0 / 0.18)" }}
-          />{" "}
-          Study
-        </span>
+      <p className="mt-3 text-[11px] text-black/40">
         <span className="hidden sm:inline">Drag along the ruler, or focus it and use the arrow keys.</span>
         <span className="sm:hidden">Tap or drag along the ruler.</span>
-      </div>
+      </p>
     </div>
   );
 }
@@ -558,7 +567,7 @@ function Row({
 
 function Logo({ name, study }: { name: string; study: boolean }) {
   const src = LOGOS[name];
-  if (src) return <Image src={src} alt="" width={36} height={36} className="size-9 shrink-0 rounded-[0.7rem]" />;
+  if (src) return <Image src={src} alt="" width={36} height={36} className="size-9 shrink-0 rounded-[0.7rem] ring-1 ring-black/[0.08]" />;
   return (
     <span aria-hidden className={`grid size-9 shrink-0 place-items-center rounded-[0.7rem] text-[13px] font-bold uppercase ${study ? "border border-black/15 text-black/50" : "bg-black/[0.06] text-black/70"}`}>
       {name.charAt(0)}

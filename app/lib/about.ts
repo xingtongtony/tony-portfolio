@@ -175,17 +175,100 @@ export const EDUCATION = [
   },
 ];
 
-export const PATENTS = [
-  { title: "Two-dimensional code displaying method and apparatus, device, and medium", number: "21917282.2", issued: "Dec 22, 2021" },
-  { title: "Display screen or portion thereof with a graphical user interface", number: "USD0990500S1", issued: "Oct 12, 2021" },
-  { title: "Display screen or portion thereof with a graphical user interface", number: "USD0990501S1", issued: "Oct 12, 2021" },
-  { title: "Display screen or portion thereof with a graphical user interface", number: "USD0986265S1", issued: "Oct 4, 2021" },
-  { title: "Display screen or portion thereof with a graphical user interface", number: "USD0986264S1", issued: "Oct 4, 2021" },
+// The total the homepage sticker states, and the patents that can be listed one
+// by one. Dates are from Google Patents (LinkedIn lists the filing dates as
+// "issued"). Names describe what each patent's drawings show.
+export const DESIGN_PATENT_TOTAL = 325;
+
+export type Patent = {
+  id: string;
+  number: string;
+  kind: "Design patent" | "Invention patent";
+  name: string;
+  title: string;
+  filed: string;
+  granted: string;
+  figure: string;
+  related: { title: string; href: string };
+  url: string;
+};
+
+export const PATENTS: Patent[] = [
+  {
+    id: "d986264",
+    number: "US D986,264 S",
+    kind: "Design patent",
+    name: "Share sheet, TikTok on tablet",
+    title: "Display screen or portion thereof with a graphical user interface",
+    filed: "Oct 4, 2021",
+    granted: "May 16, 2023",
+    figure: "FIG. 2",
+    related: { title: "Multi-Platform", href: "/work/tiktok-multi-platform" },
+    url: "https://patents.google.com/patent/USD986264S1/en",
+  },
+  {
+    id: "d986265",
+    number: "US D986,265 S",
+    kind: "Design patent",
+    name: "Comment panel, TikTok on tablet",
+    title: "Display screen or portion thereof with a graphical user interface",
+    filed: "Oct 4, 2021",
+    granted: "May 16, 2023",
+    figure: "FIG. 1",
+    related: { title: "Multi-Platform", href: "/work/tiktok-multi-platform" },
+    url: "https://patents.google.com/patent/USD986265S1/en",
+  },
+  {
+    id: "d990500",
+    number: "US D990,500 S",
+    kind: "Design patent",
+    name: "Video feed, TikTok on the web",
+    title: "Display screen or portion thereof with a graphical user interface",
+    filed: "Oct 12, 2021",
+    granted: "Jun 27, 2023",
+    figure: "FIG. 1",
+    related: { title: "Web Restructure", href: "/work/tiktok-restructure" },
+    url: "https://patents.google.com/patent/USD990500S1/en",
+  },
+  {
+    id: "d990501",
+    number: "US D990,501 S",
+    kind: "Design patent",
+    name: "Video player, TikTok on the web",
+    title: "Display screen or portion thereof with a graphical user interface",
+    filed: "Oct 12, 2021",
+    granted: "Jun 27, 2023",
+    figure: "FIG. 1",
+    related: { title: "Web Restructure", href: "/work/tiktok-restructure" },
+    url: "https://patents.google.com/patent/USD990501S1/en",
+  },
+  {
+    id: "ep4258165",
+    number: "EP 4 258 165 B1",
+    kind: "Invention patent",
+    name: "Two-dimensional code with overlapped positioning points",
+    title: "Two-dimensional code displaying method and apparatus, device, and medium",
+    filed: "Dec 22, 2021",
+    granted: "Jul 9, 2025",
+    figure: "Claim 1",
+    related: { title: "TikCode", href: "/work/tiktok-tikcode" },
+    url: "https://patents.google.com/patent/EP4258165B1/en",
+  },
 ];
 
 export const HONORS = [
-  { title: "Experiencing Perspectives Art Exhibition, Mercedes-Benz", date: "May 2014", note: "A body of my work was selected for the exhibition. With Cranbrook Academy of Art." },
-  { title: "Painting Collection", date: "Sep 2012", note: "One of my paintings was collected by the Beijing Institute of Graphic Communication." },
+  {
+    title: "Experiencing Perspectives",
+    what: "Art exhibition, Mercedes-Benz Financial Services",
+    date: "May 2014",
+    note: "A body of my work was selected for the exhibition, while at Cranbrook Academy of Art.",
+  },
+  {
+    title: "Painting",
+    what: "Collection of the Beijing Institute of Graphic Communication",
+    date: "Sep 2012",
+    note: "One of my paintings was collected by the school.",
+  },
 ];
 
 export const LANGUAGES = [

@@ -55,7 +55,8 @@ export function AboutContact() {
         <h2 className="mt-6 max-w-4xl text-5xl font-semibold leading-[0.92] tracking-[-0.075em] sm:text-7xl">
           Let&apos;s connect if you want to dive deeper.
         </h2>
-        <div className="mt-10 flex flex-wrap items-center gap-3">
+        <p className="mt-6 text-base text-black/55">I work in English and Chinese.</p>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
           <Magnetic>
             <a href={EMAIL_HREF} className={`${pill} bg-[#171717] text-white hover:bg-black`}>
               Say hi
