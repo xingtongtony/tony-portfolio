@@ -5,6 +5,10 @@ import { Career } from "../components/about/career";
 import { Recognition } from "../components/about/recognition";
 import { AboutContact } from "../components/about/about-contact";
 
+// The career ruler runs to "now". Regenerate the page at most once a day, so
+// the current roles grow by themselves between deploys.
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: "About - Tony Xing",
   description:
@@ -20,7 +24,7 @@ export const metadata: Metadata = {
  * ruler you can scrub, patents that draw themselves, and contact.
  */
 export default function About() {
-  // The month the page was built: the ruler's "now". Static page, so this is the build date.
+  // The month the page was generated: the ruler's "now" (refreshed daily, see revalidate).
   const d = new Date();
   const now = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   return (
