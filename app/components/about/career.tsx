@@ -46,6 +46,7 @@ type Entry = {
   key: string;
   label: string; // on the bar
   name: string; // company or school
+  org?: string; // the company a brand belongs to
   title: string; // role or degree
   kind: "work" | "study";
   contract?: boolean;
@@ -78,6 +79,7 @@ function buildEntries(nowYm: string): Entry[] {
       key: `w${i}`,
       label: SHORT[r.company] ?? r.company,
       name: r.company,
+      org: r.org,
       title: r.role,
       kind: "work",
       contract: r.kind === "Contract",
@@ -151,7 +153,8 @@ const CRAFT_WORD: Record<Craft, string> = {
 export function Career({ now }: { now: string }) {
   const entries = useMemo(() => buildEntries(now), [now]);
   const [craft, setCraft] = useState<Craft | null>(null);
-  const [hot, setHot] = useState<string | null>(null); // the entry pointed at (row or ruler)
+  // The entries pointed at: one row, or every role at the scrubbed month (two at once from Apr 2026).
+  const [hot, setHot] = useState<string[]>([]);
   const [open, setOpen] = useState<Set<string>>(() => new Set());
 
   const matches = (e: Entry) => !craft || e.craft.includes(craft);
@@ -208,10 +211,10 @@ export function Career({ now }: { now: string }) {
                 {first ? <p className="section-label pb-3 pt-6">Education</p> : null}
                 <Row
                   e={e}
-                  hot={hot === e.key}
+                  hot={hot.includes(e.key)}
                   dimmed={!matches(e)}
                   open={open.has(e.key)}
-                  onHot={(on) => setHot(on ? e.key : null)}
+                  onHot={(on) => setHot(on ? [e.key] : [])}
                   onToggle={() =>
                     setOpen((s) => {
                       const next = new Set(s);
@@ -259,8 +262,8 @@ function Ruler({
 }: {
   entries: Entry[];
   now: number;
-  hot: string | null;
-  setHot: (k: string | null) => void;
+  hot: string[];
+  setHot: (keys: string[]) => void;
   matches: (e: Entry) => boolean;
 }) {
   const end = (Math.floor((now - 1) / 12) + 1) * 12; // to the end of this year
@@ -287,15 +290,16 @@ function Ruler({
     return () => ro.disconnect();
   }, []);
 
-  // The entry for a month: work before study, the latest start first.
-  const at = (m: number) =>
-    entries
-      .filter((e) => m >= e.start && m < e.end)
-      .sort((a, b) => (a.kind === b.kind ? b.start - a.start : a.kind === "work" ? -1 : 1))[0];
+  // Everything at a month: every role then (two at once from Apr 2026), else the school.
+  const at = (m: number) => {
+    const here = entries.filter((e) => m >= e.start && m < e.end);
+    const work = here.filter((e) => e.kind === "work");
+    return work.length ? work : here;
+  };
 
   const scrubTo = (m: number | null) => {
     setScrub(m);
-    setHot(m === null ? null : (at(m)?.key ?? null));
+    setHot(m === null ? [] : at(m).map((e) => e.key));
   };
   const fromPointer = (ev: PointerEvent<HTMLDivElement>) => {
     const r = box.current!.getBoundingClientRect();
@@ -317,7 +321,8 @@ function Ruler({
     }
   };
 
-  const hotEntry = entries.find((e) => e.key === hot);
+  const hotEntries = entries.filter((e) => hot.includes(e.key));
+  const hotNames = [...new Set(hotEntries.map((e) => e.name))].join(" + ");
   const study = entries.filter((e) => e.kind === "study");
   const work = entries.filter((e) => e.kind === "work");
   const workFrom = Math.min(...work.map((e) => e.start));
@@ -327,7 +332,7 @@ function Ruler({
     { label: "Art school", detail: `${(studyTo - studyFrom) / 12} years, two schools`, from: studyFrom, to: studyTo },
     {
       label: "Design",
-      detail: `${Math.floor((now - workFrom) / 12)} years, ${new Set(work.map((e) => e.name)).size} companies`,
+      detail: `${Math.floor((now - workFrom) / 12)} years, ${new Set(work.map((e) => e.org ?? e.name)).size} companies`,
       from: workFrom,
       to: now,
     },
@@ -346,7 +351,7 @@ function Ruler({
         aria-valuemin={START}
         aria-valuemax={end - 1}
         aria-valuenow={marker ?? now - 1}
-        aria-valuetext={`${fmtMonth(marker ?? now - 1)}${hotEntry ? `, ${hotEntry.name}, ${hotEntry.title}` : ""}`}
+        aria-valuetext={`${fmtMonth(marker ?? now - 1)}${hotEntries.map((e) => `, ${e.name}, ${e.title}`).join("")}`}
         onPointerMove={fromPointer}
         onPointerDown={fromPointer}
         onPointerLeave={(ev) => ev.pointerType === "mouse" && scrubTo(null)}
@@ -375,7 +380,7 @@ function Ruler({
 
         {/* Bars */}
         {entries.map((e) => {
-          const isHot = hot === e.key;
+          const isHot = hot.includes(e.key);
           const on = matches(e);
           const width = pct(e.end) - pct(e.start);
           return (
@@ -424,7 +429,7 @@ function Ruler({
               }`}
             >
               <span className="font-mono tabular-nums text-white/60">{fmtMonth(marker)}</span>
-              {hotEntry ? <span className="ml-1.5">{hotEntry.name}</span> : null}
+              {hotNames ? <span className="ml-1.5">{hotNames}</span> : null}
             </span>
           </div>
         ) : null}
@@ -471,6 +476,7 @@ function Row({
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-baseline gap-x-2">
           <span className="text-[17px] font-semibold tracking-[-0.02em] text-black">{e.name}</span>
+          {e.org ? <span className="text-sm text-black/40">by {e.org}</span> : null}
           {e.contract ? <span className="rounded-full bg-black/[0.05] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-black/50">Contract</span> : null}
         </span>
         <span className="mt-0.5 block text-sm text-black/55">

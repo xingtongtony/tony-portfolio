@@ -6,6 +6,8 @@
 
 export type Role = {
   company: string;
+  /** The company a brand belongs to, when LinkedIn lists the brand (Otter is CloudKitchens). */
+  org?: string;
   role: string;
   kind?: "Contract";
   start: string;
@@ -43,6 +45,7 @@ export const ROLES: Role[] = [
   },
   {
     company: "Otter",
+    org: "CloudKitchens",
     role: "Lead Product Designer",
     kind: "Contract",
     start: "2025-09",
