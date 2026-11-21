@@ -884,3 +884,38 @@ html[data-home-view="cards"] .view-switch [data-view="cards"] {
     transition: none;
   }
 }
+
+/* Home on phones and tablets — a figure still "lands" the first time it is in
+   front (app/components/home-mobile-work.tsx), then its numerals appear. */
+.still {
+  opacity: 0;
+  transform: scale(1.04);
+  filter: blur(6px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.6s ease;
+}
+.still.still-landed {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+.still-label {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.still-label.still-landed {
+  opacity: 1;
+  transition-delay: calc(0.5s + var(--k, 0) * 0.12s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .still,
+  .still-label {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+}
+

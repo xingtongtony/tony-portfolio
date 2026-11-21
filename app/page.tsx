@@ -2,8 +2,10 @@ import { PortfolioShell } from "./components/portfolio-shell";
 import { HeroIntro } from "./components/hero-intro";
 import { NextSectionButton } from "./components/next-section-button";
 import { HomeStage } from "./components/home-stage";
-import { HomeCards, WorkGrid } from "./components/home-cards";
-import { ContactSection, ExperienceSection } from "./components/home-sections";
+import { HomeCards } from "./components/home-cards";
+import { HomeMobileWork } from "./components/home-mobile-work";
+import { HomeAboutTeaser } from "./components/home-about-teaser";
+import { AboutContact } from "./components/about/about-contact";
 
 const companies = [
   "TikTok",
@@ -90,28 +92,15 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Phones and tablets only: the same cards as the desktop cards view
-            (WorkGrid) — one column on a phone, a waterfall of two on a
-            tablet. From lg up they are the homepage's second view (HomeCards
-            above). */}
-        <section id="work" data-case-section className="scroll-mt-8 py-10 lg:hidden">
-          <div className="mb-9 max-w-2xl">
-            <div>
-              <p className="section-label">Work</p>
-              <h2 className="mt-2 text-4xl font-semibold tracking-[-0.06em] sm:text-6xl">
-                Case studies
-              </h2>
-            </div>
-          </div>
-
-          <WorkGrid />
-        </section>
+        {/* Phones and tablets only: the stage's figures as stills you swipe,
+            or Tony's cards — the desktop's two views as a switch. */}
+        <HomeMobileWork />
 
         {/* Phones and tablets only. From lg up the page is the stage alone and
-            does not scroll; these two are on the About page. */}
+            does not scroll. Career and patents live on the About page. */}
         <div className="lg:hidden">
-          <ExperienceSection />
-          <ContactSection />
+          <HomeAboutTeaser />
+          <AboutContact />
         </div>
       </div>
       {/* The pill points at the next section down; from lg there is none. */}
