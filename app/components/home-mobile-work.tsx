@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import { PROJECTS } from "../lib/projects";
-import { STILLS } from "../lib/stage-stills";
+import { STILLS, STILL_VERSION } from "../lib/stage-stills";
 import { WorkGrid } from "./home-cards";
 
 /**
@@ -147,7 +147,7 @@ function Figure({ item, landed, priority }: { item: (typeof ITEMS)[number]; land
     <>
       <div className="relative aspect-square overflow-hidden" style={{ background: item.paper }}>
         <Image
-          src={`/portfolio/stage/${item.id}.jpg`}
+          src={`/portfolio/stage/${item.id}-v${STILL_VERSION}.jpg`}
           alt={`${item.fig}: ${project.title}, a clay model of the project`}
           width={1200}
           height={1200}
@@ -166,11 +166,11 @@ function Figure({ item, landed, priority }: { item: (typeof ITEMS)[number]; land
             {n}
           </span>
         ))}
-        <span className="absolute left-4 top-4 font-mono text-[11px] uppercase tracking-[0.12em] text-black/55">{item.fig}</span>
         {soon ? <span className="absolute right-4 top-3.5 rounded-full bg-black/[0.07] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-black/55">Soon</span> : null}
       </div>
       <div className="flex flex-1 flex-col px-5 pb-5 pt-4" style={{ background: item.paper }}>
-        <h3 className="text-lg font-semibold leading-snug tracking-[-0.02em]">{project.title}</h3>
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-black/45">{item.fig}</p>
+        <h3 className="mt-1.5 text-lg font-semibold leading-snug tracking-[-0.02em]">{project.title}</h3>
         <p className="mt-1.5 text-sm leading-[1.5] text-black/60">{item.desc}</p>
         <p className="mt-auto pt-3 text-[13px] font-semibold text-black/80">
           {soon ? (
