@@ -815,3 +815,30 @@ html[data-home-view="cards"] .view-switch [data-view="cards"] {
     transition: none;
   }
 }
+
+/* About — patent figures draw themselves once in view (app/components/about/recognition.tsx).
+   Every stroke has pathLength 1; a group sets --pd to delay its strokes. */
+.patent-drawing :is(rect, circle, path) {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.1s cubic-bezier(0.65, 0, 0.35, 1);
+  transition-delay: var(--pd, 0s);
+}
+.patent-drawing text {
+  opacity: 0;
+  transition: opacity 0.4s ease 1.5s;
+}
+.patent-drawing[data-drawn] :is(rect, circle, path) {
+  stroke-dashoffset: 0;
+}
+.patent-drawing[data-drawn] text {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .patent-drawing :is(rect, circle, path),
+  .patent-drawing text {
+    stroke-dashoffset: 0;
+    opacity: 1;
+    transition: none;
+  }
+}

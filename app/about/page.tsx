@@ -1,22 +1,28 @@
 import type { Metadata } from "next";
 import { PortfolioShell } from "../components/portfolio-shell";
 import { HeroIntro } from "../components/hero-intro";
-import { ContactSection, ExperienceSection } from "../components/home-sections";
+import { Career } from "../components/about/career";
+import { Recognition } from "../components/about/recognition";
+import { AboutContact } from "../components/about/about-contact";
 
 export const metadata: Metadata = {
   title: "About - Tony Xing",
-  description: "Tony Xing is a Lead Product Designer at TikTok, previously at Airbnb and CloudKitchens.",
+  description:
+    "Tony Xing is a product designer who has led design at TikTok, CloudKitchens and Airbnb — from illustration and motion graphics to design systems and TV.",
 };
 
 /**
- * About: who Tony is, where he has worked, how to reach him.
+ * About: who Tony is, where he has worked, how to reach him. Content from his
+ * LinkedIn profile (app/lib/about.ts).
  *
- * From lg the homepage is the blueprint stage alone — one screen that moves
- * sideways and does not scroll — so what used to sit under it lives here:
- * the statement (the sticker collage phones still open with), Experience and
- * Contact. One page, one scroll.
+ * The statement (the sticker collage phones also open the homepage with), then
+ * a bio whose skills you can press to light the roles that used them, a career
+ * ruler you can scrub, patents that draw themselves, and contact.
  */
 export default function About() {
+  // The month the page was built: the ruler's "now". Static page, so this is the build date.
+  const d = new Date();
+  const now = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   return (
     <PortfolioShell sidebarTheme="light" current="about">
       <div className="mx-auto w-full max-w-[1280px]">
@@ -31,8 +37,9 @@ export default function About() {
             </div>
           </div>
         </section>
-        <ExperienceSection />
-        <ContactSection />
+        <Career now={now} />
+        <Recognition />
+        <AboutContact />
       </div>
     </PortfolioShell>
   );
