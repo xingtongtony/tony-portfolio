@@ -54,6 +54,9 @@ function slotPosition(i: number): THREE.Vector3 {
 // The key light's place relative to what the camera looks at.
 const KEY_OFFSET = new THREE.Vector3(-5, 14, 7);
 const REFERENCE_KEY_DELTA = new THREE.Vector3(0, 1, -1);
+// The TV is the one figure lit by the reference studio (captured indirect
+// light, its own ground and key); find it by id, not by its place in the list.
+const REFERENCE_INDEX = Math.max(0, FIGURES.findIndex((figure) => figure.id === "tv"));
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
@@ -348,7 +351,7 @@ function Studio({ atmosphere, bounceRef, mapsRef }: StudioProps) {
 
 function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent, onBuilt, atmosphere, bounceRef, mapsRef }: SceneProps & StudioProps) {
   const figs = useMemo<BuiltFigure[]>(() => FIGURES.map((figure) => createFigure(figure, atmosphere)), [atmosphere]);
-  const ground = useMemo(() => createReferenceGround(atmosphere, figs[0].indirect!), [atmosphere, figs]);
+  const ground = useMemo(() => createReferenceGround(atmosphere, figs[REFERENCE_INDEX].indirect!), [atmosphere, figs]);
   const groundRef = useRef(ground);
   useEffect(() => () => ground.material.dispose(), [ground]);
   const constructionPlans = useMemo(() => new Map(figs.map((fig) => [fig.def.id, createConstruction(fig)] as const)), [figs]);
@@ -695,7 +698,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     const figureFoot = scratch.copy(positions[0]).addScaledVector(RIGHT, sc.pos * GAP).project(cam);
     const currentStudio = studioThemes[currentIndex];
     const nextStudio = studioThemes[nextIndex];
-    const referenceWeight = mix(currentIndex === 0 ? 1 : 0, nextIndex === 0 ? 1 : 0, blend);
+    const referenceWeight = mix(currentIndex === REFERENCE_INDEX ? 1 : 0, nextIndex === REFERENCE_INDEX ? 1 : 0, blend);
     groundRef.current.reference.value = referenceWeight;
     CONTACT_SHADOWS.value = referenceWeight;
     if (mapsRef.current) {
@@ -982,7 +985,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
     // Resolve local diffuse illumination from the real scene once the build
     // and turn settle. A capture includes neighbouring coloured surfaces and
     // their visibility; it does not add unshadowed coloured point lights.
-    const tv = figs[0];
+    const tv = figs[REFERENCE_INDEX];
     const indirectState = indirectStateRef.current;
     const tvBuilt = Object.values(tv.parts).every(part => part.progress >= 1);
     const tvActive = focusId === "tv" && referenceWeight > 0.99 && !opening;
@@ -995,7 +998,7 @@ function Stage({ focus, reducedMotion, onReady, onPainted, onSelect, onPartEvent
         indirectState.started = indirectState.captured = false;
         indirectState.mix = 0;
       } else {
-        const turnSettled = reduced || (time - swayStart.current[0] > 4.5 && Math.abs(swayRefs.current[0]?.rotation.y ?? 0) < 0.003);
+        const turnSettled = reduced || (time - swayStart.current[REFERENCE_INDEX] > 4.5 && Math.abs(swayRefs.current[REFERENCE_INDEX]?.rotation.y ?? 0) < 0.003);
         if (turnSettled && !indirectState.captured) {
           indirectState.started = true;
           indirectState.captured = indirectRef.current.step();

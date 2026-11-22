@@ -50,13 +50,13 @@ Two more that are his decisions, not style:
   height-sweep build/rewind shader and sway parent; never scale their height to
   imitate growth. `drawing: false` omits their ink and discards their unbuilt
   surfaces and shadows. Leave real clearance between freestanding objects,
-  including during the carousel's turn. FIG. 1's approved double surrounds
+  including during the carousel's turn. FIG. 2's approved double surrounds
   use a smooth satin-resin finish and reference colours rather than matte grain.
 - **Passive scenery must receive light.** Do not use strong self-emission to
   match a concept image's bright colour: it masks shadowing without lighting
   neighbouring surfaces. A room-only PMREM also cannot supply local colour
   bounce or local occlusion. Verify real shadow-map contributions and compare
-  neighbour-colour captures when adding indirect lighting. FIG. 1 uses a local
+  neighbour-colour captures when adding indirect lighting. FIG. 2 uses a local
   one-bounce irradiance volume after its build/turn settles; it is an
   approximation, not a full multi-bounce renderer.
 

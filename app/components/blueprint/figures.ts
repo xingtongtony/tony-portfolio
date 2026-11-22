@@ -387,8 +387,14 @@ function use(p: Palette) {
 const TV_SCREEN = "/portfolio/blueprints/tv-screen.jpg";
 const LUTRA_SCREEN = "/portfolio/blueprints/lutra-screen.jpg";
 // The Okou chat below its status bar (0.492 : 1), and a result deck's first slide (16 : 9).
-const OKOU_SCREEN = "/portfolio/blueprints/okou-screen.jpg";
-const OKOU_SLIDE = "/portfolio/blueprints/okou-slide.jpg";
+// Okou's avatar, printed on its tile. The rest of its interface is modelled, not printed.
+const OKOU_AVATAR = "/portfolio/blueprints/okou-avatar.jpg";
+// Three of Okou's brand textures (one tile each), printed on the blocks beside it.
+const OKOU_TEX = {
+  drop: "/portfolio/blueprints/okou-tex-drop.jpg",
+  dash: "/portfolio/blueprints/okou-tex-dash.jpg",
+  loop: "/portfolio/blueprints/okou-tex-loop.jpg",
+};
 const WISHLIST_STAYS = ["/portfolio/blueprints/wishlist-pool.jpg", "/portfolio/blueprints/wishlist-interior.jpg"];
 
 const REMOTE_FRAME = {
@@ -542,10 +548,275 @@ const SOON = "Coming soon";
 
 const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
   [
+    THEMES.apricot,
+    (c) => {
+      // The interface as objects, with no device, and in shapes rather than
+      // words. Every other figure is a device with its screen; a phone here was
+      // too small to show anything, and prints of real text read as too much
+      // writing. So Okou's parts stand on the table as solids: the avatar (a
+      // thick tile, the real artwork on its face, a bubble of three dots on
+      // its corner while it works), a task list (two done, one running), the
+      // composer in front with its amber send button, and the deck it hands
+      // back, its chart in relief. The base is round, the only one, and the
+      // blocks beside it carry Okou's textures: the one figure in the brand's
+      // full colours.
+      //
+      // Every piece faces the same way (YAW). Pieces turned towards each other
+      // read as a mistake in perspective under the stage's parallel camera.
+      const deck = 0.107;
+      const YAW = 0.1;
+      const SKY = "#B4DEF5";
+      const PINK = "#FFC6E2";
+      const BUTTER = "#F9E840";
+      const tile = { pos: [-0.5, deck, -0.78] as Vec3, rot: [-0.1, YAW, 0] as Vec3 };
+      const side = 1.04; // the avatar's squircle: corner radius 29.5% of the side
+      const top = 0.04 + side;
+      const tasks = { pos: [-0.92, deck, 0.26] as Vec3, rot: [-0.2, YAW, 0] as Vec3 };
+      // Interface greys and the app's status colours.
+      const LINE = "#DDD6CE";
+      const RUNNING = "#0084D1";
+      const MUTED = "#6B6661";
+      const tick = (x: number, y: number, z: number): ShapeDef => ({
+        k: "poly",
+        pts: ([[-0.5, 0.02], [-0.16, -0.34], [0.5, 0.32], [0.37, 0.45], [-0.16, -0.08], [-0.37, 0.15]] as [number, number][]).map(([px, py]) => [px * 0.062, py * 0.062]),
+        t: 0.012,
+        r: 0.004,
+        pos: [x, y, z],
+        color: c.white,
+      });
+      // The result card: its middle, and the deck cover set into its lower part.
+      const cardY = 0.05 + 0.472;
+      const composer = { pos: [0.2, deck, 0.98] as Vec3, rot: [-0.24, YAW, 0] as Vec3 };
+      const result = { pos: [0.88, deck, -0.4] as Vec3, rot: [-0.12, YAW, 0] as Vec3 };
+      // The composer: a pill, its send button concentric with the right end.
+      const pill: [number, number] = [1.7, 0.44];
+      const send = 0.14;
+      const sendX = pill[0] / 2 - pill[1] / 2;
+      const arrow = 0.075;
+      // Okou's mark, flat on the deck: four lobes round a hole.
+      const mark: Vec3 = [1.12, deck, 0.3];
+      const lobe = 0.105;
+      return {
+        id: "okou",
+        fig: "FIG. 1",
+        title: "Okou iOS App",
+        desc: "A native iPhone app for working with AI agents, wherever you are.",
+        href: "/work/okou-ios",
+        parts: [
+          {
+            id: "ground",
+            label: "Turntable",
+            agent: 1,
+            color: c.ground,
+            shapes: [
+              { k: "cyl", r: 1.72, h: 0.04, pos: [0, 0.02, 0], color: c.lilac, bevel: 0.016 },
+              { k: "cyl", r: 1.59, h: 0.073, pos: [0, 0.0705, 0], color: c.mist, bevel: 0.012 },
+            ],
+          },
+          {
+            id: "okou",
+            label: "Okou",
+            agent: 2,
+            color: SKY,
+            frame: tile,
+            shapes: [
+              // The block it stands in, and the tile itself.
+              { k: "box", size: [0.84, 0.09, 0.36], pos: [0, 0.045, 0], color: c.sand, bevel: 0.03 },
+              { k: "slab", size: [side, side], t: 0.2, r: side * 0.295, pos: [0, 0.04 + side / 2, 0], bevel: 0.034 },
+            ],
+          },
+          {
+            id: "face",
+            label: "Avatar",
+            agent: 3,
+            color: c.white,
+            finish: "print",
+            frame: tile,
+            shapes: [
+              { k: "slab", size: [side - 0.06, side - 0.06], t: 0.006, r: side * 0.295 - 0.03, pos: [0, 0.04 + side / 2, 0.103], map: OKOU_AVATAR },
+            ],
+          },
+          {
+            id: "bubble",
+            label: "At work",
+            agent: 0,
+            color: c.white,
+            frame: tile,
+            shapes: [
+              // A bubble on the tile's corner, the way a badge sits on an icon:
+              // half set into the tile, its three dots half set into it.
+              { k: "slab", size: [0.5, 0.33], t: 0.11, r: 0.15, pos: [0.5, top + 0.03, 0.12], bevel: 0.03 },
+              { k: "cyl", r: 0.05, h: 0.09, pos: [0.29, top - 0.19, 0.115], rot: FACE, bevel: 0.022 },
+              { k: "ball", r: 0.04, pos: [0.375, top + 0.03, 0.175], color: c.coral },
+              { k: "ball", r: 0.04, pos: [0.5, top + 0.03, 0.175], color: c.yellow },
+              { k: "ball", r: 0.04, pos: [0.625, top + 0.03, 0.175], color: "#F590C2" },
+            ],
+          },
+          {
+            id: "tasks",
+            label: "Tasks",
+            agent: 4,
+            color: c.white,
+            frame: tasks,
+            shapes: [
+              // A widget-shaped tile leaning on its prop: three rows of work.
+              { k: "box", size: [0.5, 0.2, 0.12], pos: [0, 0.1, -0.1], color: c.sand, bevel: 0.024 },
+              { k: "slab", size: [1.16, 0.56], t: 0.08, r: 0.13, pos: [0, 0.276, 0], bevel: 0.02 },
+              ...[0.62, 0.48, 0.34].map(
+                (length, i): ShapeDef => ({ k: "slab", size: [length, 0.06], t: 0.016, r: 0.03, pos: [-0.3 + length / 2, 0.436 - i * 0.16, 0.044], color: LINE }),
+              ),
+            ],
+          },
+          {
+            id: "status",
+            label: "Done, done, running",
+            agent: 0,
+            color: c.green,
+            frame: tasks,
+            shapes: [
+              ...[0, 1].flatMap((i): ShapeDef[] => [
+                { k: "cyl", r: 0.058, h: 0.03, pos: [-0.42, 0.436 - i * 0.16, 0.05], rot: FACE, bevel: 0.01 },
+                tick(-0.42, 0.436 - i * 0.16 - 0.003, 0.069),
+              ]),
+              { k: "torus", R: 0.044, tube: 0.015, pos: [-0.42, 0.116, 0.052], color: RUNNING },
+            ],
+          },
+          {
+            id: "composer",
+            label: "Composer",
+            agent: 1,
+            color: c.white,
+            frame: composer,
+            shapes: [
+              { k: "box", size: [1.0, 0.12, 0.16], pos: [0, 0.06, -0.11], color: c.sand, bevel: 0.026 },
+              { k: "slab", size: pill, t: 0.13, r: pill[1] / 2, pos: [0, pill[1] / 2 - 0.004, 0], bevel: 0.03 },
+            ],
+          },
+          {
+            id: "prompt",
+            label: "A prompt",
+            agent: 3,
+            color: c.coral,
+            frame: composer,
+            shapes: [
+              // Plus, and the line being typed.
+              { k: "box", size: [0.13, 0.026, 0.016], pos: [-sendX, pill[1] / 2 - 0.004, 0.07], bevel: 0.006 },
+              { k: "box", size: [0.026, 0.13, 0.016], pos: [-sendX, pill[1] / 2 - 0.004, 0.07], bevel: 0.006 },
+              { k: "slab", size: [0.66, 0.07], t: 0.016, r: 0.035, pos: [-0.1, pill[1] / 2 - 0.004, 0.069], color: LINE },
+            ],
+          },
+          {
+            id: "send",
+            label: "Send",
+            agent: 2,
+            color: c.yellow,
+            frame: composer,
+            shapes: [
+              { k: "cyl", r: send, h: 0.07, pos: [sendX, pill[1] / 2 - 0.004, 0.09], rot: FACE, bevel: 0.02 },
+              {
+                k: "poly",
+                pts: [
+                  [0, arrow], [0.72 * arrow, 0.22 * arrow], [0.2 * arrow, 0.22 * arrow], [0.2 * arrow, -arrow],
+                  [-0.2 * arrow, -arrow], [-0.2 * arrow, 0.22 * arrow], [-0.72 * arrow, 0.22 * arrow],
+                ],
+                t: 0.02,
+                r: 0.008,
+                pos: [sendX, pill[1] / 2 - 0.004, 0.131],
+                color: c.white,
+              },
+            ],
+          },
+          {
+            id: "result",
+            label: "A deck it made",
+            agent: 4,
+            color: c.white,
+            frame: result,
+            shapes: [
+              { k: "box", size: [0.9, 0.09, 0.3], pos: [0, 0.045, -0.02], color: c.sand, bevel: 0.03 },
+              { k: "slab", size: [1.24, 0.944], t: 0.07, r: 0.075, pos: [0, cardY, 0], bevel: 0.016 },
+            ],
+          },
+          {
+            id: "cover",
+            label: "Its cover",
+            agent: 2,
+            // Okou's blue, not the demo deck's near-black: dark marks on a dark
+            // cover ran together at this size.
+            color: c.coral,
+            frame: result,
+            shapes: [
+              { k: "slab", size: [1.16, 0.66], t: 0.02, r: 0.05, pos: [0, cardY - 0.102, 0.04] },
+              // The card's header: a file mark, a title, a line of detail.
+              { k: "slab", size: [0.1, 0.1], t: 0.014, r: 0.028, pos: [-0.5, cardY + 0.35, 0.04], color: c.yellow },
+              { k: "slab", size: [0.42, 0.06], t: 0.014, r: 0.03, pos: [-0.17, cardY + 0.385, 0.04], color: MUTED },
+              { k: "slab", size: [0.3, 0.045], t: 0.014, r: 0.0225, pos: [-0.23, cardY + 0.312, 0.04], color: LINE },
+              // On the cover: the deck's title, a subtitle, its rule.
+              { k: "slab", size: [0.46, 0.075], t: 0.014, r: 0.0375, pos: [-0.27, cardY - 0.07, 0.054], color: c.white },
+              { k: "slab", size: [0.34, 0.04], t: 0.014, r: 0.02, pos: [-0.33, cardY - 0.165, 0.054], color: SKY },
+              { k: "slab", size: [0.1, 0.024], t: 0.014, r: 0.012, pos: [-0.45, cardY - 0.24, 0.054], color: c.yellow },
+            ],
+          },
+          {
+            id: "chart",
+            label: "Its chart",
+            agent: 3,
+            color: SKY,
+            frame: result,
+            shapes: [0.2, 0.28, 0.25, 0.38].map(
+              (height, i): ShapeDef => ({
+                k: "box",
+                size: [0.07, height, 0.05],
+                pos: [0.2 + i * 0.1, cardY - 0.38 + height / 2, 0.07],
+                bevel: 0.012,
+                ...(i === 3 ? { color: c.yellow } : {}),
+              }),
+            ),
+          },
+          {
+            id: "mark",
+            label: "Mark",
+            agent: 0,
+            color: c.yellow,
+            shapes: [
+              ...([[0, -1], [0, 1], [-1, 0], [1, 0]] as const).map(
+                ([x, z]): ShapeDef => ({ k: "cyl", r: 0.125, h: 0.05, pos: [mark[0] + x * lobe, mark[1] + 0.025, mark[2] + z * lobe], bevel: 0.016 }),
+              ),
+              { k: "cyl", r: 0.13, h: 0.054, pos: [mark[0], mark[1] + 0.027, mark[2]], bevel: 0.01 },
+              // The hole shows the deck through it.
+              { k: "cyl", r: 0.066, h: 0.012, pos: [mark[0], mark[1] + 0.056, mark[2]], color: c.mist, bevel: 0.004 },
+            ],
+          },
+          // Okou's textures as printed blocks, on the floor to the right.
+          ...(
+            [
+              ["drop", "Texture · drop", SKY, OKOU_TEX.drop, 0.5, [2.2, 0, -0.12]],
+              ["dash", "Texture · dash", PINK, OKOU_TEX.dash, 0.38, [2.2, 0.5, -0.12]],
+              ["loop", "Texture · loop", BUTTER, OKOU_TEX.loop, 0.28, [1.98, 0, 0.6]],
+            ] as [string, string, string, string, number, Vec3][]
+          ).map(([id, label, color, map, size, at], i) =>
+            surround(`block-${id}`, label, 1 + (i % 3), color, at, YAW, [
+              { k: "box", size: [size, size, size], pos: [0, size / 2, 0], bevel: 0.034 },
+              // The print on the three faces the camera sees.
+              { k: "slab", size: [size - 0.07, size - 0.07], t: 0.006, r: 0.02, pos: [0, size / 2, size / 2 + 0.001], color: c.white, finish: "print", map },
+              { k: "slab", size: [size - 0.07, size - 0.07], t: 0.006, r: 0.02, pos: [size / 2 + 0.001, size / 2, 0], rot: [0, Math.PI / 2, 0], color: c.white, finish: "print", map },
+              { k: "slab", size: [size - 0.07, size - 0.07], t: 0.006, r: 0.02, pos: [0, size + 0.001, 0], rot: flat(), color: c.white, finish: "print", map },
+            ]),
+          ),
+        ],
+        callouts: [
+          { n: "102", at: [-0.86, 1.04, -0.8], to: [-1.4, 1.66, -0.92] },
+          { n: "104", at: [1.33, 0.98, -0.44], to: [1.85, 1.62, -0.8] },
+          { n: "106", at: [-0.58, 0.24, 1.06], to: [-0.75, 0.2, 1.7] },
+        ],
+      };
+    },
+  ],
+  [
     THEMES.lilac,
     (c) => ({
       id: "tv",
-      fig: "FIG. 1",
+      fig: "FIG. 2",
       title: "TikTok TV Revamp",
       desc: "A more immersive TV feed, with layered backgrounds and clearer remote focus.",
       href: "/work/tiktok-tv-visual",
@@ -950,9 +1221,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         },
       ],
       callouts: [
-        { n: "102", at: [1.02, 2.1, -0.08], to: [1.7, 2.45, 0] },
-        { n: "104", at: [0.98, 0.74, 0.1], to: [1.9, 1.0, 0.6] },
-        { n: "106", at: [-1.26, 0.45, 0.25], to: [-2.0, 0.3, 0.75] },
+        { n: "202", at: [1.02, 2.1, -0.08], to: [1.7, 2.45, 0] },
+        { n: "204", at: [0.98, 0.74, 0.1], to: [1.9, 1.0, 0.6] },
+        { n: "206", at: [-1.26, 0.45, 0.25], to: [-2.0, 0.3, 0.75] },
       ],
     }),
   ],
@@ -960,7 +1231,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     THEMES.peach,
     (c) => ({
       id: "lutra",
-      fig: "FIG. 2",
+      fig: "FIG. 3",
       title: "CloudKitchens Lutra App",
       desc: "An operating dashboard for restaurants, from live orders to recommended coupons.",
       href: "/work/cloudkitchens",
@@ -1275,9 +1546,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
 ]),
       ],
       callouts: [
-        { n: "202", at: [-0.62, 1.56, -0.14], to: [-1.5, 2.0, -0.2] },
-        { n: "204", at: [0.92, 1.15, 0.28], to: [1.65, 1.6, 0.2] },
-        { n: "206", at: [1.14, 0.42, 0.6], to: [1.85, 0.6, 0.95] },
+        { n: "302", at: [-0.62, 1.56, -0.14], to: [-1.5, 2.0, -0.2] },
+        { n: "304", at: [0.92, 1.15, 0.28], to: [1.65, 1.6, 0.2] },
+        { n: "306", at: [1.14, 0.42, 0.6], to: [1.85, 0.6, 0.95] },
       ],
     }),
   ],
@@ -1285,7 +1556,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     THEMES.butter,
     (c) => ({
       id: "restructure",
-      fig: "FIG. 3",
+      fig: "FIG. 4",
       title: "TikTok Web Restructure",
       desc: "A video-first browser mode that makes every post discoverable and shareable.",
       href: "/work/tiktok-restructure",
@@ -1371,9 +1642,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         ]),
       ],
       callouts: [
-        { n: "302", at: [-1.27, 1.82, -0.42], to: [-1.85, 2.14, -0.35] },
-        { n: "304", at: [1.15, 1.26, -0.35], to: [1.9, 1.61, -0.15] },
-        { n: "306", at: [0.81, 0.19, 0.65], to: [1.68, 0.28, 0.99] },
+        { n: "402", at: [-1.27, 1.82, -0.42], to: [-1.85, 2.14, -0.35] },
+        { n: "404", at: [1.15, 1.26, -0.35], to: [1.9, 1.61, -0.15] },
+        { n: "406", at: [0.81, 0.19, 0.65], to: [1.68, 0.28, 0.99] },
       ],
     }),
   ],
@@ -1384,7 +1655,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
       const phone = { pos: [-0.96, 0.109, 0.48] as Vec3, rot: [-0.16, 0.27, 0] as Vec3 };
       return {
         id: "multi",
-        fig: "FIG. 4",
+        fig: "FIG. 5",
         title: "TikTok Multi-Platform",
         desc: "An iPad experience that keeps videos, navigation and conversation in view.",
         href: "/work/tiktok-multi-platform",
@@ -1483,9 +1754,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ]),
         ],
         callouts: [
-          { n: "402", at: [-0.97, 1.42, -0.21], to: [-1.64, 1.81, -0.24] },
-          { n: "404", at: [1.14, 1.04, -0.43], to: [1.91, 1.32, -0.25] },
-          { n: "406", at: [-1.17, 0.56, 0.51], to: [-1.84, 0.56, 0.73] },
+          { n: "502", at: [-0.97, 1.42, -0.21], to: [-1.64, 1.81, -0.24] },
+          { n: "504", at: [1.14, 1.04, -0.43], to: [1.91, 1.32, -0.25] },
+          { n: "506", at: [-1.17, 0.56, 0.51], to: [-1.84, 0.56, 0.73] },
         ],
       };
     },
@@ -1494,7 +1765,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     THEMES.blue,
     (c) => ({
       id: "ds",
-      fig: "FIG. 5",
+      fig: "FIG. 6",
       title: "TikTok Design System",
       desc: "Reusable component variants, with adaptive layouts and shared motion rules.",
       presentation: { elevation: 0.70, scale: 1.11 },
@@ -1753,9 +2024,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         ]),
       ],
       callouts: [
-        { n: "502", at: [-1.21, 0.25, 0.16], to: [-1.91, 0.38, 0.5] },
-        { n: "504", at: [1.27, 0.22, -0.5], to: [1.2, 0.9, -1.35] },
-        { n: "506", at: [-0.2, 0.24, -0.84], to: [-0.1, 0.95, -1.2] },
+        { n: "602", at: [-1.21, 0.25, 0.16], to: [-1.91, 0.38, 0.5] },
+        { n: "604", at: [1.27, 0.22, -0.5], to: [1.2, 0.9, -1.35] },
+        { n: "606", at: [-0.2, 0.24, -0.84], to: [-0.1, 0.95, -1.2] },
       ],
     }),
   ],
@@ -1763,7 +2034,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     THEMES.teal,
     (c) => ({
       id: "tikcode",
-      fig: "FIG. 6",
+      fig: "FIG. 7",
       title: "TikCode Redesign",
       desc: "A new shareable code for TikTok profiles, sounds, hashtags and effects.",
       href: "/work/tiktok-tikcode",
@@ -1857,9 +2128,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         ]),
       ],
       callouts: [
-        { n: "602", at: [-0.94, 1.48, -0.04], to: [-1.66, 1.83, 0.03] },
-        { n: "604", at: [1.07, 1.0, 0.38], to: [1.82, 1.22, 0.54] },
-        { n: "606", at: [-1.1, 0.18, 0.7], to: [-1.82, 0.27, 1.06] },
+        { n: "702", at: [-0.94, 1.48, -0.04], to: [-1.66, 1.83, 0.03] },
+        { n: "704", at: [1.07, 1.0, 0.38], to: [1.82, 1.22, 0.54] },
+        { n: "706", at: [-1.1, 0.18, 0.7], to: [-1.82, 0.27, 1.06] },
       ],
     }),
   ],
@@ -1867,7 +2138,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     THEMES.mint,
     (c) => ({
       id: "wishlist",
-      fig: "FIG. 7",
+      fig: "FIG. 8",
       title: "Airbnb Wishlist",
       desc: "Compare saved stays, share a shortlist and decide together where to book.",
       href: "/work/airbnb-wishlist",
@@ -2139,148 +2410,11 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         ]),
       ],
       callouts: [
-        { n: "702", at: [-1.05, 0.98, 0.24], to: [-0.75, 2.0, -0.35] },
-        { n: "704", at: [1.02, 0.86, -0.54], to: [1.77, 1.3, -0.36] },
-        { n: "706", at: [0.7, 0.45, 0.59], to: [1.66, 0.5, 0.94] },
+        { n: "802", at: [-1.05, 0.98, 0.24], to: [-0.75, 2.0, -0.35] },
+        { n: "804", at: [1.02, 0.86, -0.54], to: [1.77, 1.3, -0.36] },
+        { n: "806", at: [0.7, 0.45, 0.59], to: [1.66, 0.5, 0.94] },
       ],
     }),
-  ],
-  [
-    THEMES.apricot,
-    (c) => {
-      const deck = 0.107;
-      // The iPhone leans back on its stand; body and screen share this frame.
-      // Screen = the app below its status bar at its own aspect; body = screen
-      // + 2 × bezel, corners concentric (screen radius = body radius − bezel).
-      const phone = { pos: [0.02, deck, 0.12] as Vec3, rot: [-0.27, 0, 0] as Vec3 };
-      const bezel = 0.028;
-      const screenW = 0.6;
-      const screenH = screenW / 0.492;
-      const bodyW = screenW + 2 * bezel;
-      const bodyH = screenH + 2 * bezel;
-      const bodyR = 0.12;
-      const bodyT = 0.07;
-      const mid = bodyH / 2 + 0.01;
-      // Okou's avatar as a little bust: amber face, blue hair with a bun, a pink
-      // nose and a green striped collar. Square to the viewer.
-      const bust = { x: -0.98, z: 0.24 };
-      // The camera looks down on the bust, so the hair sits high enough to
-      // leave the face, eyes and nose in view.
-      const headR = 0.25;
-      const headY = deck + 0.37;
-      const capY = headY + 0.11;
-      const capR = 0.255;
-      const eyeY = headY - 0.015;
-      const eyeZ = bust.z + Math.sqrt(headR ** 2 - 0.08 ** 2 - 0.015 ** 2) + 0.008;
-      const noseZ = bust.z + Math.sqrt(headR ** 2 - 0.065 ** 2) + 0.014;
-      // An easel holding a result: the first slide of a deck the agent made.
-      const easel = { pos: [0.98, deck, -0.04] as Vec3, rot: [0, -0.32, 0] as Vec3 };
-      const tilt: Vec3 = [-0.1, 0, 0];
-      return {
-        id: "okou",
-        fig: "FIG. 8",
-        title: "Okou iOS App",
-        desc: "A native iPhone app for working with AI agents, wherever you are.",
-        href: "/work/okou-ios",
-        parts: [
-          { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
-          {
-            id: "stand",
-            label: "Stand",
-            agent: 0,
-            color: c.sand,
-            shapes: [
-              // A block the phone leans on, and a lip in front of its foot.
-              { k: "box", size: [0.5, 0.38, 0.24], pos: [0.02, deck + 0.19, -0.13], bevel: 0.03 },
-              { k: "box", size: [0.58, 0.05, 0.1], pos: [0.02, deck + 0.025, 0.205], bevel: 0.018 },
-              { k: "box", size: [0.3, 0.012, 0.03], pos: [0.02, deck + 0.054, 0.235], color: c.lilac, bevel: 0.005 },
-            ],
-          },
-          {
-            id: "phone",
-            label: "iPhone",
-            agent: 4,
-            color: "#1C1C1E",
-            frame: phone,
-            shapes: [
-              { k: "slab", size: [bodyW, bodyH], t: bodyT, r: bodyR, pos: [0, mid, 0], bevel: 0.02 },
-              // Side buttons: power on the right, volume and action on the left.
-              { k: "box", size: [0.014, 0.16, 0.034], pos: [bodyW / 2 + 0.005, mid + 0.24, 0], color: "#2C2C2E", bevel: 0.006 },
-              { k: "box", size: [0.014, 0.09, 0.034], pos: [-bodyW / 2 - 0.005, mid + 0.3, 0], color: "#2C2C2E", bevel: 0.006 },
-              { k: "box", size: [0.014, 0.09, 0.034], pos: [-bodyW / 2 - 0.005, mid + 0.18, 0], color: "#2C2C2E", bevel: 0.006 },
-            ],
-          },
-          {
-            id: "app",
-            label: "Okou chat",
-            agent: 3,
-            color: "#050505",
-            finish: "screen",
-            frame: phone,
-            shapes: [
-              { k: "slab", size: [screenW, screenH], t: 0.006, r: bodyR - bezel, pos: [0, mid, bodyT / 2 + 0.007], map: OKOU_SCREEN },
-            ],
-          },
-          {
-            id: "okou",
-            label: "Okou",
-            agent: 2,
-            color: c.yellow,
-            shapes: [
-              { k: "cyl", r: 0.21, h: 0.05, pos: [bust.x, deck + 0.025, bust.z], color: c.cream, bevel: 0.02 },
-              { k: "cyl", r: 0.155, h: 0.09, pos: [bust.x, deck + 0.09, bust.z], color: c.green, bevel: 0.03 },
-              // Scarf stripes, evenly spaced across its front.
-              ...row(5, [0.045, 0, 0], {
-                k: "box",
-                size: [0.012, 0.05, 0.012],
-                pos: [bust.x - 0.09, deck + 0.09, bust.z + 0.152],
-                color: c.white,
-                bevel: 0.005,
-              }),
-              { k: "ball", r: headR, pos: [bust.x, headY, bust.z] },
-              { k: "ball", r: 0.058, pos: [bust.x - 0.245, headY - 0.02, bust.z] },
-              { k: "ball", r: 0.058, pos: [bust.x + 0.245, headY - 0.02, bust.z] },
-              { k: "ball", r: capR, pos: [bust.x, capY, bust.z], color: c.coral },
-              { k: "torus", R: 0.246, tube: 0.034, pos: [bust.x, headY + 0.05, bust.z], rot: flat(), color: c.coral },
-              { k: "ball", r: 0.07, pos: [bust.x, capY + capR + 0.035, bust.z], color: c.coral },
-              { k: "ball", r: 0.024, pos: [bust.x - 0.08, eyeY, eyeZ], color: c.inky },
-              { k: "ball", r: 0.024, pos: [bust.x + 0.08, eyeY, eyeZ], color: c.inky },
-              { k: "ball", r: 0.032, pos: [bust.x, headY - 0.065, noseZ], color: "#FFC6E2" },
-            ],
-          },
-          {
-            id: "easel",
-            label: "Result deck",
-            agent: 1,
-            color: c.plum,
-            frame: easel,
-            shapes: [
-              { k: "box", size: [0.045, 1.02, 0.045], pos: [-0.27, 0.5, 0.02], rot: tilt, bevel: 0.012 },
-              { k: "box", size: [0.045, 1.02, 0.045], pos: [0.27, 0.5, 0.02], rot: tilt, bevel: 0.012 },
-              { k: "box", size: [0.045, 0.98, 0.045], pos: [0, 0.47, -0.22], rot: [0.26, 0, 0], bevel: 0.012 },
-              { k: "box", size: [0.74, 0.045, 0.1], pos: [0, 0.33, 0.07], bevel: 0.014 },
-              { k: "slab", size: [0.7, 0.44], t: 0.03, r: 0.03, pos: [0, 0.6, 0.06], rot: tilt, color: c.cream, bevel: 0.01 },
-            ],
-          },
-          {
-            id: "slide",
-            label: "First slide",
-            agent: 0,
-            color: c.white,
-            finish: "print",
-            frame: easel,
-            shapes: [
-              { k: "slab", size: [0.62, 0.349], t: 0.006, r: 0.016, pos: [0, 0.6, 0.083], rot: tilt, map: OKOU_SLIDE },
-            ],
-          },
-        ],
-        callouts: [
-          { n: "802", at: [0.3, 1.24, -0.16], to: [0.85, 1.85, -0.45] },
-          { n: "804", at: [-0.98, 0.95, 0.24], to: [-1.65, 1.5, 0.35] },
-          { n: "806", at: [1.08, 0.8, 0.02], to: [1.8, 1.2, 0.45] },
-        ],
-      };
-    },
   ],
   [
     THEMES.mono,
