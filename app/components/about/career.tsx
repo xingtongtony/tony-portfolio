@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { ArrowUpRight, Plus } from "lucide-react";
 import { EDUCATION, ROLES, type Craft } from "../../lib/about";
+import { play } from "../../lib/sound";
 
 /**
  * The About page's middle: a bio whose skills you can press, and a career
@@ -171,7 +172,10 @@ export function Career({ now }: { now: string }) {
             typeof part === "string" ? (
               <span key={i}>{part}</span>
             ) : (
-              <CraftWord key={i} active={craft === part.craft} dimmed={!!craft && craft !== part.craft} onToggle={() => setCraft((c) => (c === part.craft ? null : part.craft))}>
+              <CraftWord key={i} active={craft === part.craft} dimmed={!!craft && craft !== part.craft} onToggle={() => {
+                play(craft === part.craft ? "toggle-off" : "toggle-on");
+                setCraft((c) => (c === part.craft ? null : part.craft));
+              }}>
                 {part.word}
               </CraftWord>
             ),
@@ -215,14 +219,15 @@ export function Career({ now }: { now: string }) {
                   dimmed={!matches(e)}
                   open={open.has(e.key)}
                   onHot={(on) => setHot(on ? [e.key] : [])}
-                  onToggle={() =>
+                  onToggle={() => {
+                    play("click");
                     setOpen((s) => {
                       const next = new Set(s);
                       if (next.has(e.key)) next.delete(e.key);
                       else next.add(e.key);
                       return next;
-                    })
-                  }
+                    });
+                  }}
                 />
               </li>
             );
@@ -297,9 +302,21 @@ function Ruler({
     return work.length ? work : here;
   };
 
+  // Sound while scrubbing: a detent at every year, a note on reaching another role.
+  const heard = useRef<{ year: number | null; keys: string }>({ year: null, keys: "" });
   const scrubTo = (m: number | null) => {
     setScrub(m);
-    setHot(m === null ? [] : at(m).map((e) => e.key));
+    const here = m === null ? [] : at(m);
+    setHot(here.map((e) => e.key));
+    if (m === null) {
+      heard.current = { year: null, keys: "" };
+      return;
+    }
+    const year = Math.floor(m / 12);
+    const keys = here.map((e) => e.key).join();
+    if (keys && keys !== heard.current.keys) play("blip", { step: entries.findIndex((e) => e.key === here[0].key) });
+    else if (heard.current.year !== null && year !== heard.current.year) play("tick");
+    heard.current = { year, keys };
   };
   const fromPointer = (ev: PointerEvent<HTMLDivElement>) => {
     const r = box.current!.getBoundingClientRect();

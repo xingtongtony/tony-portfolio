@@ -13,6 +13,7 @@
 // the page, and CSS (globals.css) shows one of them. React is only asked
 // whether the stage is worth mounting, and which button is pressed.
 
+import { play } from "./sound";
 import { useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { HOME_VIEW_KEY as KEY } from "./home-view-key";
@@ -89,6 +90,7 @@ type DocVT = Document & { startViewTransition?: (update: () => void) => ViewTran
  */
 export function switchHomeView(view: HomeView) {
   if (getHomeView() === view) return;
+  play(view === "cards" ? "toggle-on" : "toggle-off");
   const apply = () => flushSync(() => setHomeView(view));
   const start = (document as DocVT).startViewTransition;
   if (typeof start !== "function") return apply();

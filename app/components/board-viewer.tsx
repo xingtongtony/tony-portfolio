@@ -16,6 +16,7 @@ import {
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Maximize2, Minus, Plus, X } from "lucide-react";
+import { play } from "../lib/sound";
 
 /**
  * Design boards a reader can open full screen.
@@ -42,11 +43,13 @@ export function BoardGallery({ boards, children }: { boards: BoardImage[]; child
       const i = boards.findIndex((board) => board.src === src);
       if (i < 0) return;
       opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      play("whoosh", { dir: 1 });
       setIndex(i);
     },
     [boards],
   );
   const close = useCallback(() => {
+    play("whoosh", { dir: -1 });
     setIndex(null);
     opener.current?.focus();
   }, []);

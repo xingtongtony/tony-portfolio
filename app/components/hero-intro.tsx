@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { play } from "../lib/sound";
 
 /**
  * Hero — dramatic mixed-weight statement with floating color tags.
@@ -232,6 +233,7 @@ export function HeroIntro({ layout = "wide" }: { layout?: Layout }) {
 
   // Replay the "10+" gradient flash (hover / tap) by restarting its animation.
   const replayGrad = () => {
+    play("shimmer");
     const el = gradRef.current;
     if (!el) return;
     el.style.animation = "none";

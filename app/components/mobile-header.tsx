@@ -1,5 +1,6 @@
 "use client";
 
+import { SoundToggle } from "./sound-toggle";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -136,6 +137,8 @@ export function MobileHeader({ theme }: { theme: ShellTheme }) {
           <Link href="/" className={`-m-2 block p-2 ${theme.logo}`} aria-label="Tony Xing">
             <TonyLogo />
           </Link>
+          <div className="flex items-center gap-2">
+          <SoundToggle label={false} className={`size-9 justify-center ${theme.nav}`} />
           <button
             ref={menuRef}
             type="button"
@@ -147,6 +150,7 @@ export function MobileHeader({ theme }: { theme: ShellTheme }) {
             <span className="availability-dot" aria-hidden="true" />
             Menu
           </button>
+          </div>
         </div>
       </header>
 

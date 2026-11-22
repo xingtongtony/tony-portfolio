@@ -3,6 +3,7 @@
 import { useRef, useState, type ReactNode, type PointerEvent } from "react";
 import { ArrowUpRight, Check, Copy } from "lucide-react";
 import { CV_HREF, EMAIL_HREF, LINKEDIN_HREF } from "../../lib/site-links";
+import { play } from "../../lib/sound";
 
 /**
  * Contact for the About page. "Copy email" puts the address on the clipboard
@@ -42,6 +43,7 @@ export function AboutContact() {
     try {
       await navigator.clipboard.writeText(EMAIL);
       setCopied(true);
+      play("success");
       window.setTimeout(() => setCopied(false), 2200);
     } catch {
       window.location.href = EMAIL_HREF;

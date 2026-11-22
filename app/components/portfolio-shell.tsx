@@ -1,3 +1,4 @@
+import { SoundToggle } from "./sound-toggle";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
@@ -162,7 +163,10 @@ export function PortfolioShell({
               </a>
             ))}
           </div>
-          <p className={`text-[11px] leading-5 ${theme.copyright}`}>© 2026 Tony Xing</p>
+          <div className="flex items-center justify-between gap-4">
+            <p className={`text-[11px] leading-5 ${theme.copyright}`}>© 2026 Tony Xing</p>
+            <SoundToggle className={`-my-1 px-2 py-1 ${theme.nav} ${theme.navHover}`} />
+          </div>
         </div>
       </aside>
 

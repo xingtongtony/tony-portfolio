@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import { PROJECTS } from "../lib/projects";
 import { STILLS, STILL_VERSION } from "../lib/stage-stills";
 import { WorkGrid } from "./home-cards";
+import { play } from "../lib/sound";
 
 /**
  * The homepage's Work on phones and tablets, where the 3D stage is not loaded.
@@ -39,7 +40,10 @@ export function HomeMobileWork() {
               role="tab"
               aria-selected={view === v}
               aria-controls={`work-${v}`}
-              onClick={() => setView(v)}
+              onClick={() => {
+                if (v !== view) play(v === "cards" ? "toggle-on" : "toggle-off");
+                setView(v);
+              }}
               className={`rounded-full px-4 py-2 capitalize transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
                 view === v ? "bg-white text-black shadow-[0_1px_3px_rgba(0,0,0,0.12)]" : "text-black/50"
               }`}
@@ -62,6 +66,7 @@ export function HomeMobileWork() {
 function Carousel() {
   const track = useRef<HTMLOListElement>(null);
   const [index, setIndex] = useState(0);
+  const shown = useRef(0); // the card in front, for the snap's tick
   const [landed, setLanded] = useState<Set<number>>(() => new Set([0]));
 
   // Which card is in front, and which have been seen (they land once).
@@ -73,6 +78,10 @@ function Carousel() {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           const i = Number((entry.target as HTMLElement).dataset.i);
+          if (shown.current !== i) {
+            shown.current = i;
+            play("tick");
+          }
           setIndex(i);
           setLanded((s) => (s.has(i) ? s : new Set(s).add(i)));
         }

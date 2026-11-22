@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEv
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { DESIGN_PATENT_TOTAL, HONORS, PATENTS, type Patent } from "../../lib/about";
+import { gesture, play } from "../../lib/sound";
 
 /**
  * Recognition: 325 design patents as 325 dots, the five patents that can be
@@ -44,7 +45,18 @@ function useInView<T extends Element>(threshold = 0.3) {
 }
 
 export function Recognition() {
-  const [active, setActive] = useState(PATENTS[0].id);
+  const [active, setActiveState] = useState(PATENTS[0].id);
+  // Choosing another patent by click or key: a click, and the pencil while its
+  // plate draws itself. Pointing (hover) changes it silently, so sweeping the
+  // pointer over the list does not rattle.
+  const setActive = (id: string, loud = false) => {
+    if (id === active) return;
+    if (loud) {
+      play("click");
+      gesture("pen", 0.85);
+    }
+    setActiveState(id);
+  };
   const current = PATENTS.find((p) => p.id === active)!;
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -67,7 +79,7 @@ export function Recognition() {
     if (ev.key === "End") next = n - 1;
     if (next >= 0) {
       ev.preventDefault();
-      setActive(PATENTS[next].id);
+      setActive(PATENTS[next].id, true);
       tabs.current[next]?.focus();
     }
   };
@@ -109,7 +121,7 @@ export function Recognition() {
                   aria-controls="patent-plate"
                   tabIndex={on ? 0 : -1}
                   onClick={() => {
-                    setActive(p.id);
+                    setActive(p.id, true);
                     showPlate();
                   }}
                   onPointerEnter={(ev) => ev.pointerType === "mouse" && setActive(p.id)}
@@ -155,7 +167,7 @@ export function Recognition() {
   );
 }
 
-function DotField({ active, onPick }: { active: string; onPick: (id: string) => void }) {
+function DotField({ active, onPick }: { active: string; onPick: (id: string, loud?: boolean) => void }) {
   const [ref, seen] = useInView<HTMLDivElement>(0.25);
   const byIndex = new Map(Object.entries(LISTED_AT).map(([id, i]) => [i, id]));
   return (
@@ -180,7 +192,7 @@ function DotField({ active, onPick }: { active: string; onPick: (id: string) => 
               type="button"
               data-dot
               style={{ ...d, background: ACCENT }}
-              onClick={() => onPick(id)}
+              onClick={() => onPick(id, true)}
               onPointerEnter={(ev) => ev.pointerType === "mouse" && onPick(id)}
               aria-label={`${p.number}, ${p.name}`}
               title={p.number}

@@ -10,7 +10,8 @@ import { AGENTS, FIGURES } from "./figures";
 import { LOADER_ART } from "./loader-art";
 import { getGreeting } from "../hero-intro";
 import { PROJECTS } from "../../lib/projects";
-import { constructionTiming } from "./construction-timing";
+import { constructionChoice, constructionTiming, type ConstructionKind } from "./construction-timing";
+import { gesture, play } from "../../lib/sound";
 
 // The navigation panel is this stage's index, from its own short list (it
 // must not pull the figures' geometry into every page): same ids, same order.
@@ -47,6 +48,16 @@ function planBuild(figId: string, instant: boolean): BuildItem[] {
     return { figId, partId: part.id, label: part.label, agent: part.agent, tGo, tDraw, tStart, tEnd, started: false, ended: false };
   });
 }
+
+/** The gesture an agent makes for a part — what it sounds like while drawing. */
+function gestureOf(figId: string, partId: string): ConstructionKind {
+  if (figId === "tv") return partId.startsWith("focus-") ? "pen" : "drag";
+  const part = FIGURES.find((f) => f.id === figId)?.parts.find((p) => p.id === partId);
+  return (part && constructionChoice(part)?.kind) || "drag";
+}
+
+/** Agents work at different spots on the stage: spread their sounds a little left and right. */
+const agentPan = (agent: number) => ((agent % 3) - 1) * 0.35;
 
 /** A schedule played backwards from `from` seconds; a whole one takes REWIND seconds. */
 function rewindFrom(figId: string, items: BuildItem[], from: number): Rewind {
@@ -179,6 +190,11 @@ export function BlueprintStage() {
       const eng = engine;
       if (!ready) return;
       const at = now();
+      // Moving along the row: a whoosh the way the row moves.
+      if (eng.focus && eng.focus !== figId) {
+        const from = FIGURES.findIndex((f) => f.id === eng.focus);
+        play("whoosh", { dir: FIGURES.findIndex((f) => f.id === figId) > from ? 1 : -1 });
+      }
       // The figure that was being built is left part-way: back it goes from there.
       if (eng.build && eng.build.figId !== figId) {
         const left = eng.build;
@@ -227,6 +243,7 @@ export function BlueprintStage() {
   const togglePause = () => {
     const b = engine.build;
     if (!b) return;
+    play("click");
     if (b.paused) {
       b.t0 += now() - b.pausedAt;
       b.paused = false;
@@ -238,6 +255,12 @@ export function BlueprintStage() {
   };
 
   const onPartEvent = useCallback((type: "start" | "end", item: BuildItem) => {
+    // Sound: the agent's gesture while it draws, then the part settling as clay.
+    if (type === "start") gesture(gestureOf(item.figId, item.partId), item.tStart - (item.tDraw ?? item.tStart) || 0.4, agentPan(item.agent));
+    else {
+      const step = FIGURES.find((f) => f.id === item.figId)?.parts.findIndex((p) => p.id === item.partId) ?? 0;
+      play("pop", { step, pan: agentPan(item.agent) });
+    }
     setLog((lines) => {
       if (type === "start") return [...lines, { partId: item.partId, agent: item.agent, label: item.label, done: false }];
       return lines.map((l) => (l.partId === item.partId ? { ...l, done: true } : l));
@@ -245,6 +268,7 @@ export function BlueprintStage() {
   }, []);
 
   const onBuilt = useCallback((figId: string, seconds: number) => {
+    play("chime");
     setBuilt((b) => ({ ...b, [figId]: seconds }));
     setBuilding(null);
     setPaused(false);
