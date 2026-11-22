@@ -320,6 +320,22 @@ export const THEMES = {
     green: "#9CCB9B",
     white: "#FFFFFF",
   },
+  // Okou's own warm white and amber. The accents are its avatar's: the blue
+  // hair and the amber face (Okou's brand stop, #ffa500).
+  apricot: {
+    ground: "#F6E4CC",
+    mist: "#FBF1E4",
+    lilac: "#EFCB9C",
+    plum: "#9A5A1E",
+    inky: "#4A2A10",
+    cream: "#FFF9F1",
+    sand: "#EAD6BD",
+    coral: "#2F6BDB",
+    yellow: "#FFA500",
+    blue: "#B8DCF4",
+    green: "#4DB96E",
+    white: "#FFFFFF",
+  },
   // Work whose case study is not written yet: the same roles in greys, so it
   // reads as "not open yet" beside the coloured ones.
   mono: {
@@ -370,6 +386,9 @@ function use(p: Palette) {
 
 const TV_SCREEN = "/portfolio/blueprints/tv-screen.jpg";
 const LUTRA_SCREEN = "/portfolio/blueprints/lutra-screen.jpg";
+// The Okou chat below its status bar (0.492 : 1), and a result deck's first slide (16 : 9).
+const OKOU_SCREEN = "/portfolio/blueprints/okou-screen.jpg";
+const OKOU_SLIDE = "/portfolio/blueprints/okou-slide.jpg";
 const WISHLIST_STAYS = ["/portfolio/blueprints/wishlist-pool.jpg", "/portfolio/blueprints/wishlist-interior.jpg"];
 
 const REMOTE_FRAME = {
@@ -2127,12 +2146,149 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     }),
   ],
   [
+    THEMES.apricot,
+    (c) => {
+      const deck = 0.107;
+      // The iPhone leans back on its stand; body and screen share this frame.
+      // Screen = the app below its status bar at its own aspect; body = screen
+      // + 2 × bezel, corners concentric (screen radius = body radius − bezel).
+      const phone = { pos: [0.02, deck, 0.12] as Vec3, rot: [-0.27, 0, 0] as Vec3 };
+      const bezel = 0.028;
+      const screenW = 0.6;
+      const screenH = screenW / 0.492;
+      const bodyW = screenW + 2 * bezel;
+      const bodyH = screenH + 2 * bezel;
+      const bodyR = 0.12;
+      const bodyT = 0.07;
+      const mid = bodyH / 2 + 0.01;
+      // Okou's avatar as a little bust: amber face, blue hair with a bun, a pink
+      // nose and a green striped collar. Square to the viewer.
+      const bust = { x: -0.98, z: 0.24 };
+      // The camera looks down on the bust, so the hair sits high enough to
+      // leave the face, eyes and nose in view.
+      const headR = 0.25;
+      const headY = deck + 0.37;
+      const capY = headY + 0.11;
+      const capR = 0.255;
+      const eyeY = headY - 0.015;
+      const eyeZ = bust.z + Math.sqrt(headR ** 2 - 0.08 ** 2 - 0.015 ** 2) + 0.008;
+      const noseZ = bust.z + Math.sqrt(headR ** 2 - 0.065 ** 2) + 0.014;
+      // An easel holding a result: the first slide of a deck the agent made.
+      const easel = { pos: [0.98, deck, -0.04] as Vec3, rot: [0, -0.32, 0] as Vec3 };
+      const tilt: Vec3 = [-0.1, 0, 0];
+      return {
+        id: "okou",
+        fig: "FIG. 8",
+        title: "Okou iOS App",
+        desc: "A native iPhone app for working with AI agents, wherever you are.",
+        href: "/work/okou-ios",
+        parts: [
+          { id: "ground", label: "Ground", agent: 1, color: c.ground, shapes: plinth(c) },
+          {
+            id: "stand",
+            label: "Stand",
+            agent: 0,
+            color: c.sand,
+            shapes: [
+              // A block the phone leans on, and a lip in front of its foot.
+              { k: "box", size: [0.5, 0.38, 0.24], pos: [0.02, deck + 0.19, -0.13], bevel: 0.03 },
+              { k: "box", size: [0.58, 0.05, 0.1], pos: [0.02, deck + 0.025, 0.205], bevel: 0.018 },
+              { k: "box", size: [0.3, 0.012, 0.03], pos: [0.02, deck + 0.054, 0.235], color: c.lilac, bevel: 0.005 },
+            ],
+          },
+          {
+            id: "phone",
+            label: "iPhone",
+            agent: 4,
+            color: "#1C1C1E",
+            frame: phone,
+            shapes: [
+              { k: "slab", size: [bodyW, bodyH], t: bodyT, r: bodyR, pos: [0, mid, 0], bevel: 0.02 },
+              // Side buttons: power on the right, volume and action on the left.
+              { k: "box", size: [0.014, 0.16, 0.034], pos: [bodyW / 2 + 0.005, mid + 0.24, 0], color: "#2C2C2E", bevel: 0.006 },
+              { k: "box", size: [0.014, 0.09, 0.034], pos: [-bodyW / 2 - 0.005, mid + 0.3, 0], color: "#2C2C2E", bevel: 0.006 },
+              { k: "box", size: [0.014, 0.09, 0.034], pos: [-bodyW / 2 - 0.005, mid + 0.18, 0], color: "#2C2C2E", bevel: 0.006 },
+            ],
+          },
+          {
+            id: "app",
+            label: "Okou chat",
+            agent: 3,
+            color: "#050505",
+            finish: "screen",
+            frame: phone,
+            shapes: [
+              { k: "slab", size: [screenW, screenH], t: 0.006, r: bodyR - bezel, pos: [0, mid, bodyT / 2 + 0.007], map: OKOU_SCREEN },
+            ],
+          },
+          {
+            id: "okou",
+            label: "Okou",
+            agent: 2,
+            color: c.yellow,
+            shapes: [
+              { k: "cyl", r: 0.21, h: 0.05, pos: [bust.x, deck + 0.025, bust.z], color: c.cream, bevel: 0.02 },
+              { k: "cyl", r: 0.155, h: 0.09, pos: [bust.x, deck + 0.09, bust.z], color: c.green, bevel: 0.03 },
+              // Scarf stripes, evenly spaced across its front.
+              ...row(5, [0.045, 0, 0], {
+                k: "box",
+                size: [0.012, 0.05, 0.012],
+                pos: [bust.x - 0.09, deck + 0.09, bust.z + 0.152],
+                color: c.white,
+                bevel: 0.005,
+              }),
+              { k: "ball", r: headR, pos: [bust.x, headY, bust.z] },
+              { k: "ball", r: 0.058, pos: [bust.x - 0.245, headY - 0.02, bust.z] },
+              { k: "ball", r: 0.058, pos: [bust.x + 0.245, headY - 0.02, bust.z] },
+              { k: "ball", r: capR, pos: [bust.x, capY, bust.z], color: c.coral },
+              { k: "torus", R: 0.246, tube: 0.034, pos: [bust.x, headY + 0.05, bust.z], rot: flat(), color: c.coral },
+              { k: "ball", r: 0.07, pos: [bust.x, capY + capR + 0.035, bust.z], color: c.coral },
+              { k: "ball", r: 0.024, pos: [bust.x - 0.08, eyeY, eyeZ], color: c.inky },
+              { k: "ball", r: 0.024, pos: [bust.x + 0.08, eyeY, eyeZ], color: c.inky },
+              { k: "ball", r: 0.032, pos: [bust.x, headY - 0.065, noseZ], color: "#FFC6E2" },
+            ],
+          },
+          {
+            id: "easel",
+            label: "Result deck",
+            agent: 1,
+            color: c.plum,
+            frame: easel,
+            shapes: [
+              { k: "box", size: [0.045, 1.02, 0.045], pos: [-0.27, 0.5, 0.02], rot: tilt, bevel: 0.012 },
+              { k: "box", size: [0.045, 1.02, 0.045], pos: [0.27, 0.5, 0.02], rot: tilt, bevel: 0.012 },
+              { k: "box", size: [0.045, 0.98, 0.045], pos: [0, 0.47, -0.22], rot: [0.26, 0, 0], bevel: 0.012 },
+              { k: "box", size: [0.74, 0.045, 0.1], pos: [0, 0.33, 0.07], bevel: 0.014 },
+              { k: "slab", size: [0.7, 0.44], t: 0.03, r: 0.03, pos: [0, 0.6, 0.06], rot: tilt, color: c.cream, bevel: 0.01 },
+            ],
+          },
+          {
+            id: "slide",
+            label: "First slide",
+            agent: 0,
+            color: c.white,
+            finish: "print",
+            frame: easel,
+            shapes: [
+              { k: "slab", size: [0.62, 0.349], t: 0.006, r: 0.016, pos: [0, 0.6, 0.083], rot: tilt, map: OKOU_SLIDE },
+            ],
+          },
+        ],
+        callouts: [
+          { n: "802", at: [0.3, 1.24, -0.16], to: [0.85, 1.85, -0.45] },
+          { n: "804", at: [-0.98, 0.95, 0.24], to: [-1.65, 1.5, 0.35] },
+          { n: "806", at: [1.08, 0.8, 0.02], to: [1.8, 1.2, 0.45] },
+        ],
+      };
+    },
+  ],
+  [
     THEMES.mono,
     (c) => {
       const camera = { pos: [-0.43, 0.107, -0.22] as Vec3, rot: [-0.19, 0.22, 0] as Vec3 };
       return {
         id: "effects",
-        fig: "FIG. 8",
+        fig: "FIG. 9",
         title: "TikTok Effect House",
         desc: "An AR effect creation tool for TikTok creators.",
         status: SOON,
@@ -2215,9 +2371,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
           ]),
         ],
         callouts: [
-          { n: "802", at: [-0.76, 1.62, -0.24], to: [-0.35, 2.35, -0.5] },
-          { n: "804", at: [1.08, 0.27, 0.61], to: [1.81, 0.49, 0.99] },
-          { n: "806", at: [0.43, 1.31, -0.06], to: [1.22, 1.56, 0.07] },
+          { n: "902", at: [-0.76, 1.62, -0.24], to: [-0.35, 2.35, -0.5] },
+          { n: "904", at: [1.08, 0.27, 0.61], to: [1.81, 0.49, 0.99] },
+          { n: "906", at: [0.43, 1.31, -0.06], to: [1.22, 1.56, 0.07] },
         ],
       };
     },
@@ -2226,7 +2382,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     THEMES.mono,
     (c) => ({
       id: "hostpromo",
-      fig: "FIG. 9",
+      fig: "FIG. 10",
       title: "Airbnb Host Promotion",
       desc: "Campaign tools to attract and allocate traffic to listings from hosts in China.",
       status: SOON,
@@ -2307,9 +2463,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         ]),
       ],
       callouts: [
-        { n: "902", at: [1.08, 0.92, -0.31], to: [0.3, 1.55, -0.5] },
-        { n: "904", at: [-0.79, 0.66, -0.28], to: [-1.6, 1.06, -0.12] },
-        { n: "906", at: [-0.3, 0.52, 0.46], to: [0.18, 0.36, 1.17] },
+        { n: "1002", at: [1.08, 0.92, -0.31], to: [0.3, 1.55, -0.5] },
+        { n: "1004", at: [-0.79, 0.66, -0.28], to: [-1.6, 1.06, -0.12] },
+        { n: "1006", at: [-0.3, 0.52, 0.46], to: [0.18, 0.36, 1.17] },
       ],
     }),
   ],
@@ -2317,7 +2473,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     THEMES.mono,
     (c) => ({
       id: "dls",
-      fig: "FIG. 10",
+      fig: "FIG. 11",
       title: "Airbnb DLS19 for China",
       desc: "A localized component library for the China design team.",
       status: SOON,
@@ -2379,9 +2535,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         ]),
       ],
       callouts: [
-        { n: "1002", at: [1.0, 1.41, -0.38], to: [1.8, 1.72, -0.28] },
-        { n: "1004", at: [0.87, 0.18, 0.68], to: [1.3, 0.3, 1.25] },
-        { n: "1006", at: [-1.02, 0.9, -0.34], to: [-1.77, 1.18, -0.21] },
+        { n: "1102", at: [1.0, 1.41, -0.38], to: [1.8, 1.72, -0.28] },
+        { n: "1104", at: [0.87, 0.18, 0.68], to: [1.3, 0.3, 1.25] },
+        { n: "1106", at: [-1.02, 0.9, -0.34], to: [-1.77, 1.18, -0.21] },
       ],
     }),
   ],
@@ -2389,7 +2545,7 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
     THEMES.mono,
     (c) => ({
       id: "supply",
-      fig: "FIG. 11",
+      fig: "FIG. 12",
       title: "Airbnb Supply Tool",
       desc: "A workspace for the China supply team to track listings and their performance.",
       status: SOON,
@@ -2473,9 +2629,9 @@ const BUILDERS: [Palette, (c: Palette) => Omit<FigureDef, "palette">][] = [
         ]),
       ],
       callouts: [
-        { n: "1102", at: [0.99, 1.49, -0.36], to: [1.78, 1.79, -0.23] },
-        { n: "1104", at: [0.94, 0.21, 0.67], to: [1.72, 0.43, 0.96] },
-        { n: "1106", at: [-1.06, 1.15, -0.36], to: [-0.6, 2.25, -0.75] },
+        { n: "1202", at: [0.99, 1.49, -0.36], to: [1.78, 1.79, -0.23] },
+        { n: "1204", at: [0.94, 0.21, 0.67], to: [1.72, 0.43, 0.96] },
+        { n: "1206", at: [-1.06, 1.15, -0.36], to: [-0.6, 2.25, -0.75] },
       ],
     }),
   ],

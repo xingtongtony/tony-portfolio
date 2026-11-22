@@ -98,6 +98,16 @@ export const WORK_CARDS: WorkCard[] = [
     glowColor: "rgba(127, 180, 70, 0.18)",
   },
   {
+    id: "okou",
+    title: "Okou iOS App",
+    company: "Okou",
+    period: "Case Study",
+    href: "/work/okou-ios",
+    image: "/portfolio/tony-work-22.jpg",
+    hoverColor: "#ffe2a8",
+    glowColor: "rgba(255, 165, 0, 0.22)",
+  },
+  {
     id: "hostpromo",
     title: "Airbnb Host Promotion",
     company: "Airbnb",

@@ -13,7 +13,7 @@ import { getHomeView, point, switchHomeView, useHomeView, usePointed, type HomeV
  * and the full-screen menu on phones. Two designs, one list.
  *
  * `sidebar` — THE INDEX. The panel always says where you are:
- * - On the homepage it is the blueprint stage's index. All eleven projects,
+ * - On the homepage it is the blueprint stage's index. All twelve projects,
  *   numbered; the one on stage is marked; resting the pointer on a row brings
  *   its figure on stage; clicking opens the case study. (A project whose case
  *   study is not written yet says "Soon", and clicking it only shows the
