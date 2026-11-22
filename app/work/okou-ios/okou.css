@@ -1,0 +1,167 @@
+/* Okou iOS case study — page-specific styles.
+   Colours are Okou's own: Ink #252121, Amber #ffa500, the warm white of its
+   sidebar (#fcf9f8), and the eight brand texture tiles. */
+
+.okou-page {
+  --okou-ink: #252121;
+  --okou-amber: #ffa500;
+  --okou-amber-text: #885600;
+  --okou-warm: #f7f3ef;
+  --okou-warm-2: #fcf9f8;
+  --okou-line: rgb(37 33 33 / 0.08);
+}
+
+/* Stages: Okou's colours, soft enough to sit behind a white screen. The hues
+   are the brand textures' own (sky #B4DEF5, pink #FFC6E2, lime #BFE123,
+   butter #F9E840), lightened; warm is the sidebar's white a step down. */
+.okou-stage[data-tone="warm"] {
+  background: #f4efe9;
+}
+.okou-stage[data-tone="sky"] {
+  background: #d9edfa;
+}
+.okou-stage[data-tone="pink"] {
+  background: #ffe1ee;
+}
+.okou-stage[data-tone="lime"] {
+  background: #e6f3bd;
+}
+.okou-stage[data-tone="butter"] {
+  background: #fbf0b4;
+}
+.okou-stage[data-tone="ink"] {
+  background: #252121;
+}
+.okou-stage {
+  transition: background-color 0.7s ease;
+}
+
+/* A bare app screen: the display's own corner radius (62pt on a 402 × 874pt
+   screen), a hairline and a soft, warm shadow. No device around it. */
+.okou-screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: 15.4% / 7.1%;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgb(37 33 33 / 0.07),
+    0 2px 4px rgb(60 40 20 / 0.04),
+    0 14px 28px -14px rgb(37 33 33 / 0.2),
+    0 40px 72px -36px rgb(37 33 33 / 0.3);
+  /* Safari: clip the video to the radius. */
+  isolation: isolate;
+}
+.okou-screen > img,
+.okou-screen > video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.okou-screen[data-tone="dark"] {
+  background: #000;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 18px 36px -18px rgb(0 0 0 / 0.5),
+    0 44px 80px -40px rgb(0 0 0 / 0.6);
+}
+
+/* The wordmark's letters hop the way the app's loading mark does: rises
+   decelerate, falls accelerate, a small squash on landing. */
+@keyframes okou-hop {
+  0% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  11% {
+    transform: translateY(-26%) scale(0.93, 1.07);
+    animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0);
+  }
+  22% {
+    transform: translateY(0) scale(1.08, 0.9);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  30% {
+    transform: translateY(-7.4%) scale(0.98, 1.02);
+    animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0);
+  }
+  38%,
+  100% {
+    transform: none;
+  }
+}
+.okou-wordmark {
+  overflow: visible;
+}
+.okou-letter {
+  transform-box: fill-box;
+  transform-origin: 50% 55%;
+}
+.okou-wordmark[data-hop="on"] .okou-letter {
+  animation: okou-hop 1.2s both;
+}
+.okou-wordmark[data-loop="on"] .okou-letter {
+  animation: okou-hop 1.2s infinite;
+}
+
+/* A slow sideways drift of a row (textures, system pages). */
+@keyframes okou-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.okou-marquee {
+  display: flex;
+  width: max-content;
+  animation: okou-marquee var(--okou-marquee-time, 60s) linear infinite;
+}
+.okou-marquee[data-reverse="on"] {
+  animation-direction: reverse;
+}
+.okou-marquee-mask {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+/* The system wall: columns of catalog pages drifting up and down. */
+@keyframes okou-rise {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+.okou-wall-col {
+  display: flex;
+  flex-direction: column;
+  animation: okou-rise var(--okou-wall-time, 70s) linear infinite;
+}
+.okou-wall-col[data-reverse="on"] {
+  animation-direction: reverse;
+}
+
+/* A gentle float for things that sit over a panel (avatar, widgets). */
+@keyframes okou-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--okou-tilt, 0deg));
+  }
+  50% {
+    transform: translateY(-8px) rotate(var(--okou-tilt, 0deg));
+  }
+}
+.okou-float {
+  animation: okou-float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .okou-wordmark .okou-letter,
+  .okou-marquee,
+  .okou-wall-col,
+  .okou-float {
+    animation: none !important;
+  }
+}

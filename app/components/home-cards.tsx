@@ -11,7 +11,7 @@ import { WORK_CARDS, type WorkCard } from "../lib/work-cards";
 import { point, usePointed } from "../lib/home-view";
 
 /**
- * Tony's hand-made cards, all eleven at once — the whole sheet of figures,
+ * Tony's hand-made cards, all twelve at once — the whole sheet of figures,
  * where the stage shows one at a time. The same cards at every width:
  *
  * - `HomeCards` — the cards view of the desktop homepage (app/lib/home-view.ts),
@@ -61,7 +61,7 @@ export function HomeCards() {
   // While the stage is showing, the cards are in the page but not displayed,
   // and a lazy image that is not displayed is never fetched. Once the stage
   // has had the network to itself for a while, fetch them, so that switching
-  // to the cards does not wait for eleven pictures. (Desktop only: phones
+  // to the cards does not wait for twelve pictures. (Desktop only: phones
   // have no cards view.)
   const [warm, setWarm] = useState(false);
   useEffect(() => {
@@ -100,7 +100,7 @@ export function HomeCards() {
 }
 
 /**
- * The eleven cards in their waterfall. Its columns follow its own width
+ * The twelve cards in their waterfall. Its columns follow its own width
  * (container queries in globals.css), so it is the same grid in the desktop
  * cards view and in the phone page.
  */

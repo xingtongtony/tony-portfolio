@@ -11,7 +11,16 @@ import { useEffect, useRef } from "react";
  * pauses when it leaves, so the motion on screen is the motion being read
  * about. With reduced motion it does not play by itself.
  */
-export function InViewVideo({ src, className = "" }: { src: string; className?: string }) {
+export function InViewVideo({
+  src,
+  className = "",
+  poster,
+}: {
+  src: string;
+  className?: string;
+  /** First frame shown before the loop plays (or instead of it, with reduced motion). */
+  poster?: string;
+}) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -30,5 +39,5 @@ export function InViewVideo({ src, className = "" }: { src: string; className?: 
     return () => observer.disconnect();
   }, []);
 
-  return <video ref={ref} src={src} className={className} loop muted playsInline preload="metadata" />;
+  return <video ref={ref} src={src} poster={poster} className={className} loop muted playsInline preload="metadata" />;
 }

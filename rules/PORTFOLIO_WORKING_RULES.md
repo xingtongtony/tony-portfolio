@@ -59,9 +59,9 @@ The desired homepage structure is inspired by Alex Nguyen's portfolio:
 - Do not replace this with a generic centered landing page unless explicitly requested.
 - **From `lg` up the homepage's right side is one screen and does not scroll** (Tony, 2026-11-17: a stage that slides sideways inside a page that scrolls down was two movements in one place). It is the blueprint stage and nothing else; scrolling up or down turns the carousel. Experience and Contact, which used to sit under it, are on the **About page** (`app/about/page.tsx`, linked from the sidebar and the phone menu) together with the sticker statement. Below `lg` nothing changed: sticker hero, cards, Experience and Contact in one scroll. The two sections are shared (`app/components/home-sections.tsx`). Do not put anything under the stage from `lg` up — if the page can scroll, the wheel goes back to scrolling it.
 - From `lg` up, the first screen of the right side is the 3D blueprint stage (`app/components/blueprint/`); below `lg` it is the sticker hero. Its rules are in `rules/BLUEPRINT_STAGE.md` — every figure on it is a published case study, or finished work Tony has asked to show as "Coming soon". Below `lg` the Work section lists everything, with the same cards as the desktop cards view (`WorkGrid`): one column on a phone, a waterfall of two on a tablet in portrait, in the index's order with their figure numbers. A tablet in landscape is `lg` and gets the panel, the stage and the switch.
-- **From `lg` up the homepage has two views of the same eleven projects** (Tony, 2026-11-20: keep the stage, and keep the hand-made cards too — they are part of his craft, and they list everything at once):
+- **From `lg` up the homepage has two views of the same twelve projects** (Tony, 2026-11-20: keep the stage, and keep the hand-made cards too — they are part of his craft, and they list everything at once):
   - **Stage** (the default, and what every new visit opens on) — the blueprint stage above: one project at a time, one screen, no page scroll.
-  - **Cards** — his hand-made cards, all eleven, in a page that scrolls (`app/components/home-cards.tsx`; spec in `DESIGN_SYSTEM.md` §7).
+  - **Cards** — his hand-made cards, all twelve, in a page that scrolls (`app/components/home-cards.tsx`; spec in `DESIGN_SYSTEM.md` §7).
   - **The switch is on the index's own "Work" line in the navigation panel** — two icons and a thumb, no taller than the line. It is there because the panel is the one thing on screen, in the same spot, in both views, so the control never moves under the pointer; and because it adds no row and no bar. Do not add a second switch in the page, and do not move it into the stage (the stage is not there in the cards view). It is homepage-only and desktop-only: phones have no stage, so the phone menu has no switch (the one exception to "anything added to the sidebar also appears in the sheet").
   - The choice belongs to the visit (`app/lib/home-view.ts`, `sessionStorage`): going to a case study and back, or reloading, keeps it; a new visit starts on the stage.
   - How it is built: both views are in the page and CSS shows one, by `<html data-home-view>` (`globals.css`). A script in the root layout sets that before the first paint, so a reload in the cards view never flashes the stage's loader. The stage is mounted only once the visit has had it on screen, and then kept mounted but hidden (`display: none`) while the cards show, so coming back is immediate and finds the figure as it was left. The rule "nothing under the stage from `lg`" still holds: the cards are *instead of* the stage, never under it.
@@ -77,6 +77,19 @@ Use this model for every migrated case study page unless the user explicitly ask
 - The case study route should be shareable, support browser back/forward, and own its scroll position.
 - Homepage cards with completed case studies should link to the local route. Coming-soon work should not link away.
 - Reuse `app/components/portfolio-shell.tsx` for case study pages so the left sidebar remains consistent across the portfolio.
+
+### Okou iOS (`/work/okou-ios`) — a page with its own layout
+
+Tony, 2026-11-22: this case study does not have to follow the shared case-study template; it may be more ambitious, as long as it tells a story and holds a high visual bar. What it keeps: the portfolio shell, the `--cs-*` text tokens, `data-case-section` + an `h2` per chapter (the index and the next-section pill read them), and titles of 38 characters or fewer.
+
+- **No device frames.** Screens are shown bare (`Screen` in `app/work/okou-ios/brand.tsx`): the display's own corner radius, a hairline, a soft shadow. Nothing that names an iPhone model: no bezel and no Dynamic Island pill. The simulator draws the pill whenever content scrolls under the status bar, so every still and loop goes through `delogo=x=406:y=34:w=394:h=126` (at 1206 px wide) before it is scaled.
+- **No Chinese, no real workspace content.** Every screen is recorded from the app's Debug-only demo mode (`--portfolio-demo`, fictional English content: workspace "Sunday Labs", the "Pricing teardown deck" chat). Never record the signed-in production account for the portfolio.
+- **Okou's brand is the art direction**: its wordmark (letters cut from the brand textures, hopping like the app's loading mark), the avatar's moods (rendered from the product's rig to loops), the eight texture tiles, its warm white, Ink and Amber. Use them before inventing decoration.
+- **A screen is always whole.** Never crop or enlarge a screen (Tony, 2026-11-22: zoomed crops read as stretched and cut off). Show the complete screen at phone proportions; point at a detail in the caption, not with a crop.
+- **A screen never sits on the white page.** It stands on a `Stage` in one of Okou's colours (warm, sky, pink, lime, butter — the textures' own hues, lightened), so a white screen reads as an object. A dark screen goes on a light stage, never on ink.
+- **The design system is set out, not photographed**: colour, type, icons and geometry are drawn from the real tokens (`system.tsx`); catalog screenshots only support them, whole, in a row.
+- Widgets are the app's own renders, cut out with transparent corners, at their real proportions.
+- Title on this page: **Founding Designer**.
 
 ### Case Study Design Workflow
 

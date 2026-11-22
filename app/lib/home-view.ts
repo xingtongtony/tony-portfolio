@@ -1,7 +1,7 @@
-// The desktop homepage shows the same eleven projects two ways:
+// The desktop homepage shows the same twelve projects two ways:
 //
 // - "stage" — the blueprint stage: one project at a time, built by the agents.
-// - "cards" — Tony's hand-made cards, all eleven at once, in a page that scrolls.
+// - "cards" — Tony's hand-made cards, all twelve at once, in a page that scrolls.
 //
 // Which one is on is a choice of the visit, kept here so the three places that
 // care agree: the switch in the navigation panel, the index under it, and the

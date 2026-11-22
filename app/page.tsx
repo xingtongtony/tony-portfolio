@@ -32,7 +32,7 @@ export default function Home() {
       mainClassName="home-page bg-[var(--studio-paper,#ffffff)] text-[#171717]"
       contentClassName="min-w-0 px-6 pb-5 pt-2 sm:px-10 xl:px-14 lg:pb-0 lg:pt-3 2xl:px-16"
     >
-      {/* From lg the page has two views of the same eleven projects, and shows
+      {/* From lg the page has two views of the same twelve projects, and shows
           one (app/lib/home-view.ts; the switch is in the navigation panel, on
           the index's "Work" line):
 
