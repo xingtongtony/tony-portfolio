@@ -103,9 +103,9 @@ export const WORK_CARDS: WorkCard[] = [
     company: "Okou",
     period: "Case Study",
     href: "/work/okou-ios",
-    image: "/portfolio/tony-work-22.jpg",
-    hoverColor: "#ffe2a8",
-    glowColor: "rgba(255, 165, 0, 0.22)",
+    image: "/portfolio/tony-work-23.jpg",
+    hoverColor: "#fbf0a0",
+    glowColor: "rgba(240, 200, 0, 0.28)",
   },
   {
     id: "hostpromo",

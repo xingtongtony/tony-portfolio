@@ -16,6 +16,7 @@ export type Project = {
 };
 
 export const PROJECTS: Project[] = [
+  { id: "okou", title: "Okou iOS App", href: "/work/okou-ios" },
   { id: "tv", title: "TikTok TV Revamp", href: "/work/tiktok-tv-visual", match: "/work/tiktok-tv" },
   { id: "lutra", title: "CloudKitchens Lutra App", href: "/work/cloudkitchens" },
   { id: "restructure", title: "TikTok Web Restructure", href: "/work/tiktok-restructure" },
@@ -23,7 +24,6 @@ export const PROJECTS: Project[] = [
   { id: "ds", title: "TikTok Design System", href: "/work/tiktok-design-system" },
   { id: "tikcode", title: "TikCode Redesign", href: "/work/tiktok-tikcode" },
   { id: "wishlist", title: "Airbnb Wishlist", href: "/work/airbnb-wishlist" },
-  { id: "okou", title: "Okou iOS App", href: "/work/okou-ios" },
   { id: "effects", title: "TikTok Effect House" },
   { id: "hostpromo", title: "Airbnb Host Promotion" },
   { id: "dls", title: "Airbnb DLS19 for China" },

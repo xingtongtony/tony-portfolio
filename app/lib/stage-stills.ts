@@ -1,5 +1,5 @@
 // Stills of the blueprint stage's figures for phones and tablets, where the
-// 3D stage is not loaded. Rendered from the stage itself (21 Nov 2026) and
+// 3D stage is not loaded. Rendered from the stage itself (21 Nov 2026; Okou 22 Nov) and
 // cropped square with the model (its own extent, measured by eye, without
 // shadow or leader lines) in the middle, all at the same visual weight (the
 // square root of the box's area is 60% of the side; at most 82% wide, 70% tall):
@@ -22,53 +22,60 @@ export type Still = {
 
 export const STILLS: Still[] = [
   {
-    id: "tv",
+    id: "okou",
     fig: "FIG. 1",
+    desc: "A native iPhone app for working with AI agents, wherever you are.",
+    paper: "#F9EDDD",
+    labels: [["102", 0.2966, 0.1247], ["104", 0.8556, 0.309], ["106", 0.1254, 0.652]],
+  },
+  {
+    id: "tv",
+    fig: "FIG. 2",
     desc: "A more immersive TV feed, with layered backgrounds and clearer remote focus.",
     paper: "#E8E2FA",
-    labels: [["102", 0.7234, 0.3807], ["104", 0.6926, 0.6429], ["106", 0.108, 0.5884]],
+    labels: [["202", 0.7234, 0.3807], ["204", 0.6926, 0.6429], ["206", 0.108, 0.5884]],
   },
   {
     id: "lutra",
-    fig: "FIG. 2",
+    fig: "FIG. 3",
     desc: "An operating dashboard for restaurants, from live orders to recommended coupons.",
     paper: "#FAE4DD",
-    labels: [["202", 0.18, 0.1437], ["204", 0.6935, 0.4026], ["206", 0.643, 0.6511]],
+    labels: [["302", 0.18, 0.1437], ["304", 0.6935, 0.4026], ["306", 0.643, 0.6511]],
   },
   {
     id: "restructure",
-    fig: "FIG. 3",
+    fig: "FIG. 4",
     desc: "A video-first browser mode that makes every post discoverable and shareable.",
     paper: "#FBF0D1",
-    labels: [["302", 0.2366, 0.1519], ["304", 0.8493, 0.4484], ["306", 0.7014, 0.7506]],
+    labels: [["402", 0.2366, 0.1519], ["404", 0.8493, 0.4484], ["406", 0.7014, 0.7506]],
   },
   {
     id: "multi",
-    fig: "FIG. 4",
+    fig: "FIG. 5",
     desc: "An iPad experience that keeps videos, navigation and conversation in view.",
     paper: "#FAE1EB",
-    labels: [["402", 0.202, 0.2288], ["404", 0.7618, 0.4753], ["406", 0.078, 0.4927]],
+    labels: [["502", 0.202, 0.2288], ["504", 0.7618, 0.4753], ["506", 0.078, 0.4927]],
   },
   {
     id: "ds",
-    fig: "FIG. 5",
+    fig: "FIG. 6",
     desc: "Reusable component variants, with adaptive layouts and shared motion rules.",
     paper: "#E3ECF9",
-    labels: [["502", 0.0503, 0.364], ["504", 0.8146, 0.2701], ["506", 0.5793, 0.1922]],
+    labels: [["602", 0.0503, 0.364], ["604", 0.8146, 0.2701], ["606", 0.5793, 0.1922]],
   },
   {
     id: "tikcode",
-    fig: "FIG. 6",
+    fig: "FIG. 7",
     desc: "A new shareable code for TikTok profiles, sounds, hashtags and effects.",
     paper: "#DCF1F0",
-    labels: [["602", 0.1504, 0.1991], ["604", 0.7035, 0.5276], ["606", 0.04, 0.5427]],
+    labels: [["702", 0.1504, 0.1991], ["704", 0.7035, 0.5276], ["706", 0.04, 0.5427]],
   },
   {
     id: "wishlist",
-    fig: "FIG. 7",
+    fig: "FIG. 8",
     desc: "Compare saved stays, share a shortlist and decide together where to book.",
     paper: "#E0F0E7",
-    labels: [["702", 0.4748, 0.2194], ["704", 0.8521, 0.4606], ["706", 0.7147, 0.6844]],
+    labels: [["802", 0.4748, 0.2194], ["804", 0.8521, 0.4606], ["806", 0.7147, 0.6844]],
   },
   {
     id: "effects",
