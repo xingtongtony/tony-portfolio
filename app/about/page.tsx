@@ -12,7 +12,7 @@ export const revalidate = 86400;
 export const metadata: Metadata = {
   title: "About - Tony Xing",
   description:
-    "Tony Xing is a product designer who has led design at TikTok, CloudKitchens and Airbnb — from illustration and motion graphics to design systems and TV.",
+    "Tony Xing is a product designer who has led design at TikTok, CloudKitchens and Airbnb, and now designs AI agent products at Okou and extend — from illustration and motion graphics to design systems, TV and agents.",
 };
 
 /**
