@@ -126,8 +126,11 @@ function buildEntries(nowYm: string): Entry[] {
 }
 
 // The bio, written from the LinkedIn profile. Pressable words carry a craft.
+// Where the story ends is where Tony works now (2026-11-23: “从 illustration 到 TikTok TV，这不准确，
+// 我现在给两个 AI 公司做 agent 产品”). The phone homepage's teaser says the same
+// (app/components/home-about-teaser.tsx): change them together.
 const BIO: (string | { word: string; craft: Craft })[] = [
-  "I started as an illustrator. After an MFA in graphic design at Cranbrook, I made motion graphics in New York, then moved into product design in Beijing and San Jose — at DiDi, Airbnb, CloudKitchens and TikTok, most recently leading the TikTok TV design team. I care about ",
+  "I started as an illustrator. After an MFA in graphic design at Cranbrook, I made motion graphics in New York, then moved into product design in Beijing and San Jose — at DiDi, Airbnb, CloudKitchens and TikTok, where I led the TikTok TV design team. Today I design AI agent products at Okou and extend. I care about ",
   { word: "product thinking", craft: "Product" },
   ", ",
   { word: "design systems", craft: "Systems" },
@@ -166,7 +169,7 @@ export function Career({ now }: { now: string }) {
       {/* BIO */}
       <section id="bio" data-case-section className="scroll-mt-8 py-16 lg:py-24">
         <p className="section-label">About</p>
-        <h2 className="mt-3 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">From illustration to TikTok TV</h2>
+        <h2 className="mt-3 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">From illustration to AI agents</h2>
         <p className="mt-10 max-w-[46rem] text-[clamp(1.25rem,2.1vw,1.625rem)] font-medium leading-[1.45] tracking-[-0.02em] text-black/45">
           {BIO.map((part, i) =>
             typeof part === "string" ? (

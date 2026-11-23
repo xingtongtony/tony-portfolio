@@ -19,10 +19,11 @@ export function HomeAboutTeaser() {
   return (
     <section id="about-me" data-case-section className="scroll-mt-8 py-16 lg:hidden">
       <p className="section-label">About</p>
-      <h2 className="mt-2 text-4xl font-semibold tracking-[-0.06em] sm:text-6xl">From illustration to TikTok TV</h2>
+      <h2 className="mt-2 text-4xl font-semibold tracking-[-0.06em] sm:text-6xl">From illustration to AI agents</h2>
       <p className="mt-6 max-w-[40rem] text-[17px] leading-[1.55] text-black/60 sm:text-lg">
         I started as an illustrator, made motion graphics in New York, then designed products at DiDi, Airbnb,
-        CloudKitchens and TikTok — most recently leading the TikTok TV design team.
+        CloudKitchens and TikTok, where I led the TikTok TV design team. Today I design AI agent products at Okou
+        and extend.
       </p>
       <div className="mt-8 flex items-center gap-2.5" aria-label="TikTok, CloudKitchens, Airbnb and DiDi">
         {LOGOS.map(([name, src]) => (
