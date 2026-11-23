@@ -817,30 +817,38 @@ html[data-home-view="cards"] .view-switch [data-view="cards"] {
 }
 
 /* About — Recognition (app/components/about/recognition.tsx).
-   Plates: pc = claimed line, ph = the claimed element the patent is about
-   (accent), pu = unclaimed (dashed). Every claimed stroke has pathLength 1, so
-   one dash offset draws them; a plate remounts, and draws, when it is chosen. */
+   Plates (patent-plates.tsx): pc = claimed line, ph = the claimed element the
+   patent is about (accent), pu = unclaimed (dashed). Every claimed stroke has
+   pathLength 1, so one dash offset draws them. A plate with `is-drawn` draws
+   itself when it mounts; it is remounted, and draws again, when it is chosen. */
 .patent-plate .pc,
 .patent-plate .ph {
   stroke: currentColor;
-  stroke-dasharray: 1;
-  animation: plate-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 .patent-plate .ph {
   stroke: var(--accent);
   stroke-width: 1.6;
-  animation-delay: 0.3s;
 }
 .patent-plate .pu {
   stroke: currentColor;
   stroke-dasharray: 5 4;
   opacity: 0.55;
+}
+.patent-plate .plate-scaled .ph {
+  stroke-width: calc(1.6px / var(--plate-scale, 1));
+}
+.patent-plate.is-drawn .pc,
+.patent-plate.is-drawn .ph {
+  stroke-dasharray: 1;
+  animation: plate-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.patent-plate.is-drawn .ph {
+  animation-delay: 0.3s;
+}
+.patent-plate.is-drawn .pu {
   animation: plate-fade 0.4s ease both;
 }
-.patent-plate .plate-scaled * {
-  vector-effect: non-scaling-stroke;
-}
-.patent-plate .pt {
+.patent-plate.is-drawn .pt {
   animation: plate-fade 0.4s ease 0.9s both;
 }
 @keyframes plate-draw {
@@ -856,32 +864,192 @@ html[data-home-view="cards"] .view-switch [data-view="cards"] {
     opacity: 0;
   }
 }
-/* The dot field fills in, row by column, the first time it is seen. */
-.dot-field [data-dot] {
-  opacity: 0;
-  transform: scale(0.4);
-  transition:
-    opacity 0.35s ease,
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.2s ease;
-  transition-delay: var(--d, 0ms), var(--d, 0ms), 0ms;
+
+/* The register: designs down, countries across, a dot for each registration.
+   It is laid out by the width it is given, not the window's (the sidebar takes
+   a third of a laptop), in three steps:
+   - narrow: a design's name over its fourteen squares; choosing it opens its
+     drawing and numbers underneath;
+   - from 35rem: name, squares and total on one line, as a table;
+   - from 60rem: the drawing stays beside the table (.patent-aside) and follows
+     the pointer, and nothing opens underneath (.patent-inline). */
+.patents {
+  container: patents / inline-size;
 }
-.dot-field[data-on] [data-dot] {
-  opacity: 1;
-  transform: none;
+.patent-head {
+  display: grid;
+  gap: 2rem;
+}
+.patent-stats {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: start;
+  column-gap: clamp(0.625rem, 5cqi, 2.25rem);
+}
+.patent-stats dd {
+  font-size: 1.625rem;
+}
+/* Four labels across the narrowest phone: the type gives way before the row wraps. */
+.patent-stats dt {
+  font-size: clamp(8px, 2.75cqi, 9.5px);
+  letter-spacing: 0.04em;
+}
+.patent-board {
+  display: grid;
+  gap: 2.5rem;
+}
+.patent-aside {
+  display: none;
+}
+.patent-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 0 0.75rem 0.75rem;
+  text-align: left;
+}
+.patent-row > [data-part="cells"] {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-left: -0.75rem;
+}
+.patent-row > [data-part="sum"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+.patent-cells {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+}
+.patent-cells > * {
+  display: flex;
+  min-height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+}
+.pips {
+  --pip: 4px;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--pip));
+  gap: 2px;
+}
+.pips > i {
+  width: var(--pip);
+  height: var(--pip);
+  border-radius: 50%;
+  background: currentColor;
+}
+.patent-detail {
+  display: grid;
+  gap: 1.25rem;
+}
+.invention-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.375rem;
+  width: 100%;
+  padding: 0.75rem 0 0.75rem 0.75rem;
+  text-align: left;
+}
+.invention-row > [data-part="name"] {
+  grid-column: 1 / -1;
+}
+@container patents (min-width: 35rem) {
+  .patent-stats dd {
+    font-size: 2rem;
+  }
+  .patent-stats dt {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+  }
+  .patent-row {
+    grid-template-columns: 10.5rem minmax(0, 1fr) 3.25rem;
+    column-gap: 0;
+    min-height: 2.75rem;
+    padding-block: 0;
+  }
+  .patent-row > [data-part="cells"] {
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: 0;
+    align-self: stretch;
+  }
+  .patent-row > [data-part="sum"] {
+    grid-column: 3;
+  }
+  .patent-cells > * {
+    min-height: 2.75rem;
+  }
+  .pips {
+    --pip: 5px;
+    gap: 3px;
+  }
+  .patent-detail {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 2rem;
+  }
+  .invention-row {
+    grid-template-columns: minmax(0, 1fr) 6.5rem auto;
+    column-gap: 1.25rem;
+    min-height: 3.25rem;
+  }
+  .invention-row > [data-part="name"] {
+    grid-column: 1;
+  }
+}
+@container patents (min-width: 60rem) {
+  .patent-head {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: end;
+    gap: 3rem;
+  }
+  .patent-stats {
+    justify-content: end;
+  }
+  .patent-board {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: start;
+    gap: 3rem;
+  }
+  .patent-aside {
+    display: block;
+  }
+  .patent-inline,
+  .patent-row [data-part="chevron"],
+  .invention-row [data-part="chevron"] {
+    display: none;
+  }
+  .patent-row {
+    grid-template-columns: 10.5rem minmax(0, 1fr) 2.5rem;
+  }
+  .patent-detail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+/* What opens under a chosen design, below 60rem. */
+.patent-inline {
+  animation: patent-open 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes patent-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .patent-plate .pc,
-  .patent-plate .ph,
-  .patent-plate .pu,
-  .patent-plate .pt {
+  .patent-plate.is-drawn .pc,
+  .patent-plate.is-drawn .ph,
+  .patent-plate.is-drawn .pu,
+  .patent-plate.is-drawn .pt,
+  .patent-inline {
     animation: none;
     stroke-dashoffset: 0;
-  }
-  .dot-field [data-dot] {
-    opacity: 1;
-    transform: none;
-    transition: none;
   }
 }
 

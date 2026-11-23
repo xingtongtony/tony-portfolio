@@ -1,151 +1,340 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
-import { DESIGN_PATENT_TOTAL, HONORS, PATENTS, type Patent } from "../../lib/about";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
+import { HONORS } from "../../lib/about";
+import {
+  DESIGNS,
+  INVENTIONS,
+  JURISDICTIONS,
+  OFFICES,
+  REGISTRATION_TOTAL,
+  count,
+  countries,
+  recordUrl,
+  total,
+  type Code,
+  type Design,
+  type Invention,
+} from "../../lib/patents";
 import { gesture, play } from "../../lib/sound";
+import { Plate } from "./patent-plates";
 
 /**
- * Recognition: 325 design patents as 325 dots, the five patents that can be
- * listed as a register, and each one redrawn from its own patent drawing.
+ * Recognition: the patents as a register. Twelve designs down, fourteen
+ * countries across, and a dot for every registration — a design is one
+ * family, registered country by country, so the row is the patent and the
+ * columns are only where it holds. Under it, the six inventions.
  *
- * - The dots: one per design patent. The four listed design patents are the
- *   coloured dots; they and the register rows point at each other.
- * - The plates follow the patent drawing convention: dashed lines are the
- *   screen (not claimed), solid lines the claimed design; the element each
- *   patent is about is drawn in the page accent. A plate draws itself when it
- *   is chosen. Reduced motion: dots and plates are simply there.
+ * Choosing a row shows its plate (the design redrawn as a patent figure, which
+ * draws itself) and every registration number, linked to its public record
+ * where one could be checked. Where the plate sits follows the room there is
+ * (globals.css, `.patents`): beside the table when it is wide, where it also
+ * follows the pointer and a square picks its country; otherwise it opens under
+ * the row. Reduced motion: plates are simply there.
  */
 
 const ACCENT = "linear-gradient(90deg, #3b82f6 0%, #a855f7 50%, #f2784b 100%)";
-const COLS = 25; // 25 × 13 = 325
-// Where the listed design patents sit in the field (row-major index), spread out by eye.
-const LISTED_AT: Record<string, number> = { d986264: 2 * COLS + 5, d986265: 5 * COLS + 18, d990500: 8 * COLS + 9, d990501: 10 * COLS + 21 };
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const day = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${d}, ${y}`;
+};
+const NAMES = Object.fromEntries(JURISDICTIONS.map((j) => [j.code, j.name])) as Record<Code, string>;
+const COLUMN_TOTAL = Object.fromEntries(JURISDICTIONS.map((j) => [j.code, DESIGNS.reduce((sum, d) => sum + count(d, j.code), 0)])) as Record<Code, number>;
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const words = ["no", "one", "two", "three"];
 
-function useInView<T extends Element>(threshold = 0.3) {
-  const ref = useRef<T>(null);
-  const [seen, setSeen] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setSeen(true);
-          io.disconnect();
-        }
-      },
-      { threshold },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [threshold]);
-  return [ref, seen] as const;
-}
+const groupOf = (d: Design) => (d.surface === "web" ? "Web" : `Tablet · ${d.orientation === "portrait" ? "Portrait" : "Landscape"}`);
+const GROUPS = ["Tablet · Landscape", "Tablet · Portrait", "Web"].map((label) => ({ label, designs: DESIGNS.filter((d) => groupOf(d) === label) }));
+/** Every row a person can choose, in the order they are on the page. */
+const ORDER = [...DESIGNS.map((d) => d.id), ...INVENTIONS.map((v) => v.id)];
 
 export function Recognition() {
-  const [active, setActiveState] = useState(PATENTS[0].id);
-  // Choosing another patent by click or key: a click, and the pencil while its
-  // plate draws itself. Pointing (hover) changes it silently, so sweeping the
-  // pointer over the list does not rattle.
-  const setActive = (id: string, loud = false) => {
-    if (id === active) return;
-    if (loud) {
+  const [active, setActive] = useState(ORDER[0]);
+  // Below the wide layout a chosen row opens underneath; this is whether it is open.
+  const [open, setOpen] = useState(false);
+  // A country picked in the active design's row (wide layout).
+  const [pick, setPick] = useState<Code | null>(null);
+  // The column under the pointer.
+  const [column, setColumn] = useState<Code | null>(null);
+  const [wide, setWide] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const rows = useRef(new Map<string, HTMLButtonElement>());
+  // The row that was pressed and where it was on screen, to hold it there while
+  // the one open above it closes.
+  const anchor = useRef<{ id: string; top: number } | null>(null);
+  // A pressed row stays while the pointer travels to its plate; back on the
+  // register the pointer leads again. It leads only where it rests, so crossing
+  // rows on the way to the plate changes nothing.
+  const pinned = useRef(false);
+  const rest = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(rest.current), []);
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setWide(entry.contentRect.width >= 960));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    const held = anchor.current;
+    anchor.current = null;
+    const row = held && rows.current.get(held.id);
+    if (!row) return;
+    const moved = row.getBoundingClientRect().top - held.top;
+    if (Math.abs(moved) > 1) window.scrollBy({ top: moved, behavior: "instant" });
+  }, [active, open]);
+
+  const loud = () => {
+    play("click");
+    gesture("pen", 0.85);
+  };
+
+  const press = (id: string, ev: MouseEvent<HTMLButtonElement>) => {
+    if (wide) {
+      // With a mouse, the square under it picks its country; a finger is too blunt for that.
+      const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      const cell = fine ? (ev.target as HTMLElement).closest<HTMLElement>("[data-code]") : null;
+      const code = (cell?.hasAttribute("data-filled") ? cell.dataset.code : null) as Code | null;
+      if (id !== active || code !== pick) loud();
+      clearTimeout(rest.current);
+      pinned.current = true;
+      setActive(id);
+      setPick(code);
+      return;
+    }
+    anchor.current = { id, top: ev.currentTarget.getBoundingClientRect().top };
+    if (id === active && open) {
       play("click");
-      gesture("pen", 0.85);
+      setOpen(false);
+      return;
     }
-    setActiveState(id);
-  };
-  const current = PATENTS.find((p) => p.id === active)!;
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  // Below lg the plate sits above the list: a tap on a row further down brings it into view.
-  const showPlate = () => {
-    const plate = document.getElementById("patent-plate");
-    if (!plate || window.matchMedia("(min-width: 1024px)").matches) return;
-    const r = plate.getBoundingClientRect();
-    if (r.top >= 0 && r.bottom <= window.innerHeight) return;
-    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    plate.scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
+    loud();
+    setActive(id);
+    setPick(null);
+    setOpen(true);
   };
 
-  const onKey = (ev: KeyboardEvent<HTMLButtonElement>, i: number) => {
-    const n = PATENTS.length;
+  // The pointer only leads where the plate is beside the table; sweeping it is silent.
+  const point = (id: string) => {
+    clearTimeout(rest.current);
+    if (!wide || pinned.current) return;
+    rest.current = setTimeout(() => {
+      setActive((was) => {
+        if (was !== id) setPick(null);
+        return id;
+      });
+    }, 110);
+  };
+
+  const onKey = (ev: KeyboardEvent<HTMLButtonElement>, id: string) => {
+    const i = ORDER.indexOf(id);
     let next = -1;
-    if (ev.key === "ArrowDown" || ev.key === "ArrowRight") next = (i + 1) % n;
-    if (ev.key === "ArrowUp" || ev.key === "ArrowLeft") next = (i - 1 + n) % n;
+    if (ev.key === "ArrowDown") next = Math.min(ORDER.length - 1, i + 1);
+    if (ev.key === "ArrowUp") next = Math.max(0, i - 1);
     if (ev.key === "Home") next = 0;
-    if (ev.key === "End") next = n - 1;
-    if (next >= 0) {
-      ev.preventDefault();
-      setActive(PATENTS[next].id, true);
-      tabs.current[next]?.focus();
+    if (ev.key === "End") next = ORDER.length - 1;
+    if (next < 0 || next === i) return;
+    ev.preventDefault();
+    rows.current.get(ORDER[next])?.focus();
+    if (wide) {
+      loud();
+      setActive(ORDER[next]);
+      setPick(null);
     }
   };
+
+  const design = DESIGNS.find((d) => d.id === active);
+  const invention = INVENTIONS.find((v) => v.id === active);
+  const detail = (place: "aside" | "inline") =>
+    design ? <DesignDetail key={design.id} design={design} pick={pick} place={place} /> : invention ? <InventionDetail key={invention.id} invention={invention} place={place} /> : null;
+
+  const rowProps = (id: string) => {
+    const on = id === active;
+    return {
+      ref: (el: HTMLButtonElement | null) => {
+        if (el) rows.current.set(id, el);
+        else rows.current.delete(id);
+      },
+      type: "button" as const,
+      "aria-expanded": wide ? undefined : on && open,
+      "aria-current": wide && on ? ("true" as const) : undefined,
+      "aria-controls": wide ? "patent-aside" : on && open ? "patent-inline" : undefined,
+      onClick: (ev: MouseEvent<HTMLButtonElement>) => press(id, ev),
+      onPointerEnter: (ev: React.PointerEvent) => ev.pointerType === "mouse" && point(id),
+      onPointerLeave: () => clearTimeout(rest.current),
+      onKeyDown: (ev: KeyboardEvent<HTMLButtonElement>) => onKey(ev, id),
+    };
+  };
+  const shown = (id: string) => id === active && (wide || open);
 
   return (
     <section id="recognition" data-case-section className="scroll-mt-8 py-16 lg:py-24">
-      <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
-        <div className="lg:col-span-5">
-          <p className="section-label">Recognition</p>
-          <h2 className="mt-3 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">
-            {DESIGN_PATENT_TOTAL} design patents
-          </h2>
-          <p className="mt-6 max-w-[30rem] text-base leading-[1.6] text-black/55">
-            Each dot is one design patent. The four in color are listed below with an invention patent, each redrawn
-            from its own patent drawing.
-          </p>
+      <div ref={box} className="patents">
+        <div className="patent-head">
+          <div>
+            <p className="section-label">Recognition</p>
+            <h2 className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-balance sm:text-5xl">
+              {DESIGNS.length} designs, registered {REGISTRATION_TOTAL} times
+            </h2>
+            <p className="mt-6 max-w-[33rem] text-base leading-[1.6] text-black/55">
+              A design is one patent family: the same drawing, registered country by country. Each dot is a registration.
+              Choose a design to see its drawing and its numbers.
+            </p>
+          </div>
+          <dl className="patent-stats">
+            {[
+              [DESIGNS.length, "Designs"],
+              [REGISTRATION_TOTAL, "Registrations"],
+              [JURISDICTIONS.length, "Countries"],
+              [INVENTIONS.length, "Inventions"],
+            ].map(([n, label]) => (
+              <div key={label} className="flex flex-col-reverse">
+                <dt className="mt-2 font-mono uppercase text-black/45">{label}</dt>
+                <dd className="font-semibold leading-none tracking-[-0.05em] tabular-nums">{n}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-        <div className="lg:col-span-7 lg:pt-2">
-          <DotField active={active} onPick={setActive} />
-        </div>
-      </div>
 
-      {/* Register + plate */}
-      <div className="mt-16 grid gap-6 lg:grid-cols-12 lg:gap-12">
-        <div className="order-2 lg:order-1 lg:col-span-5">
-          <div role="tablist" aria-orientation="vertical" aria-label="Patents" className="border-t border-black/10">
-            {PATENTS.map((p, i) => {
-              const on = p.id === active;
-              return (
-                <button
-                  key={p.id}
-                  ref={(el) => {
-                    tabs.current[i] = el;
-                  }}
-                  type="button"
-                  role="tab"
-                  id={`tab-${p.id}`}
-                  aria-selected={on}
-                  aria-controls="patent-plate"
-                  tabIndex={on ? 0 : -1}
-                  onClick={() => {
-                    setActive(p.id, true);
-                    showPlate();
-                  }}
-                  onPointerEnter={(ev) => ev.pointerType === "mouse" && setActive(p.id)}
-                  onKeyDown={(ev) => onKey(ev, i)}
-                  className={`relative block w-full border-b border-black/10 py-4 pl-4 pr-2 text-left transition-colors duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black ${
-                    on ? "bg-black/[0.03]" : "hover:bg-black/[0.02]"
-                  }`}
-                >
-                  <span aria-hidden className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full transition-opacity duration-200 ${on ? "opacity-100" : "opacity-0"}`} style={{ background: ACCENT }} />
-                  <span className="block font-mono text-[11px] tabular-nums tracking-[0.02em] text-black/45">{p.number}</span>
-                  <span className={`mt-1 block text-[16px] font-semibold leading-snug tracking-[-0.015em] ${on ? "text-black" : "text-black/70"}`}>{p.name}</span>
-                  <span className="mt-1 block text-[13px] text-black/45">
-                    {p.kind} · Granted {p.granted.replace(/ \d+,/, "")}
+        <div className="patent-board mt-12 sm:mt-14">
+          <div className="min-w-0" onPointerEnter={() => (pinned.current = false)}>
+            {/* The register */}
+            <div onPointerLeave={() => setColumn(null)}>
+              {GROUPS.map((group) => (
+                <div key={group.label} className="mt-7 first:mt-0">
+                  <div className="patent-row !py-0 pb-2" aria-hidden>
+                    <span className="self-end pb-2 font-mono text-[10.5px] uppercase tracking-[0.14em] text-black/40">{group.label}</span>
+                    <span data-part="cells" className="patent-cells font-mono text-[10px] tracking-[0.02em] sm:text-[11px]">
+                      {JURISDICTIONS.map((j) => (
+                        <span key={j.code} onPointerEnter={(ev) => ev.pointerType === "mouse" && setColumn(j.code)} className={`!min-h-7 transition-colors duration-150 ${column === j.code ? "text-black" : "text-black/40"}`}>
+                          {j.code}
+                        </span>
+                      ))}
+                    </span>
+                    <span data-part="sum" />
+                  </div>
+                  <ul className="border-t border-black/10">
+                    {group.designs.map((d) => {
+                      const on = d.id === active;
+                      const lit = shown(d.id);
+                      const sum = total(d);
+                      return (
+                        <li key={d.id} className="border-b border-black/10">
+                          <button
+                            {...rowProps(d.id)}
+                            aria-label={`${d.name}, ${group.label}: ${plural(sum, "registration")} in ${plural(countries(d).length, "country", "countries")}`}
+                            className={`patent-row relative transition-colors duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black ${
+                              lit ? "bg-black/[0.035]" : "hover:bg-black/[0.02]"
+                            }`}
+                          >
+                            <Bar on={lit} />
+                            <span className={`text-[15px] font-medium leading-tight tracking-[-0.01em] ${lit ? "text-black" : "text-black/70"}`}>{d.name}</span>
+                            <span data-part="cells" className="patent-cells">
+                              {JURISDICTIONS.map((j) => {
+                                const n = count(d, j.code);
+                                const picked = on && pick === j.code && wide;
+                                return (
+                                  <span
+                                    key={j.code}
+                                    data-code={j.code}
+                                    data-filled={n ? "" : undefined}
+                                    onPointerEnter={(ev) => ev.pointerType === "mouse" && setColumn(j.code)}
+                                    className={`transition-colors duration-150 ${column === j.code ? "bg-black/[0.04]" : ""} ${picked ? "rounded-md shadow-[inset_0_0_0_1.5px_#171717]" : ""}`}
+                                  >
+                                    {n ? <Pips n={n} /> : <i className="size-[3px] rounded-full bg-black/15" />}
+                                  </span>
+                                );
+                              })}
+                            </span>
+                            <span data-part="sum" className="flex items-center justify-end gap-1.5 pr-1 font-mono text-[11.5px] tabular-nums text-black/55">
+                              {sum}
+                              <Chevron open={on && open} />
+                            </span>
+                          </button>
+                          {on && open && !wide ? <div className="patent-inline px-3 pb-6 pt-2 sm:px-4">{detail("inline")}</div> : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+              {/* What each country holds, and all of it. */}
+              <div className="patent-row" aria-hidden>
+                <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-black/45">{column ? NAMES[column] : "All designs"}</span>
+                <span data-part="cells" className="patent-cells font-mono text-[10px] tabular-nums sm:text-[11px]">
+                  {JURISDICTIONS.map((j) => (
+                    <span key={j.code} onPointerEnter={(ev) => ev.pointerType === "mouse" && setColumn(j.code)} className={`transition-colors duration-150 ${column === j.code ? "text-black" : "text-black/40"}`}>
+                      {COLUMN_TOTAL[j.code]}
+                    </span>
+                  ))}
+                </span>
+                <span data-part="sum" className="pr-1 text-right font-mono text-[11.5px] font-medium tabular-nums">{REGISTRATION_TOTAL}</span>
+              </div>
+            </div>
+
+            {/* The inventions */}
+            <div className="mt-14">
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="section-label">Inventions</p>
+                <p className="flex items-center gap-4 font-mono text-[10.5px] uppercase tracking-[0.08em] text-black/45" aria-hidden>
+                  <span className="flex items-center gap-1.5">
+                    <i className="size-2 rounded-full bg-[#171717]" />
+                    Granted
                   </span>
-                </button>
-              );
-            })}
+                  <span className="flex items-center gap-1.5">
+                    <i className="size-2 rounded-full border border-black/40" />
+                    Pending
+                  </span>
+                </p>
+              </div>
+              <ul className="mt-4 border-t border-black/10">
+                {INVENTIONS.map((v) => {
+                  const on = v.id === active;
+                  const lit = shown(v.id);
+                  const offices = v.grants.length ? v.grants.map((g) => g.office) : v.pending ? [v.pending.office] : [];
+                  return (
+                    <li key={v.id} className="border-b border-black/10">
+                      <button
+                        {...rowProps(v.id)}
+                        aria-label={`${v.name}, ${v.product}: ${v.grants.length ? `granted in ${offices.join(", ")}` : "pending"}`}
+                        className={`invention-row relative transition-colors duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black ${
+                          lit ? "bg-black/[0.035]" : "hover:bg-black/[0.02]"
+                        }`}
+                      >
+                        <Bar on={lit} />
+                        <span data-part="name" className={`text-[15px] font-medium leading-snug tracking-[-0.01em] ${lit ? "text-black" : "text-black/70"}`}>
+                          {v.name}
+                        </span>
+                        <span className="text-[13px] text-black/50">{v.product}</span>
+                        <span className="flex items-center justify-end gap-1.5 pr-1">
+                          {offices.map((office) => (
+                            <span
+                              key={office}
+                              className={`rounded-full px-2 py-[3px] font-mono text-[10.5px] leading-none ${v.grants.length ? "bg-[#171717] text-white" : "text-black/60 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"}`}
+                            >
+                              {office}
+                            </span>
+                          ))}
+                          <Chevron open={on && open} />
+                        </span>
+                      </button>
+                      {on && open && !wide ? <div className="patent-inline px-3 pb-6 pt-2 sm:px-4">{detail("inline")}</div> : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
-        </div>
 
-        <div className="order-1 lg:order-2 lg:col-span-7">
-          <div className="lg:sticky lg:top-6">
-            <Plate patent={current} />
-          </div>
+          {/* The plate, beside the register when there is room. */}
+          <aside id="patent-aside" className="patent-aside sticky top-6" aria-label="The chosen patent">
+            <div className="rounded-[1.5rem] bg-[#f6f6f6] p-6">{detail("aside")}</div>
+          </aside>
         </div>
       </div>
 
@@ -167,347 +356,184 @@ export function Recognition() {
   );
 }
 
-function DotField({ active, onPick }: { active: string; onPick: (id: string, loud?: boolean) => void }) {
-  const [ref, seen] = useInView<HTMLDivElement>(0.25);
-  const byIndex = new Map(Object.entries(LISTED_AT).map(([id, i]) => [i, id]));
+function Bar({ on }: { on: boolean }) {
+  return <span aria-hidden className={`absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full transition-opacity duration-200 ${on ? "opacity-100" : "opacity-0"}`} style={{ background: ACCENT }} />;
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return <ChevronDown data-part="chevron" aria-hidden className={`size-4 text-black/35 transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`} strokeWidth={2} />;
+}
+
+/** One to six dots: a registration each, three to a line. */
+function Pips({ n }: { n: number }) {
+  const cols = n === 4 ? 2 : Math.min(n, 3);
   return (
-    <figure>
-      <div
-        ref={ref}
-        data-on={seen || undefined}
-        className="dot-field grid gap-[clamp(3px,0.5vw,6px)]"
-        style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}
-        role="img"
-        aria-label={`${DESIGN_PATENT_TOTAL} dots, one for each design patent; four are listed below.`}
-      >
-        {Array.from({ length: DESIGN_PATENT_TOTAL }, (_, i) => {
-          const id = byIndex.get(i);
-          const d = { "--d": `${(Math.floor(i / COLS) + (i % COLS)) * 14}ms` } as CSSProperties;
-          if (!id) return <span key={i} data-dot style={d} className="aspect-square rounded-full border border-black/[0.16]" />;
-          const p = PATENTS.find((x) => x.id === id)!;
-          const on = id === active;
+    <span className="pips text-[#171717]" style={{ "--cols": cols } as React.CSSProperties}>
+      {Array.from({ length: n }, (_, i) => (
+        <i key={i} />
+      ))}
+    </span>
+  );
+}
+
+function Shell({
+  place,
+  meta,
+  plate,
+  title,
+  summary,
+  children,
+  related,
+  note,
+}: {
+  place: "aside" | "inline";
+  meta: [string, string];
+  plate: ReactNode;
+  title: string;
+  summary: string;
+  children: ReactNode;
+  related?: { title: string; href: string };
+  note: string;
+}) {
+  return (
+    <div id={place === "inline" ? "patent-inline" : undefined} className="patent-detail">
+      <figure className={place === "inline" ? "self-start rounded-[1.25rem] bg-[#f6f6f6] p-4 sm:p-5" : ""}>
+        <div className="flex items-baseline justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.1em] text-black/45">
+          <span>{meta[0]}</span>
+          <span>{meta[1]}</span>
+        </div>
+        <div className="mt-3">{plate}</div>
+        <figcaption className="mt-3 text-[11px] leading-[1.5] text-black/40">{note}</figcaption>
+      </figure>
+      <div className={place === "aside" ? "mt-5 border-t border-black/10 pt-5" : "min-w-0"}>
+        <p className="text-[19px] font-semibold leading-snug tracking-[-0.02em]">{title}</p>
+        <p className="mt-1.5 text-sm leading-[1.5] text-black/55">{summary}</p>
+        {children}
+        {related ? (
+          <p className="mt-2 text-[13px] font-medium">
+            <Link href={related.href} className="inline-flex min-h-9 items-center text-black/70 underline decoration-black/20 underline-offset-4 transition-colors hover:text-black hover:decoration-black">
+              Case study: {related.title}
+            </Link>
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+const LIST = "mt-4 border-b border-black/10";
+/** Beside the table the list scrolls in what is left of the window, so the panel never outgrows it. */
+const LIST_ASIDE = `${LIST} max-h-[max(7rem,calc(100svh-36.5rem))] overflow-y-auto overscroll-contain [mask-image:linear-gradient(to_bottom,#000_calc(100%_-_28px),transparent)] pb-5`;
+
+function Record({ number, url }: { number: string; url: string | null }) {
+  if (!url) return <span className="inline-flex min-h-7 items-center whitespace-nowrap text-black/55">{number}</span>;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex min-h-7 items-center gap-0.5 whitespace-nowrap text-black/80 underline decoration-black/20 underline-offset-4 transition-colors hover:text-black hover:decoration-black"
+    >
+      {number}
+      <ArrowUpRight aria-hidden className="size-3 text-black/40" strokeWidth={2.25} />
+      <span className="sr-only"> (public record, opens in a new tab)</span>
+    </a>
+  );
+}
+
+function DesignDetail({ design, pick, place }: { design: Design; pick: Code | null; place: "aside" | "inline" }) {
+  const where = countries(design);
+  const list = useRef<HTMLUListElement>(null);
+  // A picked country comes to the top of the list.
+  useEffect(() => {
+    const ul = list.current;
+    if (!ul || place !== "aside") return;
+    const li = pick ? ul.querySelector<HTMLElement>(`[data-code="${pick}"]`) : null;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    ul.scrollTo({ top: li ? li.offsetTop - ul.offsetTop : 0, behavior: smooth ? "smooth" : "auto" });
+  }, [pick, place]);
+  const on = design.surface === "web" ? "TikTok on the web" : `TikTok on tablet, ${design.orientation}`;
+  return (
+    <Shell
+      place={place}
+      meta={[groupOf(design), "Design"]}
+      plate={<Plate kind={design.plate} orientation={design.orientation} draw label={`Line drawing of the design: ${design.name}, ${on}`} className="text-black/70" />}
+      title={design.name}
+      summary={`${on}. Registered ${total(design)} times in ${plural(where.length, "country", "countries")}, first filed in China on ${day(design.filed)}.`}
+      related={design.related}
+      note="Redrawn from the registered design. Dashed lines show the screen, which is not claimed; solid lines show the claimed design."
+    >
+      <ul ref={list} className={place === "aside" ? LIST_ASIDE : LIST}>
+        {where.map((j) => {
+          const numbers = design.registrations[j.code] ?? [];
           return (
-            <button
-              key={i}
-              type="button"
-              data-dot
-              style={{ ...d, background: ACCENT }}
-              onClick={() => onPick(id, true)}
-              onPointerEnter={(ev) => ev.pointerType === "mouse" && onPick(id)}
-              aria-label={`${p.number}, ${p.name}`}
-              title={p.number}
-              className={`relative aspect-square rounded-full transition-[box-shadow] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black ${
-                on ? "shadow-[0_0_0_3px_#fff,0_0_0_4.5px_#171717]" : ""
-              }`}
-            />
+            <li
+              key={j.code}
+              data-code={j.code}
+              className={`grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3 border-t border-black/10 py-2.5 transition-opacity duration-200 ${pick && pick !== j.code ? "opacity-35" : ""}`}
+            >
+              <span className="pt-px font-mono text-[11px] text-black/45">{j.code}</span>
+              <div className="min-w-0">
+                <p className="flex items-baseline justify-between gap-3 text-[13px] font-medium leading-tight">
+                  {j.name}
+                  <span className="font-mono text-[11px] font-normal tabular-nums text-black/40">{numbers.length}</span>
+                </p>
+                <p className="mt-0.5 flex flex-wrap gap-x-3.5 font-mono text-[11.5px] tabular-nums">
+                  {numbers.map((number) => (
+                    <Record key={number} number={number} url={recordUrl(j.code, number)} />
+                  ))}
+                </p>
+              </div>
+            </li>
           );
         })}
-      </div>
-      <figcaption className="mt-4 flex justify-between font-mono text-[11px] tabular-nums text-black/40">
-        <span>
-          {DESIGN_PATENT_TOTAL} = {COLS} × {DESIGN_PATENT_TOTAL / COLS}
-        </span>
-        <span>
-          <span aria-hidden className="mr-1.5 inline-block size-2 rounded-full align-[0.05em]" style={{ background: ACCENT }} />
-          Listed below
-        </span>
-      </figcaption>
-    </figure>
+      </ul>
+    </Shell>
   );
 }
 
-// ─── Plates ────────────────────────────────────────────────────────────────
-// 400 × 250, redrawn by hand from each patent's figure. Classes: u = unclaimed
-// (dashed), c = claimed, h = the claimed element the patent is about.
-
-type Draw = (cls: { c: string; h: string; u: string }) => ReactNode;
-
-const tabBar: Draw = ({ c }) => (
-  <>
-    <line x1="10" y1="212" x2="390" y2="212" className={c} pathLength={1} />
-    <path d="M54 230 V223 L60 218 L66 223 V230 Z" className={c} pathLength={1} />
-    <circle cx="129" cy="224" r="4.5" className={c} pathLength={1} />
-    <line x1="132.5" y1="227.5" x2="136" y2="231" className={c} pathLength={1} />
-    <rect x="191" y="218" width="18" height="12" rx="3" className={c} pathLength={1} />
-    <path d="M200 221 V227 M197 224 H203" className={c} pathLength={1} />
-    <rect x="264" y="219" width="12" height="10" rx="2" className={c} pathLength={1} />
-    <circle cx="340" cy="221" r="3" className={c} pathLength={1} />
-    <path d="M334 231 Q340 224 346 231" className={c} pathLength={1} />
-  </>
-);
-
-function rail({ c }: { c: string }, y0: number, step: number) {
+function InventionDetail({ invention: v, place }: { invention: Invention; place: "aside" | "inline" }) {
+  const granted = v.grants.length > 0;
+  const withOthers = v.coInventors ? ` Invented with ${words[v.coInventors] ?? v.coInventors} ${v.coInventors === 1 ? "colleague" : "colleagues"}.` : "";
   return (
-  <>
-    <circle cx="364" cy={y0} r="10" className={c} pathLength={1} />
-    <circle cx="364" cy={y0 + 10} r="3.5" className={c} pathLength={1} />
-    <path d={`M364 ${y0 + step + 7} l-7 -7 a4 4 0 0 1 7 -5 a4 4 0 0 1 7 5 Z`} className={c} pathLength={1} />
-    <path d={`M357 ${y0 + 2 * step - 4} h14 v9 h-9 l-3 3 v-3 h-2 Z`} className={c} pathLength={1} />
-    <path d={`M357 ${y0 + 3 * step + 4} q4 -8 12 -8 v-3 l5 6 l-5 6 v-3 q-7 0 -12 2`} className={c} pathLength={1} />
-    <circle cx="364" cy={y0 + 4 * step} r="9" className={c} pathLength={1} />
-    <circle cx="364" cy={y0 + 4 * step} r="3.5" className={c} pathLength={1} />
-  </>
-  );
-}
-
-const screen: Draw = ({ u }) => <rect x="10" y="10" width="380" height="230" rx="6" className={u} />;
-
-const PLATES: Record<string, { draw: Draw; ref: [number, number, number, number, string] }> = {
-  // Tablet, landscape: the share sheet beside the action rail.
-  d986264: {
-    ref: [290, 104, 300, 92, "20"],
-    draw: (k) => (
-      <>
-        {screen(k)}
-        <line x1="90" y1="10" x2="90" y2="212" className={k.c} pathLength={1} />
-        <line x1="310" y1="10" x2="310" y2="104" className={k.c} pathLength={1} />
-        {tabBar(k)}
-        {rail(k, 70, 30)}
-        <rect x="224" y="104" width="124" height="102" rx="6" className={k.h} pathLength={1} />
-        {[0, 1, 2, 3, 4].map((i) => (
-          <g key={i}>
-            <circle cx={242 + i * 22} cy="126" r="8" className={k.h} pathLength={1} />
-            <circle cx={247.5 + i * 22} cy="131.5" r="2.5" className={k.h} pathLength={1} />
-            <circle cx={242 + i * 22} cy="155" r="8" className={k.h} pathLength={1} />
-          </g>
+    <Shell
+      place={place}
+      meta={[v.product, "Invention"]}
+      plate={<Plate kind={v.plate} draw label={`Line drawing of the invention: ${v.name}`} className="text-black/70" />}
+      title={v.name}
+      summary={(granted ? `Invention patent, granted in ${plural(v.grants.length, "jurisdiction")}.` : `Patent application, filed in ${v.pending?.filed} and pending.`) + withOthers}
+      related={v.related}
+      note={
+        granted
+          ? "Redrawn from the patent’s figures. Dashed lines show the phone, which is not claimed; the overlapped points are in color."
+          : "An illustration of the idea, not a figure from the application."
+      }
+    >
+      <ul className={LIST}>
+        {v.grants.map((g) => (
+          <li key={g.office} className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3 border-t border-black/10 py-2.5">
+            <span className="pt-px font-mono text-[11px] text-black/45">{g.office}</span>
+            <div className="min-w-0">
+              <p className="flex items-baseline justify-between gap-3 text-[13px] font-medium leading-tight">
+                {OFFICES[g.office]}
+                <span className="font-mono text-[11px] font-normal tabular-nums text-black/40">{day(g.date)}</span>
+              </p>
+              <p className="mt-0.5 font-mono text-[11.5px] tabular-nums">
+                <Record number={`${g.office} ${g.number}`} url={g.url} />
+              </p>
+            </div>
+          </li>
         ))}
-        <circle cx="242" cy="186" r="7" className={k.h} pathLength={1} />
-        <path d="M239.5 190 v-8 h6 l-1.5 2 l1.5 2 h-6" className={k.h} pathLength={1} />
-        <circle cx="264" cy="186" r="7" className={k.h} pathLength={1} />
-        <path d="M261.5 182 h5 v8 l-2.5 -2 l-2.5 2 Z" className={k.h} pathLength={1} />
-        <path d="M286 190 l-5 -5 a3 3 0 0 1 5 -3.5 a3 3 0 0 1 5 3.5 Z M286 182 l-1.5 3 l2 1.5" className={k.h} pathLength={1} />
-        <path d="M308 181 v7 M305 185.5 l3 3 l3 -3 M304 191 h8" className={k.h} pathLength={1} />
-        <rect x="324" y="182.5" width="12" height="7" rx="3.5" className={k.h} pathLength={1} />
-      </>
-    ),
-  },
-  // Tablet, landscape: the comment panel opening from the action rail.
-  d986265: {
-    ref: [214, 60, 186, 44, "30"],
-    draw: (k) => (
-      <>
-        {screen(k)}
-        <line x1="90" y1="10" x2="90" y2="212" className={k.c} pathLength={1} />
-        <line x1="310" y1="186" x2="310" y2="212" className={k.c} pathLength={1} />
-        {tabBar(k)}
-        {rail(k, 40, 30)}
-        <rect x="214" y="28" width="134" height="156" rx="6" className={k.h} pathLength={1} />
-        <line x1="230" y1="28" x2="230" y2="184" className={k.h} pathLength={1} />
-        <line x1="330" y1="28" x2="330" y2="184" className={k.h} pathLength={1} />
-        <path d="M240 40 l6 4 l-6 4 Z M268 40 l6 4 l-6 4 Z" className={k.h} pathLength={1} />
-        <circle cx="339" cy="44" r="4.5" className={k.h} pathLength={1} />
-        <circle cx="339" cy="62" r="4.5" className={k.h} pathLength={1} />
-        {[0, 1, 2].map((i) => (
-          <g key={i}>
-            <circle cx="244" cy={78 + i * 26} r="6" className={k.h} pathLength={1} />
-            <line x1="256" y1={75 + i * 26} x2={300 - i * 10} y2={75 + i * 26} className={k.h} pathLength={1} />
-            <line x1="256" y1={82 + i * 26} x2="284" y2={82 + i * 26} className={k.h} pathLength={1} />
-          </g>
-        ))}
-        <circle cx="246" cy="168" r="6" className={k.h} pathLength={1} />
-        <circle cx="270" cy="168" r="6" className={k.h} pathLength={1} />
-      </>
-    ),
-  },
-  // Web: the For You feed — top bar, left navigation, a vertical video and its actions.
-  d990500: {
-    ref: [232, 92, 276, 74, "40"],
-    draw: (k) => (
-      <>
-        <rect x="10" y="10" width="380" height="230" rx="4" className={k.u} />
-        <line x1="10" y1="34" x2="390" y2="34" className={k.c} pathLength={1} />
-        <circle cx="30" cy="22" r="6" className={k.c} pathLength={1} />
-        <rect x="150" y="15" width="100" height="14" rx="7" className={k.c} pathLength={1} />
-        <circle cx="240" cy="21.5" r="3" className={k.c} pathLength={1} />
-        <circle cx="370" cy="22" r="6" className={k.c} pathLength={1} />
-        <path d="M322 25 l4 -6 l4 6 Z M336 19 l8 3 l-8 3 l2 -3 Z M350 18 h8 v7 h-8 Z" className={k.c} pathLength={1} />
-        <path d="M36 54 V49 L41 45 L46 49 V54 Z" className={k.c} pathLength={1} />
-        <path d="M36 68 l5 -5 l5 5 M38 64 h6" className={k.c} pathLength={1} />
-        <line x1="30" y1="80" x2="112" y2="80" className={k.c} pathLength={1} />
-        <circle cx="38" cy="94" r="5" className={k.c} pathLength={1} />
-        <circle cx="38" cy="108" r="5" className={k.c} pathLength={1} />
-        {[122, 136, 150, 164, 178].map((y) => (
-          <circle key={y} cx="38" cy={y} r="5" className={k.u} />
-        ))}
-        <line x1="30" y1="190" x2="112" y2="190" className={k.c} pathLength={1} />
-        {[30, 56, 82].map((x) => (
-          <rect key={x} x={x} y="198" width="22" height="7" rx="3.5" className={k.c} pathLength={1} />
-        ))}
-        {[30, 56, 82].map((x) => (
-          <rect key={`u${x}`} x={x} y="210" width="22" height="7" rx="3.5" className={k.u} />
-        ))}
-        <circle cx="152" cy="54" r="9" className={k.c} pathLength={1} />
-        <rect x="300" y="46" width="32" height="12" rx="2" className={k.c} pathLength={1} />
-        <rect x="160" y="72" width="72" height="128" rx="2" className={k.h} pathLength={1} />
-        {[156, 176, 196].map((y, i) => (
-          <g key={y}>
-            <circle cx="248" cy={y} r="7" className={k.h} pathLength={1} />
-            {i === 0 ? <path d={`M248 ${y + 3} l-3.5 -3.5 a2 2 0 0 1 3.5 -2.5 a2 2 0 0 1 3.5 2.5 Z`} className={k.h} pathLength={1} /> : null}
-            {i === 1 ? <path d={`M244.5 ${y - 2} h7 v4 h-4 l-2 2 v-2 h-1 Z`} className={k.h} pathLength={1} /> : null}
-            {i === 2 ? <path d={`M244.5 ${y + 2} q2 -4 6 -4 v-2 l3 3 l-3 3 v-2`} className={k.h} pathLength={1} /> : null}
-          </g>
-        ))}
-        <line x1="140" y1="210" x2="340" y2="210" className={k.c} pathLength={1} />
-        <circle cx="152" cy="226" r="7" className={k.u} />
-        <rect x="300" y="221" width="32" height="10" rx="2" className={k.u} />
-      </>
-    ),
-  },
-  // Web: the player page — a large landscape player, a column of thumbnails, four cards.
-  d990501: {
-    ref: [302, 60, 330, 46, "50"],
-    draw: (k) => (
-      <>
-        <rect x="10" y="10" width="380" height="230" rx="4" className={k.u} />
-        <line x1="10" y1="34" x2="390" y2="34" className={k.c} pathLength={1} />
-        <circle cx="26" cy="22" r="6" className={k.c} pathLength={1} />
-        <rect x="150" y="15" width="100" height="14" rx="7" className={k.c} pathLength={1} />
-        <circle cx="370" cy="22" r="6" className={k.c} pathLength={1} />
-        <path d="M306 25 V20 L310 17 L314 20 V25 Z M322 25 l4 -6 l4 6 Z M336 19 l8 3 l-8 3 l2 -3 Z M350 18 h8 v7 h-8 Z" className={k.c} pathLength={1} />
-        <line x1="72" y1="34" x2="72" y2="240" className={k.c} pathLength={1} />
-        <path d="M22 54 V49 L27 45 L32 49 V54 Z M22 68 l5 -5 l5 5 M22 76 h10 v6 h-10 Z" className={k.c} pathLength={1} />
-        <line x1="16" y1="92" x2="64" y2="92" className={k.c} pathLength={1} />
-        <circle cx="26" cy="104" r="5" className={k.c} pathLength={1} />
-        <circle cx="26" cy="118" r="5" className={k.c} pathLength={1} />
-        {[132, 146, 160].map((y) => (
-          <circle key={y} cx="26" cy={y} r="5" className={k.u} />
-        ))}
-        <line x1="16" y1="176" x2="64" y2="176" className={k.c} pathLength={1} />
-        <circle cx="26" cy="188" r="5" className={k.c} pathLength={1} />
-        <circle cx="26" cy="202" r="5" className={k.c} pathLength={1} />
-        {[216, 230].map((y) => (
-          <circle key={y} cx="26" cy={y} r="5" className={k.u} />
-        ))}
-        <rect x="88" y="42" width="214" height="112" rx="3" className={k.h} pathLength={1} />
-        <circle cx="98" cy="52" r="5" className={k.h} pathLength={1} />
-        <rect x="280" y="48" width="14" height="7" rx="1.5" className={k.h} pathLength={1} />
-        {[42, 70, 98, 126].map((y, i) => (
-          <rect key={y} x="310" y={y} width="66" height="24" rx="2" className={i === 0 ? k.h : k.c} pathLength={1} />
-        ))}
-        <line x1="72" y1="164" x2="390" y2="164" className={k.c} pathLength={1} />
-        {[86, 160, 234, 308].map((x) => (
-          <g key={x}>
-            <rect x={x} y="172" width="66" height="48" rx="2" className={k.c} pathLength={1} />
-            <rect x={x + 4} y="210" width="28" height="5" rx="1" className={k.c} pathLength={1} />
-            <rect x={x + 52} y="210" width="9" height="5" rx="1" className={k.c} pathLength={1} />
-            <circle cx={x + 6} cy="230" r="5" className={k.c} pathLength={1} />
-          </g>
-        ))}
-      </>
-    ),
-  },
-  // Two-dimensional code: round-dot modules, and positioning points made of two overlapped points.
-  ep4258165: {
-    ref: [170, 85, 96, 40, "110"],
-    draw: (k) => (
-      <g className="plate-scaled" transform="translate(200 125) scale(1.32) translate(-200 -125)">
-        <rect x="140" y="10" width="120" height="230" rx="16" className={k.u} />
-        <rect x="152" y="62" width="96" height="126" rx="8" className={k.c} pathLength={1} />
-        <circle cx="200" cy="62" r="9" className={k.c} pathLength={1} />
-        <line x1="176" y1="176" x2="224" y2="176" className={k.c} pathLength={1} />
-        {[
-          [160, 78],
-          [218, 78],
-          [160, 136],
-        ].map(([x, y]) => (
-          <g key={`${x}${y}`}>
-            <rect x={x} y={y} width="22" height="22" rx="4" className={k.c} pathLength={1} />
-            {[
-              [3, 3],
-              [11, 3],
-              [19, 3],
-              [3, 11],
-              [19, 11],
-              [3, 19],
-              [11, 19],
-              [19, 19],
-            ].map(([dx, dy]) => (
-              <circle key={`${dx}${dy}`} cx={x + dx} cy={y + dy} r="1.1" className={k.c} pathLength={1} />
-            ))}
-            <circle cx={x + 11} cy={y + 11} r="5" className={k.c} pathLength={1} />
-            <circle cx={x + 9.5} cy={y + 11} r="5" className={k.h} pathLength={1} />
-          </g>
-        ))}
-        {CODE_DOTS.map(([x, y]) => (
-          <circle key={`${x}-${y}`} cx={x} cy={y} r="1.6" className={k.c} pathLength={1} />
-        ))}
-      </g>
-    ),
-  },
-};
-
-// The code's modules: a fixed pattern on a 6px grid, skipping the three positioning corners.
-const CODE_DOTS: [number, number][] = (() => {
-  const out: [number, number][] = [];
-  let seed = 7;
-  for (let gy = 0; gy < 13; gy++) {
-    for (let gx = 0; gx < 13; gx++) {
-      const x = 163 + gx * 6.2;
-      const y = 81 + gy * 6.2;
-      const inEye = (x < 186 && y < 104) || (x > 214 && y < 104) || (x < 186 && y > 132);
-      seed = (seed * 9301 + 49297) % 233280;
-      if (!inEye && seed / 233280 < 0.5) out.push([Math.round(x * 10) / 10, Math.round(y * 10) / 10]);
-    }
-  }
-  return out;
-})();
-
-function Plate({ patent }: { patent: Patent }) {
-  const gid = useId().replace(/:/g, "");
-  const plate = PLATES[patent.id];
-  const [lx, ly, tx, ty, num] = plate.ref;
-  const cls = { c: "pc", h: "ph", u: "pu" };
-  return (
-    <figure id="patent-plate" role="tabpanel" aria-labelledby={`tab-${patent.id}`} className="rounded-[1.5rem] bg-[#f6f6f6] p-5 sm:p-7">
-      <div className="flex items-baseline justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.1em] text-black/45">
-        <span>{patent.figure}</span>
-        <span className="tabular-nums">{patent.number}</span>
-      </div>
-      {/* key: a new patent remounts the drawing, so it draws again. */}
-      <svg
-        key={patent.id}
-        viewBox="0 0 400 250"
-        role="img"
-        aria-label={`Line drawing redrawn from ${patent.number}: ${patent.name}`}
-        className="patent-plate mt-4 h-auto w-full text-black/70"
-        fill="none"
-        strokeWidth={1.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{ "--accent": `url(#${gid})` } as CSSProperties}
-      >
-        <defs>
-          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
-            <stop offset="0" stopColor="#3b82f6" />
-            <stop offset="0.5" stopColor="#a855f7" />
-            <stop offset="1" stopColor="#f2784b" />
-          </linearGradient>
-        </defs>
-        {plate.draw(cls)}
-        {/* Reference numeral, the way a patent figure points at its parts. */}
-        <path d={`M${lx} ${ly} Q${(lx + tx) / 2} ${ly - 8} ${tx} ${ty + 4}`} className="pc" pathLength={1} />
-        <text x={tx + 2} y={ty} className="pt fill-current stroke-none font-mono text-[10px]">
-          {num}
-        </text>
-      </svg>
-      <figcaption className="mt-5 border-t border-black/10 pt-5">
-        <p className="text-[17px] font-semibold leading-snug tracking-[-0.02em]">{patent.name}</p>
-        <p className="mt-1 text-sm leading-[1.5] text-black/55">
-          {patent.kind}: “{patent.title}”. Filed {patent.filed}, granted {patent.granted}.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-medium">
-          <Link href={patent.related.href} className="inline-flex items-center gap-1 text-black/70 underline decoration-black/20 underline-offset-4 transition-colors hover:text-black hover:decoration-black">
-            Case study: {patent.related.title}
-          </Link>
-          <a href={patent.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-black/50 transition-colors hover:text-black">
-            Google Patents
-            <ArrowUpRight aria-hidden className="size-3.5" strokeWidth={2.25} />
-          </a>
-        </div>
-        <p className="mt-4 text-[11px] leading-[1.5] text-black/40">
-          Redrawn from the patent figure. Dashed lines show the screen, which is not claimed; solid lines show the claimed design.
-        </p>
-      </figcaption>
-    </figure>
+        {v.pending ? (
+          <li className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3 border-t border-black/10 py-2.5">
+            <span className="pt-px font-mono text-[11px] text-black/45">{v.pending.office}</span>
+            <p className="flex items-baseline justify-between gap-3 text-[13px] font-medium leading-tight">
+              {OFFICES[v.pending.office]}
+              <span className="font-mono text-[11px] font-normal text-black/40">Pending</span>
+            </p>
+          </li>
+        ) : null}
+      </ul>
+    </Shell>
   );
 }

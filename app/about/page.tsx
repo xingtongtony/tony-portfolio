@@ -21,7 +21,8 @@ export const metadata: Metadata = {
  *
  * The statement (the sticker collage phones also open the homepage with), then
  * a bio whose skills you can press to light the roles that used them, a career
- * ruler you can scrub, patents that draw themselves, and contact.
+ * ruler you can scrub, the patents as a register whose plates draw themselves,
+ * and contact.
  */
 export default function About() {
   // The month the page was generated: the ruler's "now" (refreshed daily, see revalidate).
